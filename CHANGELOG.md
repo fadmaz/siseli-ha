@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.9] - 2026-03-05
+### Added
+- Implemented Traffic Watchdog (passive sniffer) to monitor inverter network activity and detect target ports.
+- Added support for port 8883 (MQTT over SSL) redirection.
+- Added `iptables -F` to ensure a clean state before applying new rules.
+
 ## [1.2.8] - 2026-03-05
 ### Fixed
 - Added `iptables` rule cleanup loop to remove legacy redirection rules on startup.

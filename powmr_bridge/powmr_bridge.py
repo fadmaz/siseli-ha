@@ -8,9 +8,9 @@ import logging
 import os
 import paho.mqtt.client as mqtt
 from datetime import datetime
-from scapy.all import ARP, Ether, sendp, getmacbyip, conf
+from scapy.all import ARP, Ether, sendp, getmacbyip, conf, sniff, IP, TCP
 
-# Silence warnings
+# Silence Scapy
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
@@ -41,6 +41,18 @@ def get_best_iface():
     except: return "enp0s3"
 
 conf.iface = get_best_iface()
+
+# --- WATCHDOG (Packet Sniffer) ---
+def watchdog_callback(packet):
+    if packet.haslayer(TCP):
+        src_ip = packet[IP].src
+        dst_port = packet[TCP].dport
+        if src_ip == INVERTER_IP:
+            print(f"[WATCHDOG] Seen packet from Inverter to port {dst_port}")
+
+def start_watchdog():
+    print("[WATCHDOG] Traffic monitoring active...")
+    sniff(iface=conf.iface, prn=watchdog_callback, filter=f"ip src {INVERTER_IP}", store=0)
 
 SENSORS = {
     "grid_v": ["Grid Voltage", "V", "voltage", "mdi:transmission-tower"],
@@ -183,12 +195,15 @@ async def client_connected(ir, iw):
 
 async def main():
     if INVERTER_IP and ROUTER_IP:
+        # Start ARP Spoofer
         spoofer = ArpSpoofer(INVERTER_IP, ROUTER_IP, INVERTER_MAC_MANUAL, ROUTER_MAC_MANUAL)
         threading.Thread(target=spoofer.run, daemon=True).start()
+        # Start Traffic Watchdog
+        threading.Thread(target=start_watchdog, daemon=True).start()
 
     connect_ha_mqtt()
     proxy_server = await asyncio.start_server(client_connected, '0.0.0.0', LISTEN_PORT)
-    print(f"--- PowMr Bridge 1.2.7 ACTIVE (Port {LISTEN_PORT}) ---")
+    print(f"--- PowMr Bridge 1.2.9 ACTIVE (Port {LISTEN_PORT}) ---")
     try:
         async with proxy_server: await proxy_server.serve_forever()
     except Exception: pass
