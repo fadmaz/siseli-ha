@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2026-03-05
+### Fixed
+- Simplified `iptables` redirection to use the default binary (removed legacy reference).
+- Confirmed successful ARP Spoofing and device discovery.
+
 ## [1.2.4] - 2026-03-05
 ### Fixed
 - Fixed `unbound variable` crash in `run.sh` by reordering config export.
