@@ -11,7 +11,7 @@ from scapy.all import ARP, send, getmacbyip
 # --- НАЛАШТУВАННЯ ---
 TARGET_HOST = os.getenv('TARGET_HOST', '8.212.18.157')
 TARGET_PORT = int(os.getenv('TARGET_PORT', 1883))
-LISTEN_PORT = int(os.getenv('LISTEN_PORT', 1883))
+LISTEN_PORT = int(os.getenv('LISTEN_PORT', 1884))
 
 HA_BROKER = os.getenv('MQTT_HOST', 'core-mosquitto') 
 HA_PORT = int(os.getenv('MQTT_PORT', 1883))
