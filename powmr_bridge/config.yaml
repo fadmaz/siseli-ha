@@ -1,6 +1,6 @@
 name: "PowMr Inverter Bridge"
 description: "Local bridge for PowMr inverters with ARP Spoofing Auto-Discovery."
-version: "1.2.5"
+version: "1.2.6"
 slug: "powmr_bridge"
 init: false
 arch:

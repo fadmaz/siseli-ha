@@ -8,7 +8,7 @@ import logging
 import os
 import paho.mqtt.client as mqtt
 from datetime import datetime
-from scapy.all import ARP, Ether, sendp, getmacbyip, conf, get_if_list
+from scapy.all import ARP, Ether, sendp, getmacbyip, conf
 
 # Вимикаємо спам-попередження
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -33,16 +33,14 @@ ROUTER_MAC_MANUAL = os.getenv('ROUTER_MAC', '').strip()
 DEVICE_ID = "powmr_rwb1"
 STATE_TOPIC = f"powmr/{DEVICE_ID}/state"
 
-# Визначаємо найкращий інтерфейс (зазвичай enp0s3 або eth0)
+# Визначаємо найкращий інтерфейс
 def get_best_iface():
     try:
         import subprocess
         out = subprocess.check_output("ip route | grep default", shell=True).decode()
         iface = out.split()[4]
-        print(f"[DEBUG] Default network interface detected: {iface}")
         return iface
-    except:
-        return "enp0s3"
+    except: return "enp0s3"
 
 conf.iface = get_best_iface()
 
@@ -78,29 +76,23 @@ class ArpSpoofer:
         self.running = False
 
     def get_mac(self, ip):
-        print(f"[ARP] Searching MAC for {ip} on interface {conf.iface}...")
         mac = getmacbyip(ip)
         if mac: print(f"[ARP] Found MAC for {ip}: {mac}")
-        else: print(f"[ARP] WARNING: Failed to find MAC for {ip}. Interception will fail.")
+        else: print(f"[ARP] WARNING: Failed to find MAC for {ip}")
         return mac
 
     def run(self):
         t_mac = self.target_mac if self.target_mac else self.get_mac(self.target_ip)
         g_mac = self.gateway_mac if self.gateway_mac else self.get_mac(self.gateway_ip)
-
         if not t_mac or not g_mac: return
-
         self.running = True
         print(f"[ARP] Spoofing ACTIVE: {self.target_ip} ({t_mac}) <-> {self.gateway_ip} ({g_mac})")
-        
         try:
             while self.running:
-                sendp(Ether(dst=t_mac)/ARP(op=2, pdst=self.target_ip, psrc=self.gateway_ip, hwdst=t_mac), iface=conf.iface, verbose=False)
-                sendp(Ether(dst=g_mac)/ARP(op=2, pdst=self.gateway_ip, psrc=self.target_ip, hwdst=g_mac), iface=conf.iface, verbose=False)
+                sendp(Ether(dst=t_mac)/ARP(op=2, pdst=self.target_ip, psrc=self.gateway_ip, hwdst=t_mac), verbose=False)
+                sendp(Ether(dst=g_mac)/ARP(op=2, pdst=self.gateway_ip, psrc=self.target_ip, hwdst=g_mac), verbose=False)
                 time.sleep(2)
-        except Exception as e: print(f"[ARP ERROR] {e}")
-
-    def stop(self): self.running = False
+        except Exception: pass
 
 # --- MQTT ---
 ha_client = mqtt.Client()
@@ -112,7 +104,7 @@ def connect_ha_mqtt():
         ha_client.loop_start()
         print(f"[HA MQTT] Connected to {HA_BROKER}")
         publish_discovery()
-    except Exception as e: print(f"[HA MQTT ERROR] {e}")
+    except Exception: pass
 
 def publish_discovery():
     for key, data in SENSORS.items():
@@ -183,10 +175,12 @@ async def handle_stream(reader, writer):
     finally: writer.close()
 
 async def client_connected(ir, iw):
+    peer = iw.get_extra_info('peername')
+    print(f"[PROXY] New connection from {peer}")
     try:
         cr, cw = await asyncio.open_connection(TARGET_HOST, TARGET_PORT)
         await asyncio.gather(handle_stream(ir, cw), handle_stream(cr, iw))
-    except Exception: pass
+    except Exception as e: print(f"[PROXY ERROR] Cloud connection failed: {e}")
     finally: iw.close()
 
 async def main():
@@ -196,7 +190,7 @@ async def main():
 
     connect_ha_mqtt()
     proxy_server = await asyncio.start_server(client_connected, '0.0.0.0', LISTEN_PORT)
-    print(f"--- PowMr Bridge 1.2.4 Active (Port {LISTEN_PORT}) ---")
+    print(f"--- PowMr Bridge 1.2.6 Active (Port {LISTEN_PORT}) ---")
     try:
         async with proxy_server: await proxy_server.serve_forever()
     except Exception: pass

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.6] - 2026-03-05
+### Fixed
+- Changed `iptables` rule from `-A` (Append) to `-I` (Insert) to ensure redirection takes priority over Docker rules.
+- Added connection logging `[PROXY] New connection` to verify traffic interception.
+- Corrected version string in Python bridge output.
+
 ## [1.2.5] - 2026-03-05
 ### Fixed
 - Simplified `iptables` redirection to use the default binary (removed legacy reference).
