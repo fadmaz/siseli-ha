@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.7] - 2026-03-05
+### Fixed
+- Added `-s $INVERTER_IP` to `iptables` rule to avoid intercepting internal HA traffic.
+- Added explicit logging for MQTT Discovery publication.
+- Enhanced proxy logging to show data transfer size and direction.
+
 ## [1.2.6] - 2026-03-05
 ### Fixed
 - Changed `iptables` rule from `-A` (Append) to `-I` (Insert) to ensure redirection takes priority over Docker rules.

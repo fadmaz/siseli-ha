@@ -10,16 +10,15 @@ import paho.mqtt.client as mqtt
 from datetime import datetime
 from scapy.all import ARP, Ether, sendp, getmacbyip, conf
 
-# Вимикаємо спам-попередження
+# Silence warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
-# --- НАЛАШТУВАННЯ ---
+# --- CONFIG ---
 TARGET_HOST = os.getenv('TARGET_HOST', '8.212.18.157')
 TARGET_PORT = int(os.getenv('TARGET_PORT', 1883))
 LISTEN_PORT = int(os.getenv('LISTEN_PORT', 18899))
 
-# --- HA MQTT ---
 HA_BROKER = os.getenv('MQTT_HOST', 'core-mosquitto') 
 HA_PORT = int(os.getenv('MQTT_PORT', 1883))
 HA_USER = os.getenv('MQTT_USER', '')
@@ -33,13 +32,12 @@ ROUTER_MAC_MANUAL = os.getenv('ROUTER_MAC', '').strip()
 DEVICE_ID = "powmr_rwb1"
 STATE_TOPIC = f"powmr/{DEVICE_ID}/state"
 
-# Визначаємо найкращий інтерфейс
+# Determine best interface
 def get_best_iface():
     try:
         import subprocess
         out = subprocess.check_output("ip route | grep default", shell=True).decode()
-        iface = out.split()[4]
-        return iface
+        return out.split()[4]
     except: return "enp0s3"
 
 conf.iface = get_best_iface()
@@ -69,10 +67,8 @@ SENSORS = {
 
 class ArpSpoofer:
     def __init__(self, target_ip, gateway_ip, target_mac=None, gateway_mac=None):
-        self.target_ip = target_ip     
-        self.gateway_ip = gateway_ip   
-        self.target_mac = target_mac
-        self.gateway_mac = gateway_mac
+        self.target_ip, self.gateway_ip = target_ip, gateway_ip
+        self.target_mac, self.gateway_mac = target_mac, gateway_mac
         self.running = False
 
     def get_mac(self, ip):
@@ -86,7 +82,7 @@ class ArpSpoofer:
         g_mac = self.gateway_mac if self.gateway_mac else self.get_mac(self.gateway_ip)
         if not t_mac or not g_mac: return
         self.running = True
-        print(f"[ARP] Spoofing ACTIVE: {self.target_ip} ({t_mac}) <-> {self.gateway_ip} ({g_mac})")
+        print(f"[ARP] Spoofing ACTIVE: {self.target_ip} <-> {self.gateway_ip}")
         try:
             while self.running:
                 sendp(Ether(dst=t_mac)/ARP(op=2, pdst=self.target_ip, psrc=self.gateway_ip, hwdst=t_mac), verbose=False)
@@ -104,9 +100,10 @@ def connect_ha_mqtt():
         ha_client.loop_start()
         print(f"[HA MQTT] Connected to {HA_BROKER}")
         publish_discovery()
-    except Exception: pass
+    except Exception as e: print(f"[HA MQTT ERROR] {e}")
 
 def publish_discovery():
+    print(f"[HA MQTT] Publishing sensor discovery...")
     for key, data in SENSORS.items():
         topic = f"homeassistant/sensor/{DEVICE_ID}/{key}/config"
         payload = {
@@ -160,14 +157,15 @@ class SolarParser:
                         state["bat_temp"] = r[41]
             if state:
                 ha_client.publish(STATE_TOPIC, json.dumps(state))
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ➡️ Data: {len(state)} params.")
-        except Exception: pass
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ➡️ Data sent: {len(state)} params.")
+        except Exception as e: print(f"[PARSER ERROR] {e}")
 
-async def handle_stream(reader, writer):
+async def handle_stream(reader, writer, label):
     try:
         while True:
             data = await reader.read(8192)
             if not data: break
+            print(f"[PROXY] {label} sent {len(data)} bytes")
             if data[0] & 0xF0 == 0x30: SolarParser.parse_payload(data)
             writer.write(data)
             await writer.drain()
@@ -179,7 +177,7 @@ async def client_connected(ir, iw):
     print(f"[PROXY] New connection from {peer}")
     try:
         cr, cw = await asyncio.open_connection(TARGET_HOST, TARGET_PORT)
-        await asyncio.gather(handle_stream(ir, cw), handle_stream(cr, iw))
+        await asyncio.gather(handle_stream(ir, cw, "Inverter"), handle_stream(cr, iw, "Cloud"))
     except Exception as e: print(f"[PROXY ERROR] Cloud connection failed: {e}")
     finally: iw.close()
 
@@ -190,7 +188,7 @@ async def main():
 
     connect_ha_mqtt()
     proxy_server = await asyncio.start_server(client_connected, '0.0.0.0', LISTEN_PORT)
-    print(f"--- PowMr Bridge 1.2.6 Active (Port {LISTEN_PORT}) ---")
+    print(f"--- PowMr Bridge 1.2.7 ACTIVE (Port {LISTEN_PORT}) ---")
     try:
         async with proxy_server: await proxy_server.serve_forever()
     except Exception: pass
