@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.3] - 2026-03-05
+### Added
+- Verbose Debug Mode for network diagnostics.
+- Detailed error reporting for `iptables` and `ip_forward`.
+- Enhanced logging in `powmr_bridge.py` for ARP and Proxy operations.
+
 ## [1.2.2] - 2026-03-05
 ### Added
 - Manual MAC address configuration for Inverter and Router in Add-on options.

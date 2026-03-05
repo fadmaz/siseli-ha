@@ -1,8 +1,44 @@
 #!/usr/bin/with-contenv bashio
 
-echo "--- PowMr Bridge 1.2.2 Booting ---"
+echo "--- PowMr Bridge 1.2.3 DEBUG START ---"
+echo "Date: $(date)"
+echo "User context: $(id)"
+echo "Kernel version: $(uname -r)"
 
-# Експорт всіх параметрів з конфігурації HA
+# Перевірка IP Forwarding (критично для ARP Spoofing)
+echo -n "Checking IP Forwarding: "
+cat /proc/sys/net/ipv4/ip_forward
+echo "Attempting to enable IP Forwarding..."
+echo 1 > /proc/sys/net/ipv4/ip_forward || echo "FAILED to enable IP Forwarding. This is required for ARP Spoofing!"
+
+# Перевірка мережевих інтерфейсів
+echo "Network Interfaces:"
+ip addr show
+
+# Детальна перевірка iptables
+echo "Testing iptables-legacy..."
+iptables-legacy -t nat -L -n || echo "iptables-legacy NOT working"
+
+echo "Testing iptables (standard)..."
+iptables -t nat -L -n || echo "iptables (standard) NOT working"
+
+echo "Configuring Port Redirection (1883 -> $LISTEN_PORT)..."
+# Спроба 1: Legacy
+iptables-legacy -t nat -A PREROUTING -p tcp --dport 1883 -j REDIRECT --to-port 18899 2>&1 | tee /tmp/ipt_err1
+# Спроба 2: Standard
+iptables -t nat -A PREROUTING -p tcp --dport 1883 -j REDIRECT --to-port 18899 2>&1 | tee /tmp/ipt_err2
+
+echo "--- Diagnostic Summary ---"
+if [ -s /tmp/ipt_err1 ] && [ -s /tmp/ipt_err2 ]; then
+    echo "CRITICAL: All iptables attempts FAILED!"
+    echo "Error 1: $(cat /tmp/ipt_err1)"
+    echo "Error 2: $(cat /tmp/ipt_err2)"
+else
+    echo "SUCCESS: Port redirection should be active."
+fi
+echo "--- DEBUG END ---"
+
+# Export variables
 export MQTT_HOST=$(bashio::config 'mqtt_host' 'core-mosquitto')
 export MQTT_PORT=$(bashio::config 'mqtt_port' '1883')
 export MQTT_USER=$(bashio::config 'mqtt_user' '')
@@ -15,11 +51,5 @@ export ROUTER_IP=$(bashio::config 'ROUTER_IP' '')
 export INVERTER_MAC=$(bashio::config 'INVERTER_MAC' '')
 export ROUTER_MAC=$(bashio::config 'ROUTER_MAC' '')
 
-# Налаштування iptables
-echo "Configuring network redirection..."
-iptables-legacy -t nat -A PREROUTING -p tcp --dport 1883 -j REDIRECT --to-port $LISTEN_PORT 2>/dev/null || \
-iptables -t nat -A PREROUTING -p tcp --dport 1883 -j REDIRECT --to-port $LISTEN_PORT || \
-echo "WARNING: iptables failed. Make sure Protection Mode is OFF."
-
-echo "Starting PowMr HA Bridge..."
+echo "Launching Python Bridge..."
 python3 -u /app/powmr_bridge.py

@@ -65,28 +65,32 @@ class ArpSpoofer:
         self.running = False
 
     def get_mac(self, ip):
+        print(f"[ARP DEBUG] Requesting MAC for {ip}...")
         mac = getmacbyip(ip)
-        if not mac:
-            print(f"[ARP] !!! Не вдалося знайти MAC для IP: {ip}. Спробуйте вказати його вручну в налаштуваннях.")
+        if mac:
+            print(f"[ARP DEBUG] SUCCESS: MAC for {ip} is {mac}")
+        else:
+            print(f"[ARP DEBUG] FAILED: Could not find MAC for {ip}")
         return mac
 
     def run(self):
+        print(f"[ARP DEBUG] Initializing ARP Spoofing loop for {self.target_ip}...")
         t_mac = self.target_mac if self.target_mac else self.get_mac(self.target_ip)
         g_mac = self.gateway_mac if self.gateway_mac else self.get_mac(self.gateway_ip)
 
         if not t_mac or not g_mac:
-            print("[ARP] Перехоплення неможливе. Перевірте MAC адреси.")
+            print("[ARP] ERROR: Interception impossible. Check MAC addresses.")
             return
 
         self.running = True
-        print(f"[System] ARP Spoofing активний: {self.target_ip} -> {t_mac}")
+        print(f"[ARP] Interception ACTIVE: {self.target_ip} ({t_mac}) <-> {self.gateway_ip} ({g_mac})")
         
         try:
             while self.running:
                 sendp(Ether(dst=t_mac)/ARP(op=2, pdst=self.target_ip, psrc=self.gateway_ip, hwdst=t_mac), verbose=False)
                 sendp(Ether(dst=g_mac)/ARP(op=2, pdst=self.gateway_ip, psrc=self.target_ip, hwdst=g_mac), verbose=False)
                 time.sleep(2)
-        except Exception as e: print(f"[ARP] Помилка: {e}")
+        except Exception as e: print(f"[ARP ERROR] Loop failed: {e}")
 
     def stop(self): self.running = False
 
@@ -96,13 +100,15 @@ if HA_USER and HA_PASS: ha_client.username_pw_set(HA_USER, HA_PASS)
 
 def connect_ha_mqtt():
     try:
+        print(f"[HA MQTT] Connecting to {HA_BROKER}:{HA_PORT}...")
         ha_client.connect(HA_BROKER, HA_PORT, 60)
         ha_client.loop_start()
-        print(f"[HA MQTT] Підключено до {HA_BROKER}")
+        print(f"[HA MQTT] SUCCESS: Connected to {HA_BROKER}")
         publish_discovery()
-    except Exception as e: print(f"[HA MQTT] Помилка: {e}")
+    except Exception as e: print(f"[HA MQTT ERROR] Connection failed: {e}")
 
 def publish_discovery():
+    print(f"[HA MQTT] Publishing {len(SENSORS)} discovery topics...")
     for key, data in SENSORS.items():
         topic = f"homeassistant/sensor/{DEVICE_ID}/{key}/config"
         payload = {
@@ -156,8 +162,8 @@ class SolarParser:
                         state["bat_temp"] = r[41]
             if state:
                 ha_client.publish(STATE_TOPIC, json.dumps(state))
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ➡️ HA: {len(state)} params.")
-        except Exception: pass
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ➡️ Data sent: {len(state)} params.")
+        except Exception as e: print(f"[PARSER ERROR] {e}")
 
 async def handle_stream(reader, writer, is_inverter):
     try:
@@ -173,20 +179,22 @@ async def handle_stream(reader, writer, is_inverter):
 async def client_connected(ir, iw):
     try:
         cr, cw = await asyncio.open_connection(TARGET_HOST, TARGET_PORT)
+        print(f"[PROXY DEBUG] Connection established to cloud {TARGET_HOST}")
         await asyncio.gather(handle_stream(ir, cw, True), handle_stream(cr, iw, False))
-    except Exception: pass
+    except Exception as e: print(f"[PROXY ERROR] Cloud connection failed: {e}")
     finally: iw.close()
 
 async def main():
+    print(f"[DEBUG] Starting PowMr Bridge 1.2.3...")
     if INVERTER_IP and ROUTER_IP:
         spoofer = ArpSpoofer(INVERTER_IP, ROUTER_IP, INVERTER_MAC_MANUAL, ROUTER_MAC_MANUAL)
         threading.Thread(target=spoofer.run, daemon=True).start()
 
     connect_ha_mqtt()
     proxy_server = await asyncio.start_server(client_connected, '0.0.0.0', LISTEN_PORT)
-    print(f"--- PowMr Bridge 1.2.2 Active (Port {LISTEN_PORT}) ---")
+    print(f"--- PowMr Bridge 1.2.3 ACTIVE on port {LISTEN_PORT} ---")
     try:
         async with proxy_server: await proxy_server.serve_forever()
-    except Exception: pass
+    except Exception as e: print(f"[SERVER ERROR] {e}")
 
 if __name__ == "__main__": asyncio.run(main())
