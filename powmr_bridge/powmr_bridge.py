@@ -313,7 +313,7 @@ def extract_publish_payload(packet: bytes) -> Tuple[Optional[str], Optional[byte
 
 
 class SolarParser:
-    DEBUG_DUMPS_LEFT = 6
+    DEBUG_DUMPS_LEFT = 3
 
     @staticmethod
     def _safe_b64decode(value: str) -> Optional[bytes]:
@@ -383,6 +383,43 @@ class SolarParser:
         return words
 
     @staticmethod
+    def _parse_ascii_tokens(data: bytes) -> list[str]:
+        text = data.decode("utf-8", errors="ignore")
+        text = text.replace("\r", " ").replace("\n", " ").strip()
+        if text.startswith("("):
+            text = text[1:]
+        text = text.replace("\x00", " ").strip()
+        parts = [p.strip() for p in text.split(" ") if p.strip()]
+        cleaned = []
+        for p in parts:
+            p = p.strip()
+            while p and p[-1] in "),;:\x00\r\n\t":
+                p = p[:-1]
+            if p:
+                cleaned.append(p)
+        return cleaned
+
+    @staticmethod
+    def _to_float(token: str) -> Optional[float]:
+        try:
+            cleaned = "".join(ch for ch in token if ch.isdigit() or ch in ".-")
+            if cleaned in {"", "-", ".", "-."}:
+                return None
+            return float(cleaned)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _to_int(token: str) -> Optional[int]:
+        try:
+            cleaned = "".join(ch for ch in token if ch.isdigit() or ch == "-")
+            if cleaned in {"", "-"}:
+                return None
+            return int(cleaned)
+        except Exception:
+            return None
+
+    @staticmethod
     def _try_old_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
         lower_blocks = {k.lower(): v for k, v in blocks.items()}
         ps4z = lower_blocks.get("ps4z")
@@ -421,6 +458,88 @@ class SolarParser:
             state["bulk_v"] = round(int.from_bytes(sgx0[23:25], "little") / 10.0, 1)
             state["cut_v"] = round(int.from_bytes(sgx0[27:29], "little") / 10.0, 1)
             state["bat_temp"] = int(sgx0[41])
+
+        return state
+
+    @staticmethod
+    def _try_ascii_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
+        state: Dict[str, object] = {}
+        parsed = {name: SolarParser._parse_ascii_tokens(data) for name, data in blocks.items()}
+
+        # 2l0E: e.g. ["229.6", "50.0", "00321", "00209"]
+        vals = parsed.get("2l0E", [])
+        if len(vals) >= 2:
+            v = SolarParser._to_float(vals[0])
+            hz = SolarParser._to_float(vals[1])
+            if v is not None:
+                state["grid_v"] = round(v, 1)
+            if hz is not None:
+                state["grid_hz"] = round(hz, 1)
+
+        # WdRR: e.g. ["234.9", "49.9", "280", "170", "65", "4"]
+        vals = parsed.get("WdRR", [])
+        if len(vals) >= 5:
+            out_v = SolarParser._to_float(vals[0])
+            out_hz = SolarParser._to_float(vals[1])
+            apparent = SolarParser._to_int(vals[2])
+            load_w = SolarParser._to_int(vals[3])
+            load_pct = SolarParser._to_int(vals[4])
+
+            if out_v is not None:
+                state["out_v"] = round(out_v, 1)
+            if out_hz is not None:
+                state["out_hz"] = round(out_hz, 1)
+            if apparent is not None:
+                state["apparent_va"] = apparent
+            if load_w is not None:
+                state["load_w"] = load_w
+            if load_pct is not None:
+                state["load_pct"] = load_pct
+
+        # 2ONL: e.g. ["04", "052.9", "056", "000", "00006"]
+        vals = parsed.get("2ONL", [])
+        if len(vals) >= 3:
+            bat_v = SolarParser._to_float(vals[1])
+            bat_cap = SolarParser._to_int(vals[2])
+            if bat_v is not None:
+                state["bat_v"] = round(bat_v, 1)
+            if bat_cap is not None:
+                state["bat_cap"] = bat_cap
+
+        # Mpod: e.g. ["000.0", "00.0", "00000", "00000"]
+        vals = parsed.get("Mpod", [])
+        if len(vals) >= 3:
+            pv_v = SolarParser._to_float(vals[0])
+            pv_w = SolarParser._to_int(vals[2])
+            if pv_v is not None:
+                state["pv_v"] = round(pv_v, 1)
+            if pv_w is not None:
+                state["pv_w"] = pv_w
+
+        # dHrK: e.g. ["1", "044.0", "020", "044.0", "046.0"]
+        vals = parsed.get("dHrK", [])
+        if len(vals) >= 5:
+            cut_v = SolarParser._to_float(vals[1])
+            max_chg = SolarParser._to_int(vals[2])
+            float_v = SolarParser._to_float(vals[3])
+            bulk_v = SolarParser._to_float(vals[4])
+
+            if cut_v is not None:
+                state["cut_v"] = round(cut_v, 1)
+            if max_chg is not None:
+                state["max_chg"] = max_chg
+            if float_v is not None:
+                state["float_v"] = round(float_v, 1)
+            if bulk_v is not None:
+                state["bulk_v"] = round(bulk_v, 1)
+
+        bat_v = float(state.get("bat_v") or 0)
+        load_w = float(state.get("load_w") or 0)
+        grid_v = float(state.get("grid_v") or 0)
+        if bat_v > 0 and grid_v < 100 and load_w > 0:
+            state["dischg_current"] = round(load_w / bat_v, 1)
+        elif "bat_v" in state:
+            state["dischg_current"] = 0
 
         return state
 
@@ -476,7 +595,7 @@ class SolarParser:
                 top_keys = list(raw_json.keys()) if isinstance(raw_json, dict) else []
                 log(f"[PARSER DEBUG] top_keys={top_keys}")
 
-                if isinstance(raw_json, dict) and isinstance(raw_json.get('b'), dict):
+                if isinstance(raw_json, dict) and isinstance(raw_json.get("b"), dict):
                     log(f"[PARSER DEBUG] b_keys={list(raw_json['b'].keys())}")
 
                 SCHEMA_DEBUG_DONE = True
@@ -495,12 +614,14 @@ class SolarParser:
                 SolarParser.DEBUG_DUMPS_LEFT -= 1
 
             state = SolarParser._try_old_schema(blocks)
+            if not state:
+                state = SolarParser._try_ascii_schema(blocks)
 
             if state:
                 LAST_STATE.update(state)
                 if DISCOVERY_PUBLISHED:
                     client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
-                log(f"[{datetime.now().strftime('%H:%M:%S')}] Published {len(state)} values to HA")
+                log(f"[{datetime.now().strftime('%H:%M:%S')}] Published {len(state)} values to HA: {LAST_STATE}")
             else:
                 found_names = sorted(blocks.keys())
                 log(f"[PARSER] JSON decoded but known blocks not found. discovered={found_names[:20]}")
@@ -675,7 +796,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- PowMr Bridge 2.0.7 ---")
+    log("--- PowMr Bridge 2.0.8 ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
