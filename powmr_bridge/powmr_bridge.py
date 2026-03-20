@@ -443,36 +443,44 @@ def packet_callback(pkt) -> None:
     if IP not in pkt or Ether not in pkt:
         return
 
-    src_mac = norm_mac(pkt[Ether].src.lower())
+    src_mac = norm_mac(pkt[Ether].src)
     src_ip = pkt[IP].src
     dst_ip = pkt[IP].dst
 
-    if src_ip == INVERTER_IP:
-        KNOWN_INVERTER_MACS.add(src_mac)
-        if not INV_MAC:
-            INV_MAC = src_mac
+    if src_ip == INVERTER_IP and not INV_MAC:
+        INV_MAC = src_mac
+        log(f"[LEARN] inverter mac = {INV_MAC}")
 
-    if src_ip == ROUTER_IP:
+    if dst_ip == INVERTER_IP and not RTR_MAC:
+        RTR_MAC = src_mac
+        log(f"[LEARN] router mac = {RTR_MAC}")
+
+    if src_ip == INVERTER_IP and src_mac:
+        KNOWN_INVERTER_MACS.add(src_mac)
+
+    if dst_ip == INVERTER_IP and src_mac:
         KNOWN_ROUTER_MACS.add(src_mac)
-        if not RTR_MAC:
-            RTR_MAC = src_mac
 
     if LOG_VERBOSE and (src_ip == INVERTER_IP or dst_ip == INVERTER_IP):
         proto = "TCP" if TCP in pkt else ("UDP" if UDP in pkt else "OTHER")
         port = f":{pkt[TCP].dport}" if TCP in pkt else ""
         log(f"[X-RAY] {src_ip} ({src_mac}) -> {dst_ip}{port} [{proto}]")
 
-    if src_ip == INVERTER_IP and TCP in pkt and dst_ip == TARGET_HOST and int(pkt[TCP].dport) == TARGET_PORT:
-        if Raw in pkt:
-            payload = bytes(pkt[Raw].load)
-            if payload:
-                flow_key = (src_ip, int(pkt[TCP].sport), dst_ip, int(pkt[TCP].dport))
-                seq = int(pkt[TCP].seq)
+    # Real inverter -> cloud traffic only
+    if src_ip == INVERTER_IP:
+        if INV_MAC and src_mac != INV_MAC:
+            return
 
-                if is_duplicate_segment(flow_key, seq, payload):
-                    if LOG_VERBOSE:
-                        log(f"[TCP DUP] flow={flow_key} seq={seq} len={len(payload)}")
-                else:
+        if TCP in pkt and dst_ip == TARGET_HOST and int(pkt[TCP].dport) == TARGET_PORT:
+            if Raw in pkt:
+                payload = bytes(pkt[Raw].load)
+                if payload:
+                    flow_key = (src_ip, int(pkt[TCP].sport), dst_ip, int(pkt[TCP].dport))
+                    seq = int(pkt[TCP].seq)
+
+                    if is_duplicate_segment(flow_key, seq, payload):
+                        return
+
                     packets = extract_mqtt_packets(flow_key, payload)
 
                     for packet in packets:
@@ -491,14 +499,20 @@ def packet_callback(pkt) -> None:
                             if publish_payload:
                                 SolarParser.parse_payload(publish_payload)
 
-        if AUTO_INTERCEPT and RTR_MAC:
-            try:
-                fwd_pkt = Ether(dst=RTR_MAC) / pkt[IP]
-                send_layer2(fwd_pkt, SNIFF_IFACE)
-            except Exception as exc:
-                log(f"[FWD ERROR] inverter->router {exc}")
+            if AUTO_INTERCEPT and RTR_MAC:
+                try:
+                    fwd_pkt = Ether(dst=RTR_MAC) / pkt[IP]
+                    send_layer2(fwd_pkt, SNIFF_IFACE)
+                except Exception as exc:
+                    log(f"[FWD ERROR] inverter->router {exc}")
 
-    elif dst_ip == INVERTER_IP:
+        return
+
+    # Real router -> inverter traffic only
+    if dst_ip == INVERTER_IP:
+        if RTR_MAC and src_mac != RTR_MAC:
+            return
+
         if AUTO_INTERCEPT and INV_MAC:
             try:
                 fwd_pkt = Ether(dst=INV_MAC) / pkt[IP]
@@ -514,7 +528,9 @@ def health_logger() -> None:
         if age < 0:
             log("[HEALTH] No packets captured yet")
         else:
-            log(f"[HEALTH] Last packet seen {int(age)}s ago; inverter_macs={sorted(x for x in KNOWN_INVERTER_MACS if x)}")
+            inv_list = sorted(x for x in KNOWN_INVERTER_MACS if x)
+            rtr_list = sorted(x for x in KNOWN_ROUTER_MACS if x)
+            log(f"[HEALTH] Last packet seen {int(age)}s ago; inverter_macs={inv_list}; router_macs={rtr_list}")
 
 
 def shutdown(*_args) -> None:
@@ -546,7 +562,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- PowMr Bridge 2.0.3 ---")
+    log("--- PowMr Bridge 2.0.4 ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
