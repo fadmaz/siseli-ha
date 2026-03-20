@@ -313,6 +313,8 @@ def extract_publish_payload(packet: bytes) -> Tuple[Optional[str], Optional[byte
 
 
 class SolarParser:
+    DEBUG_DUMPS_LEFT = 6
+
     @staticmethod
     def _safe_b64decode(value: str) -> Optional[bytes]:
         try:
@@ -362,6 +364,67 @@ class SolarParser:
         return found
 
     @staticmethod
+    def _ascii_preview(data: bytes, limit: int = 32) -> str:
+        out = []
+        for b in data[:limit]:
+            if 32 <= b <= 126:
+                out.append(chr(b))
+            else:
+                out.append(".")
+        return "".join(out)
+
+    @staticmethod
+    def _u16_words(data: bytes, count: int = 12):
+        words = []
+        max_len = min(len(data) // 2, count)
+        for i in range(max_len):
+            start = i * 2
+            words.append(int.from_bytes(data[start:start + 2], "little"))
+        return words
+
+    @staticmethod
+    def _try_old_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
+        lower_blocks = {k.lower(): v for k, v in blocks.items()}
+        ps4z = lower_blocks.get("ps4z")
+        sgx0 = lower_blocks.get("sgx0") or lower_blocks.get("sgxo")
+
+        state: Dict[str, object] = {}
+
+        if ps4z and len(ps4z) >= 44:
+            state["grid_v"] = round(int.from_bytes(ps4z[5:7], "little") / 10.0, 1)
+            state["grid_hz"] = round(int.from_bytes(ps4z[7:9], "little") / 10.0, 1)
+            state["bat_v"] = round(int.from_bytes(ps4z[13:15], "little") / 10.0, 1)
+            state["bat_cap"] = int.from_bytes(ps4z[15:17], "little")
+            state["out_v"] = round(int.from_bytes(ps4z[21:23], "little") / 10.0, 1)
+            state["out_hz"] = round(int.from_bytes(ps4z[23:25], "little") / 10.0, 1)
+            state["apparent_va"] = int.from_bytes(ps4z[25:27], "little")
+            state["load_w"] = int.from_bytes(ps4z[27:29], "little")
+            state["load_pct"] = int.from_bytes(ps4z[29:31], "little")
+            state["pv_v"] = round(int.from_bytes(ps4z[39:41], "little") / 10.0, 1)
+
+            pv_w = int.from_bytes(ps4z[41:43], "little")
+            state["pv_w"] = pv_w if pv_w < 6500 else 0
+
+            bat_v = float(state.get("bat_v") or 0)
+            load_w = float(state.get("load_w") or 0)
+            grid_v = float(state.get("grid_v") or 0)
+
+            if bat_v > 0 and grid_v < 100 and load_w > 0:
+                state["dischg_current"] = round(load_w / bat_v, 1)
+            else:
+                state["dischg_current"] = 0
+
+        if sgx0 and len(sgx0) >= 42:
+            state["max_chg"] = int.from_bytes(sgx0[13:15], "little")
+            state["util_chg"] = int.from_bytes(sgx0[17:19], "little")
+            state["float_v"] = round(int.from_bytes(sgx0[21:23], "little") / 10.0, 1)
+            state["bulk_v"] = round(int.from_bytes(sgx0[23:25], "little") / 10.0, 1)
+            state["cut_v"] = round(int.from_bytes(sgx0[27:29], "little") / 10.0, 1)
+            state["bat_temp"] = int(sgx0[41])
+
+        return state
+
+    @staticmethod
     def parse_payload(payload_bytes: bytes) -> None:
         global SCHEMA_DEBUG_DONE
 
@@ -390,8 +453,7 @@ class SolarParser:
             raw_json = json.loads(raw)
 
             candidate_pairs = SolarParser._walk_for_blocks(raw_json)
-            blocks = {}
-            block_summaries = []
+            blocks: Dict[str, bytes] = {}
             seen = set()
 
             for name, encoded in candidate_pairs:
@@ -409,64 +471,30 @@ class SolarParser:
                     continue
 
                 blocks[key] = decoded
-                block_summaries.append(f"{key}:{len(decoded)}")
 
             if not SCHEMA_DEBUG_DONE:
                 top_keys = list(raw_json.keys()) if isinstance(raw_json, dict) else []
                 log(f"[PARSER DEBUG] top_keys={top_keys}")
 
-                if isinstance(raw_json, dict) and isinstance(raw_json.get("b"), dict):
+                if isinstance(raw_json, dict) and isinstance(raw_json.get('b'), dict):
                     log(f"[PARSER DEBUG] b_keys={list(raw_json['b'].keys())}")
-
-                if block_summaries:
-                    log(f"[PARSER DEBUG] discovered_blocks={block_summaries[:20]}")
-                else:
-                    preview = raw[:500].replace("\n", " ")
-                    log(f"[PARSER DEBUG] raw_preview={preview}")
 
                 SCHEMA_DEBUG_DONE = True
 
-            lower_blocks = {k.lower(): v for k, v in blocks.items()}
+            if SolarParser.DEBUG_DUMPS_LEFT > 0:
+                log(f"[BLOCKS] found={sorted(blocks.keys())}")
+                for name in sorted(blocks.keys()):
+                    data = blocks[name]
+                    hex_preview = data[:24].hex()
+                    ascii_preview = SolarParser._ascii_preview(data, 24)
+                    words = SolarParser._u16_words(data, 10)
+                    log(
+                        f"[BLOCK] name={name} len={len(data)} "
+                        f"hex={hex_preview} ascii={ascii_preview} words={words}"
+                    )
+                SolarParser.DEBUG_DUMPS_LEFT -= 1
 
-            ps4z = lower_blocks.get("ps4z")
-            sgx0 = (
-                lower_blocks.get("sgx0")
-                or lower_blocks.get("sgxo")
-            )
-
-            state: Dict[str, object] = {}
-
-            if ps4z and len(ps4z) >= 44:
-                state["grid_v"] = round(int.from_bytes(ps4z[5:7], "little") / 10.0, 1)
-                state["grid_hz"] = round(int.from_bytes(ps4z[7:9], "little") / 10.0, 1)
-                state["bat_v"] = round(int.from_bytes(ps4z[13:15], "little") / 10.0, 1)
-                state["bat_cap"] = int.from_bytes(ps4z[15:17], "little")
-                state["out_v"] = round(int.from_bytes(ps4z[21:23], "little") / 10.0, 1)
-                state["out_hz"] = round(int.from_bytes(ps4z[23:25], "little") / 10.0, 1)
-                state["apparent_va"] = int.from_bytes(ps4z[25:27], "little")
-                state["load_w"] = int.from_bytes(ps4z[27:29], "little")
-                state["load_pct"] = int.from_bytes(ps4z[29:31], "little")
-                state["pv_v"] = round(int.from_bytes(ps4z[39:41], "little") / 10.0, 1)
-
-                pv_w = int.from_bytes(ps4z[41:43], "little")
-                state["pv_w"] = pv_w if pv_w < 6500 else 0
-
-                bat_v = float(state.get("bat_v") or 0)
-                load_w = float(state.get("load_w") or 0)
-                grid_v = float(state.get("grid_v") or 0)
-
-                if bat_v > 0 and grid_v < 100 and load_w > 0:
-                    state["dischg_current"] = round(load_w / bat_v, 1)
-                else:
-                    state["dischg_current"] = 0
-
-            if sgx0 and len(sgx0) >= 42:
-                state["max_chg"] = int.from_bytes(sgx0[13:15], "little")
-                state["util_chg"] = int.from_bytes(sgx0[17:19], "little")
-                state["float_v"] = round(int.from_bytes(sgx0[21:23], "little") / 10.0, 1)
-                state["bulk_v"] = round(int.from_bytes(sgx0[23:25], "little") / 10.0, 1)
-                state["cut_v"] = round(int.from_bytes(sgx0[27:29], "little") / 10.0, 1)
-                state["bat_temp"] = int(sgx0[41])
+            state = SolarParser._try_old_schema(blocks)
 
             if state:
                 LAST_STATE.update(state)
@@ -647,7 +675,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- PowMr Bridge 2.0.6 ---")
+    log("--- PowMr Bridge 2.0.7 ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
