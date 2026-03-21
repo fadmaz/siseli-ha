@@ -1,6 +1,6 @@
 name: "PowMr Inverter Bridge"
 description: "Local bridge for PowMr/Siseli inverters with MQTT discovery for Home Assistant."
-version: "2.2.1"
+version: "2.2.2"
 slug: "powmr_bridge"
 init: false
 arch:
