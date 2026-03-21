@@ -54,7 +54,7 @@ KNOWN_INVERTER_MACS = set()
 KNOWN_ROUTER_MACS = set()
 LAST_PACKET_TS = 0.0
 
-SENSORS = {
+SENSORS: Dict[str, Dict[str, object]] = {
     "grid_v": {
         "name": "Grid Voltage",
         "unit": "V",
@@ -174,7 +174,83 @@ SENSORS = {
         "state_class": "measurement",
         "icon": "mdi:battery-off-outline",
     },
+    "pv_today_kwh": {
+        "name": "PV Today Energy",
+        "unit": "kWh",
+        "device_class": "energy",
+        "icon": "mdi:solar-power-variant",
+    },
+    "pv_month_kwh": {
+        "name": "PV Month Energy",
+        "unit": "kWh",
+        "device_class": "energy",
+        "icon": "mdi:calendar-month",
+    },
+    "pv_year_kwh": {
+        "name": "PV Year Energy",
+        "unit": "kWh",
+        "device_class": "energy",
+        "icon": "mdi:calendar-range",
+    },
+    "pv_total_kwh": {
+        "name": "PV Total Energy",
+        "unit": "kWh",
+        "device_class": "energy",
+        "state_class": "total_increasing",
+        "icon": "mdi:counter",
+    },
+    "bms_remaining_ah": {
+        "name": "BMS Remaining Capacity",
+        "unit": "Ah",
+        "icon": "mdi:battery-medium",
+    },
+    "bms_nominal_ah": {
+        "name": "BMS Nominal Capacity",
+        "unit": "Ah",
+        "icon": "mdi:battery-outline",
+    },
+    "bms_cell_count": {
+        "name": "BMS Cell Count",
+        "state_class": "measurement",
+        "icon": "mdi:battery-sync",
+    },
+    "bms_min_cell_mv": {
+        "name": "BMS Min Cell Voltage",
+        "unit": "mV",
+        "state_class": "measurement",
+        "icon": "mdi:battery-low",
+    },
+    "bms_max_cell_mv": {
+        "name": "BMS Max Cell Voltage",
+        "unit": "mV",
+        "state_class": "measurement",
+        "icon": "mdi:battery-high",
+    },
+    "bms_min_cell_pos": {
+        "name": "BMS Min Cell Position",
+        "state_class": "measurement",
+        "icon": "mdi:numeric",
+    },
+    "bms_max_cell_pos": {
+        "name": "BMS Max Cell Position",
+        "state_class": "measurement",
+        "icon": "mdi:numeric",
+    },
+    "bms_cell_delta_mv": {
+        "name": "BMS Cell Delta",
+        "unit": "mV",
+        "state_class": "measurement",
+        "icon": "mdi:battery-sync",
+    },
 }
+
+for i in range(1, 17):
+    SENSORS[f"cell_{i}_mv"] = {
+        "name": f"Cell {i} Voltage",
+        "unit": "mV",
+        "state_class": "measurement",
+        "icon": "mdi:battery-heart-variant",
+    }
 
 MQTT_PACKET_TYPES = {
     1: "CONNECT",
@@ -500,6 +576,74 @@ class SolarParser:
             return None
 
     @staticmethod
+    def _parse_cost_energy(tokens: List[str]) -> Dict[str, object]:
+        state: Dict[str, object] = {}
+        work = list(tokens)
+
+        if work and len(work[0]) == 6 and work[0].isdigit():
+            work = work[1:]
+        if work and ":" in work[0]:
+            work = work[1:]
+
+        nums: List[float] = []
+        for tok in work:
+            val = SolarParser._to_float(tok)
+            if val is not None:
+                nums.append(val)
+
+        if len(nums) >= 4:
+            state["pv_today_kwh"] = round(nums[0], 3)
+            state["pv_month_kwh"] = round(nums[1], 3)
+            state["pv_year_kwh"] = round(nums[2], 3)
+            state["pv_total_kwh"] = round(nums[3], 3)
+
+        return state
+
+    @staticmethod
+    def _parse_bms_capacity(tokens: List[str]) -> Dict[str, object]:
+        state: Dict[str, object] = {}
+        if len(tokens) >= 2:
+            rem = SolarParser._to_float(tokens[0])
+            nom = SolarParser._to_float(tokens[1])
+            if rem is not None:
+                state["bms_remaining_ah"] = round(rem, 1)
+            if nom is not None:
+                state["bms_nominal_ah"] = round(nom, 1)
+        return state
+
+    @staticmethod
+    def _parse_cell_list(tokens: List[str]) -> Dict[str, object]:
+        state: Dict[str, object] = {}
+        cell_values: List[int] = []
+
+        for tok in tokens:
+            val = SolarParser._to_int(tok)
+            if val is not None and 2000 <= val <= 5000:
+                cell_values.append(val)
+
+        if not cell_values:
+            return state
+
+        cell_values = cell_values[:16]
+
+        state["bms_cell_count"] = len(cell_values)
+        for idx, mv in enumerate(cell_values, start=1):
+            state[f"cell_{idx}_mv"] = mv
+
+        min_mv = min(cell_values)
+        max_mv = max(cell_values)
+        min_pos = cell_values.index(min_mv) + 1
+        max_pos = cell_values.index(max_mv) + 1
+
+        state["bms_min_cell_mv"] = min_mv
+        state["bms_max_cell_mv"] = max_mv
+        state["bms_min_cell_pos"] = min_pos
+        state["bms_max_cell_pos"] = max_pos
+        state["bms_cell_delta_mv"] = max_mv - min_mv
+
+        return state
+
+    @staticmethod
     def _try_old_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
         lower_blocks = {k.lower(): v for k, v in blocks.items()}
         ps4z = lower_blocks.get("ps4z")
@@ -603,6 +747,18 @@ class SolarParser:
                 state["float_v"] = round(float_v, 1)
             if bulk_v is not None:
                 state["bulk_v"] = round(bulk_v, 1)
+
+        vals = parsed.get("COST", ("", []))[1]
+        if vals:
+            state.update(SolarParser._parse_cost_energy(vals))
+
+        vals = parsed.get("uxJp", ("", []))[1]
+        if vals:
+            state.update(SolarParser._parse_bms_capacity(vals))
+
+        vals = parsed.get("v09K", ("", []))[1]
+        if vals:
+            state.update(SolarParser._parse_cell_list(vals))
 
         bat_v = float(state.get("bat_v") or 0)
         load_w = float(state.get("load_w") or 0)
@@ -835,7 +991,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- PowMr Bridge 2.1.2 ---")
+    log("--- PowMr Bridge 2.1.3 ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
