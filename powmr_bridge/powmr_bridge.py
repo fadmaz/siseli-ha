@@ -536,7 +536,7 @@ class SolarParser:
         if "hR6Y" in parsed:
             state["firmware_info"] = parsed["hR6Y"][0]
 
-        # Grid / mains block - best match to app screenshot
+        # Grid / mains block - best match to app
         vals = parsed.get("2l0E", ("", []))[1]
         if len(vals) >= 2:
             grid_v = SolarParser._to_float(vals[0])
@@ -553,7 +553,7 @@ class SolarParser:
             if mains_w is not None:
                 state["mains_power_w"] = mains_w
 
-        # Output / load block - best match to app screenshot
+        # Output / load block - best match to app
         vals = parsed.get("WdRR", ("", []))[1]
         if len(vals) >= 2:
             out_v = SolarParser._to_float(vals[0])
@@ -712,12 +712,13 @@ class SolarParser:
 
             blocks: Dict[str, bytes] = {}
             seen = set()
+
             for name, encoded in candidate_pairs:
                 key = name.strip()
                 if not key:
                     continue
 
-                    dedupe_key = (key, encoded[:32])
+                dedupe_key = (key, encoded[:32])
                 if dedupe_key in seen:
                     continue
                 seen.add(dedupe_key)
@@ -725,6 +726,7 @@ class SolarParser:
                 decoded = SolarParser._safe_b64decode(encoded)
                 if decoded is None:
                     continue
+
                 blocks[key] = decoded
 
             state = SolarParser._try_ascii_schema(blocks)
@@ -899,7 +901,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- Inverter Bridge 2.2.7 ---")
+    log("--- Inverter Bridge 2.2.8 ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
