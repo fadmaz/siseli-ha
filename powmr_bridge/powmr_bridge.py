@@ -60,6 +60,7 @@ KNOWN_ROUTER_MACS = set()
 LAST_PACKET_TS = 0.0
 
 STRICT_NUM_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
+UNCERTAIN_KEYS = {"mains_apparent_va", "mains_power_w", "load_pct"}
 
 
 def sensor(name: str, **kwargs) -> Dict[str, object]:
@@ -245,8 +246,15 @@ def on_connect(_client, _userdata, _flags, rc, _properties=None):
     if code == 0:
         log(f"[HA MQTT] Connected to {MQTT_HOST}:{MQTT_PORT}")
         publish_discovery()
-        if LAST_STATE:
-            client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
+
+        if not LAST_STATE:
+            LAST_STATE.update({
+                "mains_apparent_va": None,
+                "mains_power_w": None,
+                "load_pct": None,
+            })
+
+        client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
     else:
         log(f"[HA MQTT ERROR] Connection failed with rc={code}")
 
@@ -566,12 +574,8 @@ class SolarParser:
     @staticmethod
     def _try_ascii_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
         state: Dict[str, object] = {}
-        parsed = {name: SolarParser._parse_ascii_text(data) for name, data in blocks.items()}
 
-        # clear uncertain fields each cycle unless positively parsed
-        state["mains_apparent_va"] = None
-        state["mains_power_w"] = None
-        state["load_pct"] = None
+        parsed = {name: SolarParser._parse_ascii_text(data) for name, data in blocks.items()}
 
         # Info
         if "SUCV" in parsed:
@@ -598,6 +602,7 @@ class SolarParser:
                 state["out_v"] = round(out_v, 1)
             if out_hz is not None:
                 state["out_hz"] = round(out_hz, 1)
+
         if len(vals) >= 4:
             out_va = SolarParser._to_int(vals[2])
             out_w = SolarParser._to_int(vals[3])
@@ -606,7 +611,7 @@ class SolarParser:
             if out_w is not None:
                 state["load_w"] = out_w
 
-        # GRID block -> WdRR (first two fields are the reliable part)
+        # GRID block -> WdRR (reliable first two values)
         vals = parsed.get("WdRR", ("", []))[1]
         if len(vals) >= 2:
             grid_v = SolarParser._to_float(vals[0])
@@ -699,28 +704,17 @@ class SolarParser:
             if bulk_v is not None:
                 state["bulk_v"] = round(bulk_v, 1)
 
-        # Additional status-ish block
+        # Additional settings / status block
         vals = parsed.get("93VQ", ("", []))[1]
         if len(vals) >= 11:
             util_chg = SolarParser._to_int(vals[10])
             if util_chg is not None and 0 <= util_chg <= 200:
                 state["util_chg"] = util_chg
 
-        # output dc compensator looks reliable here on your app
         if len(vals) >= 18:
             dc_comp = SolarParser._to_int(vals[17])
             if dc_comp is not None and 0 <= dc_comp <= 500:
                 state["output_dc_comp"] = dc_comp
-
-        # some firmwares seem to expose mains values at the end of this block
-        if len(vals) >= 20:
-            maybe_mains_va = SolarParser._to_int(vals[18])
-            maybe_mains_w = SolarParser._to_int(vals[19])
-
-            if maybe_mains_va is not None and 0 <= maybe_mains_va <= 50000:
-                state["mains_apparent_va"] = maybe_mains_va
-            if maybe_mains_w is not None and 0 <= maybe_mains_w <= 50000:
-                state["mains_power_w"] = maybe_mains_w
 
         # Energy counters
         vals = parsed.get("COST", ("", []))[1]
@@ -954,13 +948,20 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- Inverter Bridge 2.3.1 ---")
+    log("--- Inverter Bridge 2.3.2 ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
     log(f"[Config] DEVICE_NAME={DEVICE_NAME} MANUFACTURER={MANUFACTURER}")
     log(f"[Config] STATE_TOPIC={STATE_TOPIC}")
     log(f"[Config] SNIFF_IFACE={SNIFF_IFACE or 'auto'}")
+
+    # clear retained wrong uncertain values on startup
+    LAST_STATE.update({
+        "mains_apparent_va": None,
+        "mains_power_w": None,
+        "load_pct": None,
+    })
 
     start_mqtt()
 
