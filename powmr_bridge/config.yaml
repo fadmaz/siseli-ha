@@ -1,6 +1,6 @@
 name: "Taico Inverter Bridge"
 description: "Local bridge for Taico / Siseli-compatible inverters with MQTT discovery for Home Assistant."
-version: "2.2.7"
+version: "2.2.8"
 slug: "powmr_bridge"
 init: false
 arch:
