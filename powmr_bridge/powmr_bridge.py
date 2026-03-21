@@ -60,7 +60,15 @@ KNOWN_ROUTER_MACS = set()
 LAST_PACKET_TS = 0.0
 
 STRICT_NUM_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
-UNCERTAIN_KEYS = {"mains_apparent_va", "mains_power_w", "load_pct"}
+
+DEBUG_BLOCK_SENSOR_MAP = {
+    "2l0E": "dbg_2l0e_raw",
+    "WdRR": "dbg_wdrr_raw",
+    "93VQ": "dbg_93vq_raw",
+    "2ONL": "dbg_2onl_raw",
+    "Mpod": "dbg_mpod_raw",
+    "noeP": "dbg_noep_raw",
+}
 
 
 def sensor(name: str, **kwargs) -> Dict[str, object]:
@@ -127,6 +135,14 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "bms_min_cell_pos": sensor("BMS Min Cell Position", state_class="measurement", icon="mdi:numeric"),
     "bms_max_cell_pos": sensor("BMS Max Cell Position", state_class="measurement", icon="mdi:numeric"),
     "bms_cell_delta_mv": sensor("BMS Cell Delta", unit="mV", state_class="measurement", icon="mdi:battery-sync"),
+
+    # Debug raw blocks
+    "dbg_2l0e_raw": sensor("DEBUG 2l0E Raw", icon="mdi:bug-outline"),
+    "dbg_wdrr_raw": sensor("DEBUG WdRR Raw", icon="mdi:bug-outline"),
+    "dbg_93vq_raw": sensor("DEBUG 93VQ Raw", icon="mdi:bug-outline"),
+    "dbg_2onl_raw": sensor("DEBUG 2ONL Raw", icon="mdi:bug-outline"),
+    "dbg_mpod_raw": sensor("DEBUG Mpod Raw", icon="mdi:bug-outline"),
+    "dbg_noep_raw": sensor("DEBUG noeP Raw", icon="mdi:bug-outline"),
 }
 
 for i in range(1, 17):
@@ -450,11 +466,11 @@ class SolarParser:
             if p:
                 cleaned.append(p)
 
-        return text, cleaned
+        clean_text = " ".join(cleaned)
+        return clean_text, cleaned
 
     @staticmethod
     def _clean_model_code(text: str) -> str:
-        text = text.replace("(", "").replace("\r", " ").replace("\n", " ").replace("\x00", " ").strip()
         parts = [p for p in text.split() if p]
         return parts[0] if parts else text
 
@@ -572,10 +588,35 @@ class SolarParser:
         return state
 
     @staticmethod
+    def _log_debug_blocks(parsed: Dict[str, Tuple[str, List[str]]]) -> None:
+        for block_name in DEBUG_BLOCK_SENSOR_MAP:
+            if block_name in parsed:
+                raw_text, tokens = parsed[block_name]
+                indexed = " | ".join(f"{idx}={tok}" for idx, tok in enumerate(tokens))
+                log(f"[DEBUG BLOCK] {block_name} raw='{raw_text}'")
+                log(f"[DEBUG TOKENS] {block_name} {indexed}")
+
+    @staticmethod
+    def _publish_debug_blocks(state: Dict[str, object], parsed: Dict[str, Tuple[str, List[str]]]) -> None:
+        for block_name, sensor_key in DEBUG_BLOCK_SENSOR_MAP.items():
+            if block_name in parsed:
+                raw_text, _tokens = parsed[block_name]
+                state[sensor_key] = raw_text[:250]
+            else:
+                state[sensor_key] = None
+
+    @staticmethod
     def _try_ascii_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
         state: Dict[str, object] = {}
 
         parsed = {name: SolarParser._parse_ascii_text(data) for name, data in blocks.items()}
+        SolarParser._publish_debug_blocks(state, parsed)
+        SolarParser._log_debug_blocks(parsed)
+
+        # Keep unresolved fields intentionally unknown
+        state["mains_apparent_va"] = None
+        state["mains_power_w"] = None
+        state["load_pct"] = None
 
         # Info
         if "SUCV" in parsed:
@@ -583,9 +624,7 @@ class SolarParser:
 
         if "hR6Y" in parsed:
             raw_fw, fw_tokens = parsed["hR6Y"]
-            raw_fw_clean = raw_fw.replace("(", "").strip()
-            state["firmware_info"] = raw_fw_clean
-
+            state["firmware_info"] = raw_fw
             if len(fw_tokens) >= 1:
                 state["firmware_version"] = fw_tokens[0]
             if len(fw_tokens) >= 2:
@@ -611,7 +650,7 @@ class SolarParser:
             if out_w is not None:
                 state["load_w"] = out_w
 
-        # GRID block -> WdRR (reliable first two values)
+        # GRID block -> WdRR
         vals = parsed.get("WdRR", ("", []))[1]
         if len(vals) >= 2:
             grid_v = SolarParser._to_float(vals[0])
@@ -704,7 +743,7 @@ class SolarParser:
             if bulk_v is not None:
                 state["bulk_v"] = round(bulk_v, 1)
 
-        # Additional settings / status block
+        # Additional status / settings block
         vals = parsed.get("93VQ", ("", []))[1]
         if len(vals) >= 11:
             util_chg = SolarParser._to_int(vals[10])
@@ -948,7 +987,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- Inverter Bridge 2.3.2 ---")
+    log("--- Inverter Bridge 2.3.3 debug ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
@@ -956,11 +995,16 @@ if __name__ == "__main__":
     log(f"[Config] STATE_TOPIC={STATE_TOPIC}")
     log(f"[Config] SNIFF_IFACE={SNIFF_IFACE or 'auto'}")
 
-    # clear retained wrong uncertain values on startup
     LAST_STATE.update({
         "mains_apparent_va": None,
         "mains_power_w": None,
         "load_pct": None,
+        "dbg_2l0e_raw": None,
+        "dbg_wdrr_raw": None,
+        "dbg_93vq_raw": None,
+        "dbg_2onl_raw": None,
+        "dbg_mpod_raw": None,
+        "dbg_noep_raw": None,
     })
 
     start_mqtt()
