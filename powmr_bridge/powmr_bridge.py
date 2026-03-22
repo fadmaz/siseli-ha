@@ -61,6 +61,13 @@ LAST_PACKET_TS = 0.0
 
 STRICT_NUM_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
 
+FOCUS_DEBUG_BLOCKS = {
+    "Yavb": "dbg_yavb_raw",
+    "eo8w": "dbg_eo8w_raw",
+    "WdRR": "dbg_wdrr_raw",
+    "2l0E": "dbg_2l0e_raw",
+}
+
 
 def sensor(name: str, **kwargs) -> Dict[str, object]:
     data: Dict[str, object] = {"name": name}
@@ -126,6 +133,12 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "bms_min_cell_pos": sensor("BMS Min Cell Position", state_class="measurement", icon="mdi:numeric"),
     "bms_max_cell_pos": sensor("BMS Max Cell Position", state_class="measurement", icon="mdi:numeric"),
     "bms_cell_delta_mv": sensor("BMS Cell Delta", unit="mV", state_class="measurement", icon="mdi:battery-sync"),
+
+    # Focus debug
+    "dbg_yavb_raw": sensor("DEBUG Yavb Raw", icon="mdi:bug-outline"),
+    "dbg_eo8w_raw": sensor("DEBUG eo8w Raw", icon="mdi:bug-outline"),
+    "dbg_wdrr_raw": sensor("DEBUG WdRR Raw", icon="mdi:bug-outline"),
+    "dbg_2l0e_raw": sensor("DEBUG 2l0E Raw", icon="mdi:bug-outline"),
 }
 
 for i in range(1, 17):
@@ -250,6 +263,10 @@ def on_connect(_client, _userdata, _flags, rc, _properties=None):
             LAST_STATE.update({
                 "mains_apparent_va": None,
                 "mains_power_w": None,
+                "dbg_yavb_raw": None,
+                "dbg_eo8w_raw": None,
+                "dbg_wdrr_raw": None,
+                "dbg_2l0e_raw": None,
             })
 
         client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
@@ -570,9 +587,28 @@ class SolarParser:
         return state
 
     @staticmethod
+    def _update_focus_debug_state(state: Dict[str, object], parsed: Dict[str, Tuple[str, List[str]]]) -> None:
+        for block_name, sensor_key in FOCUS_DEBUG_BLOCKS.items():
+            if block_name in parsed:
+                raw_text, _tokens = parsed[block_name]
+                state[sensor_key] = raw_text[:250]
+
+    @staticmethod
+    def _log_focus_debug(parsed: Dict[str, Tuple[str, List[str]]]) -> None:
+        for block_name in FOCUS_DEBUG_BLOCKS:
+            if block_name in parsed:
+                raw_text, tokens = parsed[block_name]
+                indexed = " | ".join(f"{idx}={tok}" for idx, tok in enumerate(tokens))
+                log(f"[MAINS DEBUG] {block_name} raw='{raw_text}'")
+                log(f"[MAINS TOKENS] {block_name} {indexed}")
+
+    @staticmethod
     def _try_ascii_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
         state: Dict[str, object] = {}
         parsed = {name: SolarParser._parse_ascii_text(data) for name, data in blocks.items()}
+
+        SolarParser._update_focus_debug_state(state, parsed)
+        SolarParser._log_focus_debug(parsed)
 
         # Keep unresolved mains fields intentionally unknown
         state["mains_apparent_va"] = None
@@ -952,7 +988,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- Inverter Bridge 2.3.4 ---")
+    log("--- Inverter Bridge 2.3.5 mains-debug ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
@@ -963,6 +999,10 @@ if __name__ == "__main__":
     LAST_STATE.update({
         "mains_apparent_va": None,
         "mains_power_w": None,
+        "dbg_yavb_raw": None,
+        "dbg_eo8w_raw": None,
+        "dbg_wdrr_raw": None,
+        "dbg_2l0e_raw": None,
     })
 
     start_mqtt()
