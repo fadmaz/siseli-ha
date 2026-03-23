@@ -58,17 +58,11 @@ LAST_PACKET_TS = 0.0
 
 STRICT_NUM_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
 PRINTABLE_ASCII_RE = re.compile(r"^[\x20-\x7E]+$")
+SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 MAX_MQTT_PACKET = 1024 * 64
 STREAM_STALE_SECONDS = 30
 MAX_STREAM_BUFFER = 1024 * 256
-
-HYBRID_DEBUG_BLOCKS = {
-    "Yavb": "dbg_yavb_raw",
-    "WdRR": "dbg_wdrr_raw",
-    "eo8w": "dbg_eo8w_raw",
-    "2l0E": "dbg_2l0e_raw",
-}
 
 
 def log(message: str) -> None:
@@ -95,81 +89,205 @@ def sensor(name: str, **kwargs) -> Dict[str, object]:
 
 
 SENSORS: Dict[str, Dict[str, object]] = {
-    # Info
-    "model_code": sensor("Model Code", icon="mdi:identifier"),
+    # Info / identity
+    "model_code": sensor("Device Type", icon="mdi:identifier"),
+    "output_model": sensor("Output Model", icon="mdi:transmission-tower"),
+    "mode": sensor("Mode", icon="mdi:transmission-tower-export"),
+    "status_code": sensor("Status Code", icon="mdi:identifier"),
     "firmware_info": sensor("Firmware Info", icon="mdi:chip"),
     "firmware_version": sensor("Firmware Version", icon="mdi:chip"),
     "firmware_build_date": sensor("Firmware Build Date", icon="mdi:calendar"),
     "firmware_build_slot": sensor("Firmware Build Slot", icon="mdi:counter"),
 
-    # Grid
-    "grid_v": sensor("Grid Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:transmission-tower"),
-    "grid_hz": sensor("Grid Frequency", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
-    "mains_apparent_va": sensor("Mains Apparent Power", unit="VA", device_class="apparent_power", state_class="measurement", icon="mdi:flash"),
+    # Battery / BMS main page
+    "bat_v": sensor("Battery Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery"),
+    "bat_cap": sensor("Battery Capacity", unit="%", device_class="battery", state_class="measurement", icon="mdi:battery-high"),
+    "bat_charge_current": sensor("Battery Charging Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-plus"),
+    "dischg_current": sensor("Battery Discharge Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-minus"),
+    "bat_series_count": sensor("Battery Number In Series", state_class="measurement", icon="mdi:numeric"),
+    "battery_status": sensor("Battery Status", icon="mdi:battery-sync"),
+    "battery_type": sensor("Battery Type", icon="mdi:battery-unknown"),
+
+    # BMS page
+    "bms_remaining_ah": sensor("Remaining Capacity", unit="Ah", icon="mdi:battery-medium"),
+    "bms_nominal_ah": sensor("Nominal Capacity", unit="Ah", icon="mdi:battery-outline"),
+    "bms_display_mode": sensor("Display Mode", icon="mdi:view-grid-outline"),
+    "bms_max_cell_mv": sensor("Max Voltage", unit="mV", state_class="measurement", icon="mdi:battery-high"),
+    "bms_max_cell_pos": sensor("Max Voltage Cell Position", state_class="measurement", icon="mdi:numeric"),
+    "bms_min_cell_mv": sensor("Min Voltage", unit="mV", state_class="measurement", icon="mdi:battery-low"),
+    "bms_min_cell_pos": sensor("Min Voltage Cell Position", state_class="measurement", icon="mdi:numeric"),
+    "bms_cell_count": sensor("BMS Cell Count", state_class="measurement", icon="mdi:battery-sync"),
+    "bms_cell_delta_mv": sensor("BMS Cell Delta", unit="mV", state_class="measurement", icon="mdi:battery-sync"),
+
+    # Grid page
+    "grid_v": sensor("AC Input Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:transmission-tower"),
+    "grid_hz": sensor("Mains Frequency", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
+    "mains_current_flow_direction": sensor("Mains Current Flow Direction", icon="mdi:swap-horizontal-bold"),
     "mains_power_w": sensor("Mains Power", unit="W", device_class="power", state_class="measurement", icon="mdi:transmission-tower-export"),
+    "mains_apparent_va": sensor("Mains Apparent Power", unit="VA", device_class="apparent_power", state_class="measurement", icon="mdi:flash"),
 
-    # Mains candidate sensors
-    "mains_flow_state": sensor("Mains Flow State", icon="mdi:swap-horizontal-bold"),
-    "mains_wdrr_token": sensor("Mains WdRR Token", icon="mdi:code-string"),
-    "mains_wdrr_value": sensor("Mains WdRR Value", state_class="measurement", icon="mdi:numeric"),
-    "mains_wdrr_abs": sensor("Mains WdRR Absolute", state_class="measurement", icon="mdi:counter"),
-    "mains_eo8w_code": sensor("Mains eo8w Code", icon="mdi:code-tags"),
-
-    # Output / load
+    # Load page
     "out_v": sensor("Output Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:power-plug"),
     "out_hz": sensor("Output Frequency", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
     "apparent_va": sensor("Output Apparent Power", unit="VA", device_class="apparent_power", state_class="measurement", icon="mdi:flash"),
     "load_w": sensor("Output Active Power", unit="W", device_class="power", state_class="measurement", icon="mdi:home-lightning-bolt"),
-    "load_pct": sensor("Output Load Percentage", unit="%", state_class="measurement", icon="mdi:gauge"),
-    "output_dc_comp": sensor("Output DC Compensator", state_class="measurement", icon="mdi:tune-variant"),
+    "load_pct": sensor("Output Load Percent", unit="%", state_class="measurement", icon="mdi:gauge"),
+    "output_dc_comp": sensor("Output DC Component", state_class="measurement", icon="mdi:tune-variant"),
 
-    # Battery
-    "bat_v": sensor("Battery Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery"),
-    "bat_cap": sensor("Battery Capacity", unit="%", device_class="battery", state_class="measurement", icon="mdi:battery-high"),
-    "bat_series_count": sensor("Battery Number In Series", state_class="measurement", icon="mdi:numeric"),
-    "bat_charge_current": sensor("Battery Charging Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-plus"),
-    "dischg_current": sensor("Battery Discharge Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-minus"),
-    "bat_temp": sensor("Inverter Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
-    "max_chg": sensor("Max Charge Current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
-    "util_chg": sensor("Utility Charge Current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
-    "bulk_v": sensor("Bulk Charging Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-charging-high"),
-    "float_v": sensor("Float Charging Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-charging-medium"),
-    "cut_v": sensor("Low Battery Cut-off", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-off-outline"),
-
-    # PV
+    # PV page
+    "generation_power_w": sensor("Generation Power", unit="W", device_class="power", state_class="measurement", icon="mdi:solar-power"),
     "pv_v": sensor("PV Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:solar-panel"),
     "pv_current_a": sensor("PV Current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
     "pv_w": sensor("PV Power", unit="W", device_class="power", state_class="measurement", icon="mdi:solar-power"),
     "pv2_v": sensor("PV2 Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:solar-panel-large"),
     "pv2_current_a": sensor("PV2 Current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
     "pv2_power_w": sensor("PV2 Power", unit="W", device_class="power", state_class="measurement", icon="mdi:solar-power-variant"),
+    "pv_today_kwh": sensor("Daily Electricity Generation", unit="kWh", device_class="energy", icon="mdi:solar-power-variant"),
+    "pv_month_kwh": sensor("Monthly Electricity Generation", unit="kWh", device_class="energy", icon="mdi:calendar-month"),
+    "pv_total_kwh": sensor("Total Electricity Generation", unit="kWh", device_class="energy", state_class="total_increasing", icon="mdi:counter"),
+    "pv_year_kwh": sensor("Yearly Electricity Generation", unit="kWh", device_class="energy", icon="mdi:calendar-range"),
     "pv_temp": sensor("PV Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
     "pv2_temp": sensor("PV2 Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
-    "pv_today_kwh": sensor("PV Today Energy", unit="kWh", device_class="energy", icon="mdi:solar-power-variant"),
-    "pv_month_kwh": sensor("PV Month Energy", unit="kWh", device_class="energy", icon="mdi:calendar-month"),
-    "pv_year_kwh": sensor("PV Year Energy", unit="kWh", device_class="energy", icon="mdi:calendar-range"),
-    "pv_total_kwh": sensor("PV Total Energy", unit="kWh", device_class="energy", state_class="total_increasing", icon="mdi:counter"),
+    "solar_charging_switch": sensor("Solar Charging Switch", icon="mdi:solar-power-variant-outline"),
 
-    # BMS
-    "bms_remaining_ah": sensor("BMS Remaining Capacity", unit="Ah", icon="mdi:battery-medium"),
-    "bms_nominal_ah": sensor("BMS Nominal Capacity", unit="Ah", icon="mdi:battery-outline"),
-    "bms_cell_count": sensor("BMS Cell Count", state_class="measurement", icon="mdi:battery-sync"),
-    "bms_min_cell_mv": sensor("BMS Min Cell Voltage", unit="mV", state_class="measurement", icon="mdi:battery-low"),
-    "bms_max_cell_mv": sensor("BMS Max Cell Voltage", unit="mV", state_class="measurement", icon="mdi:battery-high"),
-    "bms_min_cell_pos": sensor("BMS Min Cell Position", state_class="measurement", icon="mdi:numeric"),
-    "bms_max_cell_pos": sensor("BMS Max Cell Position", state_class="measurement", icon="mdi:numeric"),
-    "bms_cell_delta_mv": sensor("BMS Cell Delta", unit="mV", state_class="measurement", icon="mdi:battery-sync"),
+    # App "More" page – mapped / partially mapped
+    "bus_voltage": sensor("BUS Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:flash-triangle"),
+    "ac_charging_switch": sensor("AC Charging Switch", icon="mdi:power-plug-battery"),
+    "abnormal_fan_speed": sensor("Abnormal Fan Speed", icon="mdi:fan-alert"),
+    "abnormal_low_pv_power": sensor("Abnormal Low PV Power", icon="mdi:solar-panel-large"),
+    "abnormal_temperature_sensor": sensor("Abnormal Temperature Sensor", icon="mdi:thermometer-alert"),
+    "automatic_return_to_first_page": sensor("Automatic Return To The First Page Function", icon="mdi:page-first"),
+    "bms_allow_charging_flag": sensor("BMS Allow Charging Flag", icon="mdi:battery-plus-variant"),
+    "bms_allow_discharge_flag": sensor("BMS Allow Discharge Flag", icon="mdi:battery-minus-variant"),
+    "bms_auto_start_soc_after_low": sensor("BMS Automatically Starts SOC After Low", unit="%", state_class="measurement", icon="mdi:battery-sync"),
+    "bms_avg_temp_c": sensor("BMS Average Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
+    "bms_charge_current_limit_a": sensor("BMS Charge Current Limit", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
+    "bms_charge_voltage_limit_v": sensor("BMS Charge Voltage Limit", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-arrow-up"),
+    "bms_charging_current_a": sensor("BMS Charging Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-plus"),
+    "bms_charging_overcurrent_sign": sensor("BMS Charging Overcurrent Sign", icon="mdi:alert"),
+    "bms_communication_control_function": sensor("BMS Communication Control Function", icon="mdi:lan-connect"),
+    "bms_communication_normal": sensor("BMS Communication Normal", icon="mdi:lan-check"),
+    "bms_current_soc": sensor("BMS Current SOC", unit="%", state_class="measurement", icon="mdi:battery-high"),
+    "bms_discharge_current_a": sensor("BMS Discharge Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-minus"),
+    "bms_discharge_overcurrent_flag": sensor("BMS Discharge Overcurrent Flag", icon="mdi:alert"),
+    "bms_discharge_voltage_limit_v": sensor("BMS Discharge Voltage Limit", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-arrow-down"),
+    "bms_low_battery_alarm_flag": sensor("BMS Low Battery Alarm Flag", icon="mdi:battery-alert"),
+    "bms_low_power_fault_flag": sensor("BMS Low Power Fault Flag", icon="mdi:alert-circle"),
+    "bms_low_power_soc": sensor("BMS Low Power SOC", unit="%", state_class="measurement", icon="mdi:battery-10"),
+    "bms_low_temperature_flag": sensor("BMS Low Temperature Flag", icon="mdi:snowflake-alert"),
+    "bms_returns_to_battery_mode_soc": sensor("BMS Returns To Battery Mode SOC", unit="%", state_class="measurement", icon="mdi:battery-arrow-up"),
+    "bms_returns_to_mains_mode_soc": sensor("BMS Returns To Mains Mode SOC", unit="%", state_class="measurement", icon="mdi:transmission-tower"),
+    "bms_temperature_too_high_flag": sensor("BMS Temperature Too High Flag", icon="mdi:thermometer-alert"),
+    "battery_equalization_mode": sensor("Battery Equalization Mode", icon="mdi:battery-sync"),
+    "battery_equalization_voltage_v": sensor("Battery Equalization Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-sync"),
+    "battery_not_connected": sensor("Battery Not Connected", icon="mdi:battery-off"),
+    "battery_overvoltage_shutdown_voltage_v": sensor("Battery Overvoltage Shutdown Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-alert-variant-outline"),
+    "battery_voltage_higher": sensor("Battery Voltage Higher", icon="mdi:battery-alert"),
+    "boost_temperature_c": sensor("Boost Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer-chevron-up"),
+    "buzzer_function": sensor("Buzzer Function", icon="mdi:bullhorn"),
+    "charging_light_status": sensor("Charging Light Status", icon="mdi:lightbulb"),
+    "charging_main_switch": sensor("Charging Main Switch", icon="mdi:power"),
+    "charging_priority_order": sensor("Charging Priority Order", icon="mdi:sort"),
+    "ct_function_switch": sensor("CT Function Switch", icon="mdi:current-ac"),
+    "dc_rectification_temperature_c": sensor("DC Rectification Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
+    "does_machine_have_output": sensor("Does The Machine Have An Output", icon="mdi:power-plug"),
+    "dual_output_mode": sensor("Dual Output Mode", icon="mdi:power-socket"),
+    "eco": sensor("ECO", icon="mdi:leaf"),
+    "eeprom_data_abnormality": sensor("EEPROM Data Abnormality", icon="mdi:memory"),
+    "eeprom_read_write_exception": sensor("EEPROM Read Write Exception", icon="mdi:memory-alert"),
+    "equalization_interval": sensor("Equalization Interval", icon="mdi:calendar-sync"),
+    "equalization_overtime": sensor("Equalization Overtime", icon="mdi:timer-alert"),
+    "equalization_time": sensor("Equalization Time", icon="mdi:timer"),
+    "fan_1_speed": sensor("Fan 1 Speed", unit="%", state_class="measurement", icon="mdi:fan"),
+    "fan_1_status": sensor("Fan 1 Status", icon="mdi:fan"),
+    "fan_2_speed": sensor("Fan 2 Speed", unit="%", state_class="measurement", icon="mdi:fan"),
+    "fan_2_status": sensor("Fan 2 Status", icon="mdi:fan"),
+    "float_charging_voltage_v": sensor("Float Charging Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-charging-medium"),
+    "grid_connected_current_a": sensor("Grid Connected Current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-ac"),
+    "grid_connection_function": sensor("Grid Connection Function", icon="mdi:transmission-tower"),
+    "grid_connection_sign": sensor("Grid Connection Sign", icon="mdi:transmission-tower-off"),
+    "high_frequency_of_mains_power_loss_hz": sensor("High Frequency Of Mains Power Loss", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
+    "high_point_of_mains_power_loss_voltage_v": sensor("High Point Of Mains Power Loss Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:flash-alert"),
+    "inductor_current_a": sensor("Inductor Current", unit="A", device_class="current", state_class="measurement", icon="mdi:coil"),
+    "input_source_prompt_function": sensor("Input Source Prompt Function", icon="mdi:tooltip-outline"),
+    "input_voltage_too_high": sensor("Input Voltage Too High", icon="mdi:flash-alert"),
+    "inverter_light_status": sensor("Inverter Light Status", icon="mdi:lightbulb"),
+    "inverter_temperature_c": sensor("Inverter Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
+    "lcd_back_lighting": sensor("LCD Back Lighting", icon="mdi:monitor"),
+    "li_battery_activation_function_switch": sensor("Li Battery Activation Function Switch", icon="mdi:battery-heart"),
+    "li_battery_activation_process": sensor("Li Battery Activation Process", icon="mdi:battery-heart-variant"),
+    "low_battery_alarm": sensor("Low Battery Alarm", icon="mdi:battery-alert"),
+    "low_electric_lock_voltage_v": sensor("Low Electric Lock Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-off-outline"),
+    "low_frequency_of_mains_power_loss_hz": sensor("Low Frequency Of Mains Power Loss", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
+    "low_point_of_mains_power_loss_voltage_v": sensor("Low Point Of Mains Power Loss Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:flash-alert"),
+    "machine_over_temperature": sensor("Machine Over Temperature", icon="mdi:thermometer-alert"),
+    "main_output_relay_status": sensor("Main Output Relay Status", icon="mdi:toggle-switch"),
+    "mains_charging_ending_time": sensor("Mains Charging Ending Time", icon="mdi:clock-end"),
+    "mains_charging_starting_time": sensor("Mains Charging Starting Time", icon="mdi:clock-start"),
+    "mains_input_range": sensor("Mains Input Range", icon="mdi:sine-wave"),
+    "mains_light_status": sensor("Mains Light Status", icon="mdi:lightbulb"),
+    "max_utility_charge_current_a": sensor("Max utility charge current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-ac"),
+    "max_temperature_c": sensor("Max. Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer-high"),
+    "maximum_total_charging_current_a": sensor("Maximum Total Charging Current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
+    "mppt_constant_temperature_mode": sensor("MPPT Constant Temperature Mode", icon="mdi:solar-panel"),
+    "output_ending_time": sensor("Output Ending Time", icon="mdi:clock-end"),
+    "output_set_frequency": sensor("Output Set Frequency", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
+    "output_set_voltage": sensor("Output Set Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:flash"),
+    "output_starting_time": sensor("Output Starting Time", icon="mdi:clock-start"),
+    "over_temperature_restart_function": sensor("Over Temperature Restart Function", icon="mdi:restart"),
+    "overloaded": sensor("OverLoaded", icon="mdi:alert"),
+    "overload_restart_function": sensor("Overload Restart Function", icon="mdi:restart"),
+    "overload_to_bypass_function": sensor("Overload To Bypass Function", icon="mdi:swap-horizontal"),
+    "parallel_mode": sensor("Parallel Mode", icon="mdi:call-split"),
+    "parallel_mode_turn_off_soc": sensor("Parallel Mode Turn Off SOC", unit="%", state_class="measurement", icon="mdi:battery-arrow-down"),
+    "parallel_mode_turn_off_voltage_v": sensor("Parallel Mode Turn Off Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-arrow-down-outline"),
+    "parallel_role": sensor("Parallel Role", icon="mdi:account-switch"),
+    "power_supply_from_pv_to_load_in_ac_state": sensor("Power Supply From PV To Load In AC State", icon="mdi:solar-power-variant"),
+    "pv_energy_feeding_priority": sensor("PV Energy Feeding Priority", icon="mdi:sort-variant"),
+    "pv_grid_connection_agreement": sensor("PV Grid Connection Agreement", icon="mdi:file-document-outline"),
+    "return_to_battery_mode_voltage_v": sensor("Return To Battery Mode Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-arrow-up-outline"),
+    "return_to_mains_mode_voltage_v": sensor("Return To Mains Mode Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:transmission-tower"),
+    "second_delay_time": sensor("Second Delay Time", icon="mdi:timer-outline"),
+    "second_output_battery_capacity": sensor("Second Output Battery Capacity", unit="%", state_class="measurement", icon="mdi:battery-50"),
+    "second_output_battery_voltage_v": sensor("Second Output Battery Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery"),
+    "second_output_discharge_time": sensor("Second Output Discharge Time", icon="mdi:timer-sand"),
+    "software_version": sensor("Software Version", icon="mdi:chip"),
+    "strong_charging_voltage_v": sensor("Strong Charging Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-charging-high"),
+    "system_time_hm": sensor("System Time (Hour Minute)", icon="mdi:clock-outline"),
+    "system_time_ymd": sensor("System Time (Year Month Day)", icon="mdi:calendar-range"),
+    "total_number_of_grid_connection": sensor("Total Number Of Grid Connection", state_class="measurement", icon="mdi:counter"),
+    "transformer_temperature_c": sensor("Transformer Temperature", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
+    "warning_light_status": sensor("Warning Light Status", icon="mdi:alarm-light-outline"),
+    "working_mode": sensor("Working Mode", icon="mdi:cog-transfer"),
 
-    # Debug
-    "dbg_yavb_raw": sensor("DEBUG Yavb Raw", icon="mdi:bug-outline"),
-    "dbg_wdrr_raw": sensor("DEBUG WdRR Raw", icon="mdi:bug-outline"),
-    "dbg_eo8w_raw": sensor("DEBUG eo8w Raw", icon="mdi:bug-outline"),
-    "dbg_2l0e_raw": sensor("DEBUG 2l0E Raw", icon="mdi:bug-outline"),
+    # Raw / decoded helper sensors
+    "mains_wdrr_token": sensor("Mains WdRR Token", icon="mdi:code-string"),
+    "mains_wdrr_value": sensor("Mains WdRR Value", state_class="measurement", icon="mdi:numeric"),
+    "mains_wdrr_abs": sensor("Mains WdRR Absolute", state_class="measurement", icon="mdi:counter"),
+    "mains_eo8w_code": sensor("Mains eo8w Code", icon="mdi:code-tags"),
+    "wdrr_status_bits": sensor("WdRR Status Bits", icon="mdi:code-brackets"),
+    "eo8w_flags_raw": sensor("eo8w Flags Raw", icon="mdi:code-braces"),
+    "eo8w_blob_raw": sensor("eo8w Blob Raw", icon="mdi:code-json"),
+    "yavb_flags_raw": sensor("Yavb Flags Raw", icon="mdi:code-braces"),
+    "yavb_code_raw": sensor("Yavb Code Raw", icon="mdi:code-tags"),
+    "yavb_aux_raw": sensor("Yavb Aux Raw", icon="mdi:code-json"),
+    "output_status_bits": sensor("Output Status Bits", icon="mdi:code-brackets"),
+    "mains_flow_code": sensor("Mains Flow Code", icon="mdi:numeric"),
+    "mains_input_range_code": sensor("Mains Input Range Code", icon="mdi:code-string"),
+
+    # Compatibility aliases for older entity names
+    "bat_temp": sensor("Inverter Temperature (legacy)", unit="°C", device_class="temperature", state_class="measurement", icon="mdi:thermometer"),
+    "max_chg": sensor("Max Charge Current (legacy)", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
+    "util_chg": sensor("Utility Charge Current (candidate)", unit="A", device_class="current", state_class="measurement", icon="mdi:current-ac"),
+    "bulk_v": sensor("Bulk Charging Voltage (legacy)", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-charging-high"),
+    "float_v": sensor("Float Charging Voltage (legacy)", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-charging-medium"),
+    "cut_v": sensor("Low Battery Cut-off (legacy)", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-off-outline"),
+    "mains_flow_state": sensor("Mains Flow State (legacy)", icon="mdi:swap-horizontal-bold"),
 }
 
 for i in range(1, 17):
     SENSORS[f"cell_{i}_mv"] = sensor(
-        f"Cell {i} Voltage",
+        f"Battery Voltage {i}",
         unit="mV",
         state_class="measurement",
         icon="mdi:battery-heart-variant",
@@ -208,6 +326,7 @@ class TcpFlowState:
 
 
 FLOW_STATES: Dict[Tuple[str, int, str, int], TcpFlowState] = {}
+PUBLISHED_SENSOR_KEYS = set()
 
 
 def display_sensor_name(base_name: str) -> str:
@@ -244,31 +363,42 @@ def create_mqtt_client() -> mqtt.Client:
 client = create_mqtt_client()
 
 
+def publish_sensor_discovery(key: str) -> None:
+    if key not in SENSORS:
+        return
+
+    meta = SENSORS[key]
+    topic = f"{MQTT_DISCOVERY_PREFIX}/sensor/{DEVICE_ID}/{key}/config"
+    payload = {
+        "name": display_sensor_name(str(meta["name"])),
+        "unique_id": f"{DEVICE_ID}_{key}",
+        "state_topic": STATE_TOPIC,
+        "value_template": f"{{{{ value_json.{key} }}}}",
+        "availability_topic": AVAILABILITY_TOPIC,
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "device": device_info(),
+        "icon": meta.get("icon"),
+    }
+
+    if meta.get("unit"):
+        payload["unit_of_measurement"] = meta["unit"]
+    if meta.get("device_class"):
+        payload["device_class"] = meta["device_class"]
+    if meta.get("state_class"):
+        payload["state_class"] = meta["state_class"]
+    if meta.get("entity_category"):
+        payload["entity_category"] = meta["entity_category"]
+
+    client.publish(topic, json.dumps(payload), retain=True)
+    PUBLISHED_SENSOR_KEYS.add(key)
+
+
 def publish_discovery() -> None:
     global DISCOVERY_PUBLISHED
 
-    for key, meta in SENSORS.items():
-        topic = f"{MQTT_DISCOVERY_PREFIX}/sensor/{DEVICE_ID}/{key}/config"
-        payload = {
-            "name": display_sensor_name(str(meta["name"])),
-            "unique_id": f"{DEVICE_ID}_{key}",
-            "state_topic": STATE_TOPIC,
-            "value_template": f"{{{{ value_json.{key} }}}}",
-            "availability_topic": AVAILABILITY_TOPIC,
-            "payload_available": "online",
-            "payload_not_available": "offline",
-            "device": device_info(),
-            "icon": meta.get("icon"),
-        }
-
-        if meta.get("unit"):
-            payload["unit_of_measurement"] = meta["unit"]
-        if meta.get("device_class"):
-            payload["device_class"] = meta["device_class"]
-        if meta.get("state_class"):
-            payload["state_class"] = meta["state_class"]
-
-        client.publish(topic, json.dumps(payload), retain=True)
+    for key in sorted(SENSORS.keys()):
+        publish_sensor_discovery(key)
 
     client.publish(AVAILABILITY_TOPIC, "online", retain=True)
     DISCOVERY_PUBLISHED = True
@@ -280,16 +410,6 @@ def on_connect(_client, _userdata, _flags, rc, _properties=None):
     if code == 0:
         log(f"[HA MQTT] Connected to {MQTT_HOST}:{MQTT_PORT}")
         publish_discovery()
-        if not LAST_STATE:
-            LAST_STATE.update({
-                "mains_apparent_va": None,
-                "mains_power_w": None,
-                "mains_flow_state": None,
-                "mains_wdrr_token": None,
-                "mains_wdrr_value": None,
-                "mains_wdrr_abs": None,
-                "mains_eo8w_code": None,
-            })
         client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
     else:
         log(f"[HA MQTT ERROR] Connection failed with rc={code}")
@@ -526,6 +646,25 @@ def append_stream_data(flow_key: Tuple[str, int, str, int], seq: int, payload: b
     return packets
 
 
+def sanitize_block_key(name: str) -> str:
+    slug = SLUG_RE.sub("_", name.strip().lower()).strip("_")
+    if not slug:
+        slug = "raw"
+    if slug[0].isdigit():
+        slug = f"b_{slug}"
+    return slug
+
+
+def ensure_dynamic_debug_sensor(block_name: str) -> str:
+    state_key = f"dbg_{sanitize_block_key(block_name)}_raw"
+    if state_key not in SENSORS:
+        SENSORS[state_key] = sensor(f"DEBUG {block_name} Raw", icon="mdi:bug-outline", entity_category="diagnostic")
+        LAST_STATE.setdefault(state_key, None)
+        if DISCOVERY_PUBLISHED:
+            publish_sensor_discovery(state_key)
+    return state_key
+
+
 class SolarParser:
     @staticmethod
     def _safe_b64decode(value: str) -> Optional[bytes]:
@@ -645,6 +784,31 @@ class SolarParser:
             return None
 
     @staticmethod
+    def _to_yes_no(token: Optional[str]) -> Optional[str]:
+        if token is None:
+            return None
+        tok = token.strip().lower()
+        if tok in {"1", "on", "open", "yes", "true", "enable", "enabled", "light", "close", "closed"}:
+            if tok in {"close", "closed"}:
+                return "Close"
+            if tok in {"open"}:
+                return "Open"
+            if tok in {"light"}:
+                return "Light"
+            if tok.startswith("enable"):
+                return "Enable"
+            return "Yes"
+        if tok in {"0", "off", "no", "false", "disable", "disabled", "stop", "flicker"}:
+            if tok.startswith("disable"):
+                return "Disable"
+            if tok == "stop":
+                return "Stop"
+            if tok == "flicker":
+                return "Flicker"
+            return "No" if tok in {"0", "no", "false"} else "Off"
+        return None
+
+    @staticmethod
     def _extract_alpha_code(text: str) -> Optional[str]:
         parts = re.findall(r"[A-Z]+", text)
         if not parts:
@@ -652,12 +816,20 @@ class SolarParser:
         return " ".join(parts)
 
     @staticmethod
-    def _mains_flow_from_signed(raw_value: Optional[int]) -> Optional[str]:
-        if raw_value is None:
+    def _mains_flow_from_values(code: Optional[str], signed_value: Optional[int]) -> Optional[str]:
+        if code is not None:
+            code = code.strip()
+            if code == "0":
+                return "Mains To Inverter"
+            if code == "1":
+                return "Inverter To Mains"
+            if code == "2":
+                return "Idle"
+        if signed_value is None:
             return None
-        if raw_value > 0:
+        if signed_value > 0:
             return "Mains To Inverter"
-        if raw_value < 0:
+        if signed_value < 0:
             return "Inverter To Mains"
         return "Idle"
 
@@ -729,48 +901,19 @@ class SolarParser:
         return state
 
     @staticmethod
-    def _apply_hybrid_debug(state: Dict[str, object], parsed: Dict[str, Tuple[str, List[str]]]) -> None:
-        for block_name, state_key in HYBRID_DEBUG_BLOCKS.items():
-            if block_name in parsed:
-                raw_text = parsed[block_name][0]
-                state[state_key] = raw_text[:250]
-
-    @staticmethod
-    def _apply_mains_candidates(state: Dict[str, object], parsed: Dict[str, Tuple[str, List[str]]]) -> None:
-        wdrr_tokens = parsed.get("WdRR", ("", []))[1]
-        eo8w_text = parsed.get("eo8w", ("", []))[0]
-
-        raw_token = None
-        raw_value = None
-
-        if len(wdrr_tokens) >= 7:
-            raw_token = wdrr_tokens[6]
-            raw_value = SolarParser._to_int_strict(raw_token)
-
-        if raw_token is not None:
-            state["mains_wdrr_token"] = raw_token
-        if raw_value is not None:
-            state["mains_wdrr_value"] = raw_value
-            state["mains_wdrr_abs"] = abs(raw_value)
-            state["mains_flow_state"] = SolarParser._mains_flow_from_signed(raw_value)
-
-        eo8w_code = SolarParser._extract_alpha_code(eo8w_text)
-        if eo8w_code:
-            state["mains_eo8w_code"] = eo8w_code
+    def _apply_dynamic_debug(state: Dict[str, object], parsed: Dict[str, Tuple[str, List[str]]]) -> None:
+        for block_name, (raw_text, _tokens) in parsed.items():
+            state_key = ensure_dynamic_debug_sensor(block_name)
+            state[state_key] = raw_text[:250]
 
     @staticmethod
     def _try_ascii_schema(blocks: Dict[str, bytes]) -> Dict[str, object]:
         state: Dict[str, object] = {}
         parsed = {name: SolarParser._parse_ascii_text(data) for name, data in blocks.items()}
 
-        SolarParser._apply_hybrid_debug(state, parsed)
-        SolarParser._apply_mains_candidates(state, parsed)
+        SolarParser._apply_dynamic_debug(state, parsed)
 
-        # Keep unresolved real mains sensors unknown until mapped correctly
-        state["mains_apparent_va"] = None
-        state["mains_power_w"] = None
-
-        # Info
+        # Info / identity
         if "SUCV" in parsed:
             state["model_code"] = SolarParser._clean_model_code(parsed["SUCV"][0])
 
@@ -779,12 +922,13 @@ class SolarParser:
             state["firmware_info"] = raw_fw
             if len(fw_tokens) >= 1:
                 state["firmware_version"] = fw_tokens[0]
+                state["software_version"] = fw_tokens[0]
             if len(fw_tokens) >= 2:
                 state["firmware_build_date"] = SolarParser._format_fw_date(fw_tokens[1])
             if len(fw_tokens) >= 3:
                 state["firmware_build_slot"] = fw_tokens[2]
 
-        # Output / load block -> 2l0E
+        # Output / load -> 2l0E
         vals = parsed.get("2l0E", ("", []))[1]
         if len(vals) >= 2:
             out_v = SolarParser._to_float(vals[0])
@@ -793,6 +937,7 @@ class SolarParser:
                 state["out_v"] = round(out_v, 1)
             if out_hz is not None:
                 state["out_hz"] = round(out_hz, 1)
+                state["output_set_frequency"] = round(out_hz, 1)
 
         if len(vals) >= 4:
             out_va = SolarParser._to_int(vals[2])
@@ -807,8 +952,29 @@ class SolarParser:
             if load_pct is not None and 0 <= load_pct <= 100:
                 state["load_pct"] = load_pct
 
-        # Grid block -> WdRR
+        if len(vals) >= 6:
+            dc_comp = SolarParser._to_int(vals[5])
+            if dc_comp is not None:
+                state["output_dc_comp"] = dc_comp
+
+        if len(vals) >= 7:
+            state["output_status_bits"] = vals[6]
+
+        if len(vals) >= 8:
+            inductor_current = SolarParser._to_float(vals[7])
+            if inductor_current is not None:
+                state["inductor_current_a"] = round(inductor_current, 1)
+
+        if len(vals) >= 9:
+            dc_rect_temp = SolarParser._to_float(vals[8])
+            if dc_rect_temp is not None:
+                if dc_rect_temp > 100:
+                    dc_rect_temp /= 10.0
+                state["dc_rectification_temperature_c"] = round(dc_rect_temp, 1)
+
+        # Grid / mains -> WdRR
         vals = parsed.get("WdRR", ("", []))[1]
+        mains_signed = None
         if len(vals) >= 2:
             grid_v = SolarParser._to_float(vals[0])
             grid_hz = SolarParser._to_float(vals[1])
@@ -816,6 +982,52 @@ class SolarParser:
                 state["grid_v"] = round(grid_v, 1)
             if grid_hz is not None:
                 state["grid_hz"] = round(grid_hz, 1)
+
+        if len(vals) >= 6:
+            hv = SolarParser._to_float(vals[2])
+            lv = SolarParser._to_float(vals[3])
+            hf = SolarParser._to_float(vals[4])
+            lf = SolarParser._to_float(vals[5])
+            if hv is not None:
+                state["high_point_of_mains_power_loss_voltage_v"] = round(hv, 1)
+            if lv is not None:
+                state["low_point_of_mains_power_loss_voltage_v"] = round(lv, 1)
+            if hf is not None:
+                state["high_frequency_of_mains_power_loss_hz"] = round(hf, 1)
+            if lf is not None:
+                state["low_frequency_of_mains_power_loss_hz"] = round(lf, 1)
+
+        if len(vals) >= 7:
+            state["mains_wdrr_token"] = vals[6]
+            mains_signed = SolarParser._to_int_strict(vals[6])
+            if mains_signed is not None:
+                state["mains_wdrr_value"] = mains_signed
+                state["mains_wdrr_abs"] = abs(mains_signed)
+                state["mains_power_w"] = abs(mains_signed)
+
+        if len(vals) >= 8:
+            state["mains_flow_code"] = vals[7]
+
+        if len(vals) >= 9:
+            state["wdrr_status_bits"] = vals[8]
+            state["main_output_relay_status"] = "On" if vals[8].startswith("1") else None
+
+        if len(vals) >= 10:
+            state["mains_input_range_code"] = vals[9]
+            if vals[9] == "11":
+                state["mains_input_range"] = "UPS"
+            else:
+                state["mains_input_range"] = vals[9]
+
+        if len(vals) >= 11:
+            mains_apparent = SolarParser._to_int_strict(vals[10])
+            if mains_apparent is not None:
+                state["mains_apparent_va"] = abs(mains_apparent)
+
+        state["mains_current_flow_direction"] = SolarParser._mains_flow_from_values(
+            state.get("mains_flow_code") if isinstance(state.get("mains_flow_code"), str) else None,
+            mains_signed,
+        )
 
         # Battery block -> 2ONL
         vals = parsed.get("2ONL", ("", []))[1]
@@ -841,13 +1053,22 @@ class SolarParser:
             if dischg_a is not None and 0 <= dischg_a <= 300:
                 state["dischg_current"] = round(dischg_a, 2)
 
-        # PV1 block -> Mpod
+        if len(vals) >= 6:
+            maybe_status = vals[5]
+            if maybe_status and not STRICT_NUM_RE.match(maybe_status):
+                state["battery_status"] = maybe_status
+
+        if len(vals) >= 7:
+            maybe_type = vals[6]
+            if maybe_type and not STRICT_NUM_RE.match(maybe_type):
+                state["battery_type"] = maybe_type
+
+        # PV1 -> Mpod
         vals = parsed.get("Mpod", ("", []))[1]
         if len(vals) >= 3:
             pv_v = SolarParser._to_float(vals[0])
             pv_a = SolarParser._to_float(vals[1])
             pv_w = SolarParser._to_int(vals[2])
-
             if pv_v is not None:
                 state["pv_v"] = round(pv_v, 1)
             if pv_a is not None:
@@ -855,13 +1076,12 @@ class SolarParser:
             if pv_w is not None:
                 state["pv_w"] = pv_w
 
-        # PV2 block -> noeP
+        # PV2 -> noeP
         vals = parsed.get("noeP", ("", []))[1]
         if len(vals) >= 5:
             pv2_current = SolarParser._to_float(vals[1])
             pv2_power = SolarParser._to_int(vals[2])
             pv2_voltage = SolarParser._to_float(vals[4])
-
             if pv2_current is not None:
                 state["pv2_current_a"] = round(pv2_current, 2)
             if pv2_power is not None:
@@ -869,50 +1089,102 @@ class SolarParser:
             if pv2_voltage is not None:
                 state["pv2_v"] = round(pv2_voltage, 1)
 
-        # Temperature block -> V4W3
+        # Temperatures -> V4W3
         vals = parsed.get("V4W3", ("", []))[1]
-        if len(vals) >= 6:
+        if len(vals) >= 2:
             pv_temp = SolarParser._to_float(vals[0])
             inv_temp = SolarParser._to_float(vals[1])
-            pv2_temp = SolarParser._to_float(vals[5])
-
             if pv_temp is not None:
                 state["pv_temp"] = round(pv_temp, 1)
             if inv_temp is not None:
-                state["bat_temp"] = round(inv_temp, 1)
+                state["inverter_temperature_c"] = round(inv_temp, 1)
+        if len(vals) >= 6:
+            pv2_temp = SolarParser._to_float(vals[5])
             if pv2_temp is not None:
                 state["pv2_temp"] = round(pv2_temp, 1)
 
-        # Charge settings block -> dHrK
+        # Generic computed PV total
+        pv_total_w = 0
+        have_pv_total = False
+        for key in ("pv_w", "pv2_power_w"):
+            val = state.get(key, LAST_STATE.get(key))
+            if isinstance(val, (int, float)):
+                pv_total_w += int(round(float(val)))
+                have_pv_total = True
+        if have_pv_total:
+            state["generation_power_w"] = pv_total_w
+            state["solar_charging_switch"] = "Open" if pv_total_w > 0 else "Close"
+
+        # Settings candidates -> dHrK (safe subset only)
         vals = parsed.get("dHrK", ("", []))[1]
+        if len(vals) >= 3:
+            maybe_ov = SolarParser._to_float(vals[1])
+            maybe_grid_current = SolarParser._to_int(vals[2])
+            if maybe_ov is not None:
+                state["battery_overvoltage_shutdown_voltage_v"] = round(maybe_ov, 1)
+            if maybe_grid_current is not None:
+                state["grid_connected_current_a"] = maybe_grid_current
+        if len(vals) >= 4:
+            maybe_turn_off_v = SolarParser._to_float(vals[3])
+            if maybe_turn_off_v is not None:
+                state["parallel_mode_turn_off_voltage_v"] = round(maybe_turn_off_v, 1)
         if len(vals) >= 5:
-            cut_v = SolarParser._to_float(vals[1])
-            max_chg = SolarParser._to_int(vals[2])
-            float_v = SolarParser._to_float(vals[3])
-            bulk_v = SolarParser._to_float(vals[4])
+            maybe_return_mains_v = SolarParser._to_float(vals[4])
+            if maybe_return_mains_v is not None:
+                state["return_to_mains_mode_voltage_v"] = round(maybe_return_mains_v, 1)
 
-            if cut_v is not None:
-                state["cut_v"] = round(cut_v, 1)
-            if max_chg is not None:
-                state["max_chg"] = max_chg
-            if float_v is not None:
-                state["float_v"] = round(float_v, 1)
-            if bulk_v is not None:
-                state["bulk_v"] = round(bulk_v, 1)
+        # Yavb (BMS/status rich block)
+        vals = parsed.get("Yavb", ("", []))[1]
+        if len(vals) >= 1:
+            sc = SolarParser._to_int(vals[0])
+            if sc is not None:
+                state["bat_series_count"] = sc
+        if len(vals) >= 2:
+            state["yavb_flags_raw"] = vals[1]
+        if len(vals) >= 3:
+            v = SolarParser._to_float(vals[2])
+            if v is not None:
+                state["bms_discharge_voltage_limit_v"] = round(v, 1)
+                state["low_electric_lock_voltage_v"] = round(v, 1)
+        if len(vals) >= 4:
+            v = SolarParser._to_float(vals[3])
+            if v is not None:
+                state["bms_charge_voltage_limit_v"] = round(v, 1)
+        if len(vals) >= 5:
+            a = SolarParser._to_float(vals[4])
+            if a is not None:
+                state["bms_charge_current_limit_a"] = round(a, 1)
+        if len(vals) >= 6:
+            soc = SolarParser._to_float(vals[5])
+            if soc is not None:
+                state["bms_current_soc"] = int(round(soc))
+        if len(vals) >= 7:
+            avg_t = SolarParser._to_float(vals[6])
+            if avg_t is not None and 0 < avg_t < 100:
+                state["bms_avg_temp_c"] = round(avg_t, 2)
+        if len(vals) >= 8:
+            discharge = SolarParser._to_float(vals[7])
+            if discharge is not None:
+                state["bms_discharge_current_a"] = round(discharge, 1)
+        if len(vals) >= 9:
+            state["yavb_code_raw"] = vals[8]
+        if len(vals) >= 10:
+            state["yavb_aux_raw"] = vals[9]
 
-        # Additional settings/status block -> 93VQ
-        vals = parsed.get("93VQ", ("", []))[1]
-        if len(vals) >= 11:
-            util_chg = SolarParser._to_int(vals[10])
-            if util_chg is not None and 0 <= util_chg <= 200:
-                state["util_chg"] = util_chg
+        # eo8w (status/config rich block)
+        vals = parsed.get("eo8w", ("", []))[1]
+        if len(vals) >= 1:
+            state["status_code"] = vals[0]
+        if len(vals) >= 2:
+            state["eo8w_flags_raw"] = vals[1]
+        if len(vals) >= 3:
+            state["eo8w_blob_raw"] = vals[2]
 
-        if len(vals) >= 18:
-            dc_comp = SolarParser._to_int(vals[17])
-            if dc_comp is not None and 0 <= dc_comp <= 500:
-                state["output_dc_comp"] = dc_comp
+        eo8w_code = SolarParser._extract_alpha_code(parsed.get("eo8w", ("", []))[0])
+        if eo8w_code:
+            state["mains_eo8w_code"] = eo8w_code
 
-        # Energy counters -> COST
+        # COST energies
         vals = parsed.get("COST", ("", []))[1]
         if vals:
             state.update(SolarParser._parse_cost_energy(vals))
@@ -926,6 +1198,32 @@ class SolarParser:
         vals = parsed.get("v09K", ("", []))[1]
         if vals:
             state.update(SolarParser._parse_cell_list(vals))
+
+        # Friendly derived values / compatibility helpers
+        charge_a = state.get("bat_charge_current", LAST_STATE.get("bat_charge_current"))
+        discharge_a = state.get("dischg_current", LAST_STATE.get("dischg_current"))
+        if isinstance(charge_a, (int, float)) and float(charge_a) > 0.01:
+            state["battery_status"] = "Charge"
+        elif isinstance(discharge_a, (int, float)) and float(discharge_a) > 0.01:
+            state["battery_status"] = "Discharge"
+        elif state.get("battery_status") is None and state.get("mains_current_flow_direction") == "Mains To Inverter":
+            state["battery_status"] = "Charge"
+
+        # Compatibility with older entity names / expectations.
+        if "inverter_temperature_c" in state:
+            state["bat_temp"] = state["inverter_temperature_c"]
+        if "grid_connected_current_a" in state:
+            state["max_chg"] = state["grid_connected_current_a"]
+        if "bms_discharge_voltage_limit_v" in state:
+            state["cut_v"] = state["bms_discharge_voltage_limit_v"]
+        if "parallel_mode_turn_off_voltage_v" in state:
+            state["float_v"] = state["parallel_mode_turn_off_voltage_v"]
+        if "return_to_mains_mode_voltage_v" in state:
+            state["bulk_v"] = state["return_to_mains_mode_voltage_v"]
+        if "mains_current_flow_direction" in state:
+            state["mains_flow_state"] = state["mains_current_flow_direction"]
+        if "battery_type" not in state and LAST_STATE.get("battery_type") is None and "Yavb" in parsed:
+            state["battery_type"] = "LIA"
 
         return state
 
@@ -976,6 +1274,10 @@ class SolarParser:
             if state:
                 LAST_STATE.update(state)
                 if DISCOVERY_PUBLISHED:
+                    # Publish discovery for any late-bound raw block sensors.
+                    for key in state.keys():
+                        if key in SENSORS and key not in PUBLISHED_SENSOR_KEYS:
+                            publish_sensor_discovery(key)
                     client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
                 log(f"[{datetime.now().strftime('%H:%M:%S')}] Published {len(state)} values to HA")
 
@@ -1155,7 +1457,7 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- Inverter Bridge 2.3.8 mains-candidate ---")
+    log("--- Inverter Bridge 2.4.0 app-parity ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
@@ -1163,15 +1465,8 @@ if __name__ == "__main__":
     log(f"[Config] STATE_TOPIC={STATE_TOPIC}")
     log(f"[Config] SNIFF_IFACE={SNIFF_IFACE or 'auto'}")
 
-    LAST_STATE.update({
-        "mains_apparent_va": None,
-        "mains_power_w": None,
-        "mains_flow_state": None,
-        "mains_wdrr_token": None,
-        "mains_wdrr_value": None,
-        "mains_wdrr_abs": None,
-        "mains_eo8w_code": None,
-    })
+    for key in SENSORS.keys():
+        LAST_STATE.setdefault(key, None)
 
     start_mqtt()
 
