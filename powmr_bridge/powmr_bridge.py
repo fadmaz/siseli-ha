@@ -43,17 +43,17 @@ STATE_TOPIC = os.getenv("STATE_TOPIC", f"taico/{DEVICE_ID}/state")
 AVAILABILITY_TOPIC = os.getenv("AVAILABILITY_TOPIC", f"taico/{DEVICE_ID}/availability")
 
 SNIFF_IFACE = os.getenv("SNIFF_IFACE", "").strip() or None
-LOG_VERBOSE = os.getenv("LOG_VERBOSE", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_BLOCKS = os.getenv("LOG_BLOCKS", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_STATE_DIFF = os.getenv("LOG_STATE_DIFF", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_STATE_SNAPSHOT = os.getenv("LOG_STATE_SNAPSHOT", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_VERBOSE = os.getenv("LOG_VERBOSE", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_BLOCKS = os.getenv("LOG_BLOCKS", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_STATE_DIFF = os.getenv("LOG_STATE_DIFF", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_STATE_SNAPSHOT = os.getenv("LOG_STATE_SNAPSHOT", "false").strip().lower() in {"1", "true", "yes", "on"}
 LOG_RAW_JSON = os.getenv("LOG_RAW_JSON", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_CLEAN_STATE = os.getenv("LOG_CLEAN_STATE", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_MQTT_TOPICS = os.getenv("LOG_MQTT_TOPICS", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_MQTT_PAYLOAD_PREVIEW = os.getenv("LOG_MQTT_PAYLOAD_PREVIEW", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_UNPARSED_PUBLISH = os.getenv("LOG_UNPARSED_PUBLISH", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_STREAM_EVENTS = os.getenv("LOG_STREAM_EVENTS", "true").strip().lower() in {"1", "true", "yes", "on"}
-LOG_NULL_TARGETS = os.getenv("LOG_NULL_TARGETS", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_CLEAN_STATE = os.getenv("LOG_CLEAN_STATE", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_MQTT_TOPICS = os.getenv("LOG_MQTT_TOPICS", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_MQTT_PAYLOAD_PREVIEW = os.getenv("LOG_MQTT_PAYLOAD_PREVIEW", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_UNPARSED_PUBLISH = os.getenv("LOG_UNPARSED_PUBLISH", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_STREAM_EVENTS = os.getenv("LOG_STREAM_EVENTS", "false").strip().lower() in {"1", "true", "yes", "on"}
+LOG_NULL_TARGETS = os.getenv("LOG_NULL_TARGETS", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 INV_MAC: Optional[str] = None
 RTR_MAC: Optional[str] = None
@@ -1954,13 +1954,14 @@ signal.signal(signal.SIGINT, shutdown)
 
 
 if __name__ == "__main__":
-    log("--- Inverter Bridge 2.4.3 sticky-state ---")
+    log("--- Inverter Bridge 2.4.6 production-clean ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
     log(f"[Config] DEVICE_NAME={DEVICE_NAME} MANUFACTURER={MANUFACTURER}")
     log(f"[Config] STATE_TOPIC={STATE_TOPIC}")
     log(f"[Config] SNIFF_IFACE={SNIFF_IFACE or 'auto'}")
+    log(f"[Config] DEBUG_FLAGS verbose={LOG_VERBOSE} blocks={LOG_BLOCKS} state_diff={LOG_STATE_DIFF} state_snapshot={LOG_STATE_SNAPSHOT} raw_json={LOG_RAW_JSON} clean_state={LOG_CLEAN_STATE} mqtt_topics={LOG_MQTT_TOPICS} payload_preview={LOG_MQTT_PAYLOAD_PREVIEW} unparsed={LOG_UNPARSED_PUBLISH} stream_events={LOG_STREAM_EVENTS} null_targets={LOG_NULL_TARGETS}")
 
     for key in SENSORS.keys():
         LAST_STATE.setdefault(key, None)
