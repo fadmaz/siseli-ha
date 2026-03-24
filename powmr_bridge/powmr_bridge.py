@@ -49,6 +49,11 @@ LOG_STATE_DIFF = os.getenv("LOG_STATE_DIFF", "true").strip().lower() in {"1", "t
 LOG_STATE_SNAPSHOT = os.getenv("LOG_STATE_SNAPSHOT", "true").strip().lower() in {"1", "true", "yes", "on"}
 LOG_RAW_JSON = os.getenv("LOG_RAW_JSON", "false").strip().lower() in {"1", "true", "yes", "on"}
 LOG_CLEAN_STATE = os.getenv("LOG_CLEAN_STATE", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_MQTT_TOPICS = os.getenv("LOG_MQTT_TOPICS", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_MQTT_PAYLOAD_PREVIEW = os.getenv("LOG_MQTT_PAYLOAD_PREVIEW", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_UNPARSED_PUBLISH = os.getenv("LOG_UNPARSED_PUBLISH", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_STREAM_EVENTS = os.getenv("LOG_STREAM_EVENTS", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_NULL_TARGETS = os.getenv("LOG_NULL_TARGETS", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 INV_MAC: Optional[str] = None
 RTR_MAC: Optional[str] = None
@@ -86,6 +91,39 @@ def log_kv(tag: str, **kwargs) -> None:
     for key, value in kwargs.items():
         parts.append(f"{key}={json_log(value)}")
     log(f"{tag} " + " ".join(parts))
+
+
+def printable_text_preview(data: Optional[bytes], limit: int = 240) -> str:
+    if not data:
+        return ""
+    try:
+        text = data.decode("utf-8", errors="ignore")
+    except Exception:
+        text = ""
+    text = text.replace("\r", " ").replace("\n", " ").replace("\x00", " ").strip()
+    if len(text) > limit:
+        return text[:limit] + "…"
+    return text
+
+
+def hex_preview(data: Optional[bytes], limit: int = 240) -> str:
+    if not data:
+        return ""
+    view = data[:limit]
+    out = view.hex()
+    if len(data) > limit:
+        out += "…"
+    return out
+
+
+def log_payload_preview(tag: str, payload: Optional[bytes], **kwargs) -> None:
+    log_kv(
+        tag,
+        payload_len=len(payload or b""),
+        payload_text=printable_text_preview(payload),
+        payload_hex=hex_preview(payload),
+        **kwargs,
+    )
 
 
 def norm_mac(mac: Optional[str]) -> Optional[str]:
@@ -346,6 +384,8 @@ class TcpFlowState:
 
 FLOW_STATES: Dict[Tuple[str, int, str, int], TcpFlowState] = {}
 PUBLISHED_SENSOR_KEYS = set()
+SEEN_MQTT_TOPICS: Dict[str, int] = {}
+IMPORTANT_DEBUG_KEYS = ("bms_avg_temp_c", "mains_current_flow_direction")
 
 
 def display_sensor_name(base_name: str) -> str:
@@ -640,17 +680,26 @@ def append_stream_data(flow_key: Tuple[str, int, str, int], seq: int, payload: b
 
     if state.next_seq is None:
         state.next_seq = seq
+        if LOG_STREAM_EVENTS:
+            log_kv("[STREAM INIT]", flow=flow_key, seq=seq, payload_len=len(payload))
 
     if seq < state.next_seq:
         overlap = state.next_seq - seq
         if overlap >= len(payload):
+            if LOG_STREAM_EVENTS:
+                log_kv("[STREAM DUPLICATE]", flow=flow_key, seq=seq, next_seq=state.next_seq, payload_len=len(payload))
             return packets
+        if LOG_STREAM_EVENTS:
+            log_kv("[STREAM OVERLAP]", flow=flow_key, seq=seq, next_seq=state.next_seq, overlap=overlap, payload_len=len(payload))
         payload = payload[overlap:]
         seq = state.next_seq
 
     if seq > state.next_seq:
         if seq not in state.pending:
             state.pending[seq] = payload
+            if LOG_STREAM_EVENTS:
+                log_kv("[STREAM GAP]", flow=flow_key, seq=seq, next_seq=state.next_seq, payload_len=len(payload), pending_count=len(state.pending))
+                log_payload_preview("[STREAM GAP PAYLOAD]", payload, flow=flow_key, seq=seq)
         return packets
 
     state.stream.extend(payload)
@@ -658,10 +707,14 @@ def append_stream_data(flow_key: Tuple[str, int, str, int], seq: int, payload: b
 
     while state.next_seq in state.pending:
         pending_payload = state.pending.pop(state.next_seq)
+        if LOG_STREAM_EVENTS:
+            log_kv("[STREAM REASSEMBLE]", flow=flow_key, seq=state.next_seq, payload_len=len(pending_payload), pending_count=len(state.pending))
         state.stream.extend(pending_payload)
         state.next_seq += len(pending_payload)
 
     if len(state.stream) > MAX_STREAM_BUFFER:
+        if LOG_STREAM_EVENTS:
+            log_kv("[STREAM TRIM]", flow=flow_key, stream_len=len(state.stream), max_len=MAX_STREAM_BUFFER)
         del state.stream[:-MAX_STREAM_BUFFER]
 
     packets.extend(extract_mqtt_packets_from_stream(state.stream))
@@ -1593,7 +1646,7 @@ class SolarParser:
 
 
     @staticmethod
-    def parse_payload(payload_bytes: bytes) -> None:
+    def parse_payload(payload_bytes: bytes, source_topic: Optional[str] = None) -> bool:
         try:
             idx = payload_bytes.find(b'{"b":')
             if idx == -1:
@@ -1606,18 +1659,24 @@ class SolarParser:
                 idx = payload_bytes.find(b"{")
 
             if idx == -1:
-                return
+                if LOG_UNPARSED_PUBLISH:
+                    log_payload_preview("[UNPARSED PAYLOAD: NO JSON START]", payload_bytes, topic=source_topic)
+                return False
 
             raw = payload_bytes[idx:].decode("utf-8", errors="ignore")
             end = raw.rfind("}")
             if end != -1:
                 raw = raw[: end + 1]
+            elif LOG_UNPARSED_PUBLISH:
+                log_payload_preview("[UNPARSED PAYLOAD: NO JSON END]", payload_bytes, topic=source_topic)
 
             raw_json = json.loads(raw)
             if LOG_RAW_JSON:
                 log(f"[RAW JSON] {json_log(raw_json)}")
 
             candidate_pairs = SolarParser._walk_for_blocks(raw_json)
+            if LOG_MQTT_PAYLOAD_PREVIEW:
+                log_payload_preview("[PAYLOAD PREVIEW]", payload_bytes, topic=source_topic, candidate_pair_count=len(candidate_pairs))
 
             blocks: Dict[str, bytes] = {}
             seen = set()
@@ -1639,7 +1698,7 @@ class SolarParser:
                 blocks[key] = decoded
 
             if LOG_BLOCKS:
-                log_kv("[BLOCK SUMMARY]", block_count=len(blocks), block_names=sorted(blocks.keys()))
+                log_kv("[BLOCK SUMMARY]", topic=source_topic, block_count=len(blocks), block_names=sorted(blocks.keys()))
                 for block_name in sorted(blocks.keys()):
                     raw_text, raw_tokens = SolarParser._parse_ascii_text(blocks[block_name])
                     log_kv(
@@ -1650,11 +1709,16 @@ class SolarParser:
                         hex_preview=blocks[block_name][:64].hex(),
                     )
 
+            if not blocks and LOG_UNPARSED_PUBLISH:
+                log_payload_preview("[UNPARSED PAYLOAD: NO BLOCKS]", payload_bytes, topic=source_topic)
+
             state = SolarParser._try_ascii_schema(blocks)
             if state:
                 clean_state = SolarParser._drop_none_values(state)
                 if not clean_state:
-                    return
+                    if LOG_UNPARSED_PUBLISH:
+                        log_payload_preview("[UNPARSED PAYLOAD: EMPTY CLEAN STATE]", payload_bytes, topic=source_topic, block_names=sorted(blocks.keys()))
+                    return False
 
                 previous_state = dict(LAST_STATE)
                 changed_keys = []
@@ -1667,12 +1731,20 @@ class SolarParser:
                             log_kv("[STATE CHANGE]", key=key, old=None if old_val == "__missing__" else old_val, new=new_val)
 
                 if LOG_CLEAN_STATE:
-                    log_kv("[CLEAN STATE]", values=clean_state)
+                    log_kv("[CLEAN STATE]", topic=source_topic, values=clean_state)
 
                 LAST_STATE.update(clean_state)
 
+                unresolved_debug = []
+                if LOG_NULL_TARGETS:
+                    for key in IMPORTANT_DEBUG_KEYS:
+                        if LAST_STATE.get(key) is None:
+                            unresolved_debug.append(key)
+                    if unresolved_debug:
+                        log_kv("[UNRESOLVED TARGETS]", topic=source_topic, keys=unresolved_debug, block_names=sorted(blocks.keys()))
+
                 if LOG_STATE_SNAPSHOT:
-                    log_kv("[STATE SNAPSHOT]", values=LAST_STATE)
+                    log_kv("[STATE SNAPSHOT]", topic=source_topic, values=LAST_STATE)
 
                 if DISCOVERY_PUBLISHED:
                     # Publish discovery for any late-bound raw block sensors.
@@ -1683,13 +1755,22 @@ class SolarParser:
 
                 log_kv(
                     f"[{datetime.now().strftime('%H:%M:%S')}] Published to HA",
+                    topic=source_topic,
                     clean_value_count=len(clean_state),
                     changed_key_count=len(changed_keys),
                     changed_keys=changed_keys,
                 )
+                return True
+
+            if LOG_UNPARSED_PUBLISH:
+                log_payload_preview("[UNPARSED PAYLOAD: NO STATE]", payload_bytes, topic=source_topic, block_names=sorted(blocks.keys()))
+            return False
 
         except Exception as exc:
             log(f"[PARSER ERROR] {exc}")
+            if LOG_UNPARSED_PUBLISH:
+                log_payload_preview("[PARSER ERROR PAYLOAD]", payload_bytes, topic=source_topic, error=str(exc))
+            return False
 
 
 class ArpSpoofer:
@@ -1760,10 +1841,19 @@ def handle_inverter_tcp_packet(pkt) -> None:
 
         if ((packet[0] >> 4) & 0x0F) == 3:
             topic, publish_payload = extract_publish_payload(packet)
+            if topic is not None:
+                count = SEEN_MQTT_TOPICS.get(topic, 0) + 1
+                SEEN_MQTT_TOPICS[topic] = count
+                if LOG_MQTT_TOPICS:
+                    log_kv("[MQTT TOPIC]", topic=topic, seen_count=count, payload_len=len(publish_payload or b""))
             if LOG_VERBOSE and topic is not None:
                 log(f"[MQTT PUBLISH] topic={topic} payload_len={len(publish_payload or b'')}")
+            if publish_payload and LOG_MQTT_PAYLOAD_PREVIEW:
+                log_payload_preview("[MQTT PAYLOAD]", publish_payload, topic=topic)
             if publish_payload:
-                SolarParser.parse_payload(publish_payload)
+                parsed_ok = SolarParser.parse_payload(publish_payload, source_topic=topic)
+                if not parsed_ok and LOG_UNPARSED_PUBLISH:
+                    log_payload_preview("[MQTT PAYLOAD NOT PARSED]", publish_payload, topic=topic)
 
 
 def packet_callback(pkt) -> None:
