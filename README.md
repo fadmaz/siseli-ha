@@ -3,6 +3,8 @@
 [![Version](https://img.shields.io/badge/version-2.5.0-blue.svg)](CHANGELOG.md)
 [![HA Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-green.svg)](https://www.home-assistant.io/)
 
+> **Acknowledgment:** This project is an expanded and generalized fork of the excellent work originally created at [yuraantonov11/siseli-ha](https://github.com/yuraantonov11/siseli-ha). Huge thanks to the original author!
+
 Integrate inverters compatible with the Siseli Solar Cloud (including RWB1 and similar models) into Home Assistant without external clouds. This bridge intercepts the MQTT traffic sent to the Siseli cloud, decodes it, and creates sensors via MQTT Auto-Discovery.
 
 ## 🌟 Supported Brands
@@ -50,13 +52,16 @@ Ensure the official **Mosquitto Broker** add-on is installed and configured:
 
 ## 🛠 How it Works (Technical)
 
-The add-on uses two methods for traffic interception:
+The add-on uses multiple methods for traffic interception. For the inverter to start sending data to this add-on, it needs to "think" it is sending it to the Siseli cloud:
 
-### Option A: ARP Spoofing (Recommended)
+### Option A: ARP Spoofing (Auto-Intercept, Recommended)
 With `AUTO_INTERCEPT` enabled, the add-on sends special network packets every 2 seconds, convincing the inverter that your Home Assistant server is the router. The inverter starts sending data to HA instead of the real router. The bridge parses the data and transparently forwards it to the Siseli cloud, so the official mobile app continues to work.
 
-### Option B: Manual Redirect (Legacy)
-You can disable ARP Spoofing and manually configure your router to redirect traffic for IP `8.212.18.157` to your Home Assistant IP.
+### Option B: DNS Configuration
+Configure your router so that requests to the Siseli cloud domain resolve to the local IP address of your Home Assistant.
+
+### Option C: Manual Redirect / Static Route (Legacy)
+Create a static route on your router that redirects traffic for the target IP `8.212.18.157` to the IP of your Home Assistant.
 
 ---
 
@@ -74,6 +79,12 @@ The following sensors will automatically appear in Home Assistant:
 
 ## 🇺🇦 Українською (Ukrainian)
 Цей додаток дозволяє інтегрувати інвертори, сумісні з Siseli Cloud, у Home Assistant без використання зовнішніх хмар (підтримуються бренди Solar of Things, LUMINOUS NEO, PowMr, Taico та інші). Він перехоплює трафік, що йде до хмари Siseli, та автоматично створює сенсори. Повна інструкція з налаштування доступна в розділі README вище (англійською).
+
+### Налаштування інвертора (Методи перехоплення)
+Щоб інвертор почав надсилати дані в цей додаток, потрібно, щоб він "думав", що надсилає їх у хмару Siseli:
+* **Варіант А: ARP Spoofing (Auto-Intercept)**: Залиште `AUTO_INTERCEPT: true` в налаштуваннях додатку, і він зробить все автоматично.
+* **Варіант Б: Налаштування DNS**: Налаштуйте ваш роутер так, щоб запити до домену хмари Siseli резолвились на локальну IP-адресу вашого Home Assistant.
+* **Варіант В: Static Route**: Створіть статичний маршрут на роутері, який перенаправляє трафік для IP `8.212.18.157` на IP вашого Home Assistant.
 
 ---
 
