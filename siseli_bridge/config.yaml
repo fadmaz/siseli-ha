@@ -1,6 +1,6 @@
 name: "Siseli Inverter Bridge"
 description: "Local bridge for Siseli-compatible inverters with MQTT discovery for Home Assistant."
-version: "2.5.1"
+version: "2.5.2"
 slug: "siseli_bridge"
 init: false
 arch:
