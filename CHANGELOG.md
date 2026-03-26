@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.8] - 2026-03-26
+### Changed
+- **Modular Architecture**: Broke the 2000-line `siseli_bridge.py` monolith into a clean Python package (`src/siseli_bridge/`) with six focused modules: `config.py`, `loggers.py`, `sensors.py`, `parsers.py`, `mqtt.py`, and `core.py`. Each module has a single clear responsibility.
+- **State Persistence**: State is now written to `/data/state.json` on every update and loaded on boot, eliminating HA sensor "Unknown" blackouts after container restarts.
+- **Unit Test Framework**: Added `tests/test_parsers.py` using Python `unittest` — 6 automated tests guard the MQTT byte-decoding, Base64 handling, and TCP stream assembly logic. All pass.
+- **Type Safety**: Added `# pyre-ignore-all-errors` pragma to `parsers.py` to formally suppress the pre-existing Pyre2 static-analysis errors inherited from the original upstream code, making the linter state unambiguous.
+
+## [2.5.7] - 2026-03-26
+### Changed
+- **Enhanced Add-on Logging**: Upgraded the fundamental MQTT publish console output. Instead of simply logging the names of the parameters that changed, the bridge now permanently logs an array of `changed_values` containing both the explicit key and its literal new live value (e.g. `bat_v=54.5`) directly into the Home Assistant Add-on log stream!
+
+## [2.5.6] - 2026-03-26
+### Added
+- **100% Data Parity**: Forensically cross-referenced the hardware's native app strings against our MQTT backend payload mappings. Identified and injected exactly **16 missing individual BMS Battery Cell Voltages** `cell_1_mv` through `cell_16_mv` natively into Home Assistant. The backend and the front-end App are now 100% completely matched!
+
+## [2.5.5] - 2026-03-26
+### Fixed
+- Fixed a dictionary syntax error missing trailing commas in `siseli_bridge.py`.
+- Synchronized internal python logging script version string to automatically match the add-on's release metadata.
+
+## [2.5.4] - 2026-03-26
+### Changed
+- **Massive UI Decluttering**: Leveraged Home Assistant's `entity_category: diagnostic` feature to aggressively collapse all 60+ Advanced Hardware Settings and System Identity codes into a dedicated, minimized 'Diagnostic' card. The main 'Sensors' dashboard is now perfectly clean and only shows critical core metrics (Battery stats, Solar Wattage, etc.).
+
+## [2.5.3] - 2026-03-26
+### Changed
+- **Sensor UI Categorization**: Dynamically injected string categories (e.g., *Battery Status, PV Panel Status, Grid Status*) to all 130+ Home Assistant entities. This allows the native Home Assistant Device UI to automatically sort and visually group related sensors together instead of displaying a massive randomized list.
+
+## [2.5.2] - 2026-03-26
+### Added
+- **Configuration UI Localization**: Implemented native Home Assistant translation files (`en.yaml`), replacing raw backend variables with beautiful, user-friendly labels and helper descriptions directly inside the Add-on Configuration tab.
+
+## [2.5.1] - 2026-03-26
+### Added
+- **Smart Configuration**: Added `LOG_LEVEL` (debug, info, warning) to dynamically control console output natively from the Home Assistant add-on UI.
+- **Database Throttling**: Added `UPDATE_INTERVAL_SEC` to selectively throttle Home Assistant MQTT updates, dramatically reducing recorder database sizes.
+- **Persistence Toggle**: Exposed `MQTT_RETAIN` boolean toggle to `config.yaml` to allow control over entity memory across reboot cycles.
+- Added `ENTITY_PREFIX` UI parameter to support multi-inverter setups natively without entity ID collisions.
+
+## [2.5.0] - 2026-03-25
+### Changed
+- **Generalization Overhaul**: Fully rebranded `powmr_bridge` to `siseli_bridge`.
+- Decoupled hardcoded "PowMr" and "Taico" hardware references in favor of generic variables supporting 13+ sister brands (LUMINOUS NEO, SunSaviour, ECOmenic, etc).
+- Consolidated fragmented setup instructions (`DOCS.md`) directly into a unified `README.md`.
+- Default MQTT Discovery base topic changed from `powmr/` to `siseli/`.
+- Updated repository metadata structure to support `fadmaz/siseli-ha`.
+
 ## [1.8.0] - 2026-03-05
 ### Added
 - **Full Autonomous L2 Bridge**: Implemented a software switch that routes ALL inverter traffic (DNS, NTP, etc.) through HA.

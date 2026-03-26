@@ -1,2 +1,2 @@
-paho-mqtt
-scapy
+paho-mqtt>=1.6,<2.0
+scapy>=2.5,<2.7

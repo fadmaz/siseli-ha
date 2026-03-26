@@ -25,7 +25,19 @@ configuration:
     description: "The official Siseli cloud server. DO NOT CHANGE unless the cloud IP changes (default: 8.212.18.157)."
   TARGET_PORT:
     name: "Target Cloud Port"
-    description: "The official Siseli cloud port (default: 18899)."
+    description: "The MQTT port used by the Siseli cloud (default: 1883)."
+  LISTEN_PORT:
+    name: "Listen Port"
+    description: "The local TCP port to listen for incoming cloud connections (default: 18899). Normally does not need changing."
+  INVERTER_MAC:
+    name: "Inverter MAC Address"
+    description: "Optional. Manually specify the MAC address of your inverter (e.g. aa:bb:cc:dd:ee:ff). Leave blank for auto-detection."
+  ROUTER_MAC:
+    name: "Router MAC Address"
+    description: "Optional. Manually specify the MAC address of your router. Leave blank for auto-detection."
+  MQTT_DISCOVERY_PREFIX:
+    name: "MQTT Discovery Prefix"
+    description: "The MQTT discovery prefix used by Home Assistant (default: 'homeassistant'). Only change if you have a custom setup."
   DEVICE_ID:
     name: "Device ID"
     description: "Unique identifier for this specific inverter in Home Assistant."
