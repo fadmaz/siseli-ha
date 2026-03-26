@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.4] - 2026-03-26
+### Changed
+- **Massive UI Decluttering**: Leveraged Home Assistant's `entity_category: diagnostic` feature to aggressively collapse all 60+ Advanced Hardware Settings and System Identity codes into a dedicated, minimized 'Diagnostic' card. The main 'Sensors' dashboard is now perfectly clean and only shows critical core metrics (Battery stats, Solar Wattage, etc.).
+
 ## [2.5.3] - 2026-03-26
 ### Changed
 - **Sensor UI Categorization**: Dynamically injected string categories (e.g., *Battery Status, PV Panel Status, Grid Status*) to all 130+ Home Assistant entities. This allows the native Home Assistant Device UI to automatically sort and visually group related sensors together instead of displaying a massive randomized list.
