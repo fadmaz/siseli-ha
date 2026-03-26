@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.9] - 2026-03-26
+- Fixed Dockerfile to use pinned `requirements.txt` instead of hardcoded packages
+- Fixed circular import crash between `parsers.py` and `mqtt.py` via deferred imports
+- Fixed 20+ missing name references in `parsers.py` (`json`, `datetime`, `log`, `SENSORS`, etc.)
+- Fixed missing `mqtt_type_name` and `SEEN_MQTT_TOPICS` imports in `core.py`
+- Added `MODEL_NAME` and `MANUFACTURER` exports to `run.sh`
+- Removed duplicate cell sensor definitions in `sensors.py`
+- Added `state.json` persistence write after every state update
+- Created `.dockerignore` to reduce image size
+- Cleaned up stray `import re` in `config.py`
+- Removed unused `datetime` import from `core.py`
+
 ## [2.5.8] - 2026-03-26
 ### Changed
 - **Modular Architecture**: Broke the 2000-line `siseli_bridge.py` monolith into a clean Python package (`src/siseli_bridge/`) with six focused modules: `config.py`, `loggers.py`, `sensors.py`, `parsers.py`, `mqtt.py`, and `core.py`. Each module has a single clear responsibility.
