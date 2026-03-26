@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.1] - 2026-03-26
+### Added
+- **Smart Configuration**: Added `LOG_LEVEL` (debug, info, warning) to dynamically control console output natively from the Home Assistant add-on UI.
+- **Database Throttling**: Added `UPDATE_INTERVAL_SEC` to selectively throttle Home Assistant MQTT updates, dramatically reducing recorder database sizes.
+- **Persistence Toggle**: Exposed `MQTT_RETAIN` boolean toggle to `config.yaml` to allow control over entity memory across reboot cycles.
+- Added `ENTITY_PREFIX` UI parameter to support multi-inverter setups natively without entity ID collisions.
+
+## [2.5.0] - 2026-03-25
+### Changed
+- **Generalization Overhaul**: Fully rebranded `powmr_bridge` to `siseli_bridge`.
+- Decoupled hardcoded "PowMr" and "Taico" hardware references in favor of generic variables supporting 13+ sister brands (LUMINOUS NEO, SunSaviour, ECOmenic, etc).
+- Consolidated fragmented setup instructions (`DOCS.md`) directly into a unified `README.md`.
+- Default MQTT Discovery base topic changed from `powmr/` to `siseli/`.
+- Updated repository metadata structure to support `fadmaz/siseli-ha`.
+
 ## [1.8.0] - 2026-03-05
 ### Added
 - **Full Autonomous L2 Bridge**: Implemented a software switch that routes ALL inverter traffic (DNS, NTP, etc.) through HA.

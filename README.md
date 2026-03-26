@@ -74,19 +74,24 @@ Create a static route on your router that redirects traffic for the target IP `8
 ---
 
 ## 📊 Available Sensors
-The following sensors will automatically appear in Home Assistant:
+This bridge dynamically extracts and exposes **almost every single sensor and data point available in the official Siseli app** (100+ entities) directly into Home Assistant via MQTT Auto-Discovery.
 
-- **⚡ Power & Grid**
-  - AC Input Voltage & Frequency
-  - Output (Load) Voltage & Frequency
-  - Active Load (W) & Percentage (%)
-- **🔋 Battery**
-  - Battery Voltage & Capacity (%)
-- **☀️ Solar**
-  - PV (Solar) Power & Voltage
-- **⚙️ Hardware & Settings**
-  - Inverter Temperature
-  - Charging Settings (Max charge, Bulk, Float, Cut-off voltage)
+The exposed data includes:
+
+- **🔋 Battery & BMS Status**
+  - Overall Voltage, Capacity (%), Charge/Discharge Currents, Battery Type
+  - Remaining Capacity (Ah), Nominal Capacity (Ah), Min/Max Cell Voltages, and individual cell voltages (1-16)
+- **⚡ Grid & Load Status**
+  - AC Input Voltage & Mains Frequency
+  - Active Load (W), Apparent Power (VA), Output Voltage/Frequency, and Load Percentage
+- **☀️ PV Panel Status**
+  - Daily, Monthly, Yearly, and Total Electricity Generation (kWh)
+  - PV1 & PV2 Voltages, Currents, Wattage, and PV Temperatures
+- **⚙️ Advanced Device Settings ("More" tab)**
+  - Dozens of configuration points including Working Mode (SBU, UTI, etc.), Charging Priority, Output Frequencies
+  - Fan Speeds, Warning Lights, Hardware Switches (AC Charging, Main Output Relay)
+  - Customizable thresholds (Float Charging Voltage, Low Battery Alarm, Overvoltage Shutdown)
+  - Diagnostic booleans (Abnormal Fan Speed, EEPROM errors, Machine Over Temperature)
 
 ---
 
