@@ -43,6 +43,9 @@ options:
   AVAILABILITY_TOPIC: "siseli/siseli_inverter_1/availability"
   SNIFF_IFACE: ""
   LOG_VERBOSE: true
+  LOG_LEVEL: "info"
+  UPDATE_INTERVAL_SEC: 10
+  MQTT_RETAIN: true
 
 schema:
   MQTT_HOST: str
@@ -71,3 +74,6 @@ schema:
   AVAILABILITY_TOPIC: str
   SNIFF_IFACE: str?
   LOG_VERBOSE: bool
+  LOG_LEVEL: list(debug|info|warning|error)
+  UPDATE_INTERVAL_SEC: int(0,)
+  MQTT_RETAIN: bool

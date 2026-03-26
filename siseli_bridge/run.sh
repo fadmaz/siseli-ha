@@ -24,6 +24,10 @@ export STATE_TOPIC="$(bashio::config 'STATE_TOPIC' "siseli/$(bashio::config 'DEV
 export AVAILABILITY_TOPIC="$(bashio::config 'AVAILABILITY_TOPIC' "siseli/$(bashio::config 'DEVICE_ID' 'siseli_inverter_1')/availability")"
 export SNIFF_IFACE="$(bashio::config 'SNIFF_IFACE' '')"
 export LOG_VERBOSE="$(bashio::config 'LOG_VERBOSE' 'true')"
+export ENTITY_PREFIX="$(bashio::config 'ENTITY_PREFIX' 'Siseli')"
+export LOG_LEVEL="$(bashio::config 'LOG_LEVEL' 'info')"
+export UPDATE_INTERVAL_SEC="$(bashio::config 'UPDATE_INTERVAL_SEC' '10')"
+export MQTT_RETAIN="$(bashio::config 'MQTT_RETAIN' 'true')"
 
 echo "[Config] INVERTER_IP=${INVERTER_IP} ROUTER_IP=${ROUTER_IP}"
 echo "[Config] TARGET=${TARGET_HOST}:${TARGET_PORT} MQTT=${MQTT_HOST}:${MQTT_PORT}"

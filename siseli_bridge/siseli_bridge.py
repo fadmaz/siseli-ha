@@ -43,17 +43,47 @@ STATE_TOPIC = os.getenv("STATE_TOPIC", f"siseli/{DEVICE_ID}/state")
 AVAILABILITY_TOPIC = os.getenv("AVAILABILITY_TOPIC", f"siseli/{DEVICE_ID}/availability")
 
 SNIFF_IFACE = os.getenv("SNIFF_IFACE", "").strip() or None
-LOG_VERBOSE = os.getenv("LOG_VERBOSE", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_BLOCKS = os.getenv("LOG_BLOCKS", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_STATE_DIFF = os.getenv("LOG_STATE_DIFF", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_STATE_SNAPSHOT = os.getenv("LOG_STATE_SNAPSHOT", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_RAW_JSON = os.getenv("LOG_RAW_JSON", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_CLEAN_STATE = os.getenv("LOG_CLEAN_STATE", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_MQTT_TOPICS = os.getenv("LOG_MQTT_TOPICS", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_MQTT_PAYLOAD_PREVIEW = os.getenv("LOG_MQTT_PAYLOAD_PREVIEW", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_UNPARSED_PUBLISH = os.getenv("LOG_UNPARSED_PUBLISH", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_STREAM_EVENTS = os.getenv("LOG_STREAM_EVENTS", "false").strip().lower() in {"1", "true", "yes", "on"}
-LOG_NULL_TARGETS = os.getenv("LOG_NULL_TARGETS", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+UPDATE_INTERVAL_SEC = int(os.getenv("UPDATE_INTERVAL_SEC", "10"))
+MQTT_RETAIN = os.getenv("MQTT_RETAIN", "true").strip().lower() in {"1", "true", "yes", "on"}
+LOG_LEVEL_STR = os.getenv("LOG_LEVEL", "info").strip().lower()
+
+if LOG_LEVEL_STR == "debug":
+    LOG_VERBOSE = True
+    LOG_BLOCKS = True
+    LOG_STATE_DIFF = True
+    LOG_STATE_SNAPSHOT = True
+    LOG_RAW_JSON = True
+    LOG_CLEAN_STATE = True
+    LOG_MQTT_TOPICS = True
+    LOG_MQTT_PAYLOAD_PREVIEW = True
+    LOG_UNPARSED_PUBLISH = True
+    LOG_STREAM_EVENTS = True
+    LOG_NULL_TARGETS = True
+elif LOG_LEVEL_STR in {"warning", "error"}:
+    LOG_VERBOSE = False
+    LOG_BLOCKS = False
+    LOG_STATE_DIFF = False
+    LOG_STATE_SNAPSHOT = False
+    LOG_RAW_JSON = False
+    LOG_CLEAN_STATE = False
+    LOG_MQTT_TOPICS = False
+    LOG_MQTT_PAYLOAD_PREVIEW = False
+    LOG_UNPARSED_PUBLISH = False
+    LOG_STREAM_EVENTS = False
+    LOG_NULL_TARGETS = False
+else:
+    LOG_VERBOSE = os.getenv("LOG_VERBOSE", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_BLOCKS = os.getenv("LOG_BLOCKS", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_STATE_DIFF = os.getenv("LOG_STATE_DIFF", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_STATE_SNAPSHOT = os.getenv("LOG_STATE_SNAPSHOT", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_RAW_JSON = os.getenv("LOG_RAW_JSON", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_CLEAN_STATE = os.getenv("LOG_CLEAN_STATE", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_MQTT_TOPICS = os.getenv("LOG_MQTT_TOPICS", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_MQTT_PAYLOAD_PREVIEW = os.getenv("LOG_MQTT_PAYLOAD_PREVIEW", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_UNPARSED_PUBLISH = os.getenv("LOG_UNPARSED_PUBLISH", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_STREAM_EVENTS = os.getenv("LOG_STREAM_EVENTS", "false").strip().lower() in {"1", "true", "yes", "on"}
+    LOG_NULL_TARGETS = os.getenv("LOG_NULL_TARGETS", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 INV_MAC: Optional[str] = None
 RTR_MAC: Optional[str] = None
@@ -65,6 +95,7 @@ sniffer: Optional[AsyncSniffer] = None
 KNOWN_INVERTER_MACS = set()
 KNOWN_ROUTER_MACS = set()
 LAST_PACKET_TS = 0.0
+LAST_PUBLISH_TS = 0.0
 
 STRICT_NUM_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
 PRINTABLE_ASCII_RE = re.compile(r"^[\x20-\x7E]+$")
@@ -472,7 +503,7 @@ def on_connect(_client, _userdata, _flags, rc, _properties=None):
         log(f"[HA MQTT] Connected to {MQTT_HOST}:{MQTT_PORT}")
         publish_discovery()
         if any(v is not None for v in LAST_STATE.values()):
-            client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
+            client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=MQTT_RETAIN)
     else:
         log(f"[HA MQTT ERROR] Connection failed with rc={code}")
 
@@ -1751,7 +1782,12 @@ class SolarParser:
                     for key in clean_state.keys():
                         if key in SENSORS and key not in PUBLISHED_SENSOR_KEYS:
                             publish_sensor_discovery(key)
-                    client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=True)
+                    
+                    global LAST_PUBLISH_TS
+                    now = time.time()
+                    if len(changed_keys) > 0 or (now - LAST_PUBLISH_TS) >= UPDATE_INTERVAL_SEC:
+                        client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=MQTT_RETAIN)
+                        LAST_PUBLISH_TS = now
 
                 log_kv(
                     f"[{datetime.now().strftime('%H:%M:%S')}] Published to HA",
