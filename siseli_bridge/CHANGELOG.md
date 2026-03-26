@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.3] - 2026-03-26
+### Changed
+- **Sensor UI Categorization**: Dynamically injected string categories (e.g., *Battery Status, PV Panel Status, Grid Status*) to all 130+ Home Assistant entities. This allows the native Home Assistant Device UI to automatically sort and visually group related sensors together instead of displaying a massive randomized list.
+
 ## [2.5.2] - 2026-03-26
 ### Added
 - **Configuration UI Localization**: Implemented native Home Assistant translation files (`en.yaml`), replacing raw backend variables with beautiful, user-friendly labels and helper descriptions directly inside the Add-on Configuration tab.
