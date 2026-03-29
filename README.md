@@ -59,7 +59,6 @@ Ensure the official **Mosquitto Broker** add-on is installed and configured:
 
 - Optional parallel-system fields:
   - **INVERTER_COUNT**: Number of parallel inverters.
-  - **INVERTER_POWER_MULTIPLIER**: Extra tuning multiplier for main summary power.
   - **BATTERY_COUNT**: Number of batteries in the bank.
   - **BATTERY_CAPACITY_PER_BATTERY_AH**: Capacity per battery in Ah.
 
@@ -69,21 +68,20 @@ Ensure the official **Mosquitto Broker** add-on is installed and configured:
 
 When using multiple inverters in parallel, main summary power sensors are scaled with:
 
-`scaled_power = raw_power * INVERTER_COUNT * INVERTER_POWER_MULTIPLIER`
+`c_scaled_power = raw_power * INVERTER_COUNT`
 
 This is applied to:
 
-- `Generation Power`
-- `Mains Power`
-- `Output Active Power`
+- `c_generation_power_w`
+- `c_mains_power_w`
+- `c_load_w`
 
-For battery-bank visibility, the bridge now also publishes configured helper sensors on the Main device:
+For battery-bank visibility, the bridge also publishes calculated BMS capacity helper sensors on the Main device:
 
-- Configured inverter count and power multiplier
-- Configured battery count
-- Configured battery capacity per battery (Ah)
-- Total configured battery capacity (Ah)
-- Estimated remaining battery capacity (Ah) using BMS SOC
+- `c_bms_total_capacity_ah`
+- `c_bms_remaining_capacity_ah`
+
+All calculated sensors use the `c_` prefix so they are easy to distinguish from raw inverter values.
 
 ---
 

@@ -20,7 +20,6 @@ class TestValidateConfig(unittest.TestCase):
         "LISTEN_PORT": "18899",
         "UPDATE_INTERVAL_SEC": "10",
         "INVERTER_COUNT": "1",
-        "INVERTER_POWER_MULTIPLIER": "1.0",
         "BATTERY_COUNT": "1",
         "BATTERY_CAPACITY_PER_BATTERY_AH": "0.0",
     }
@@ -104,12 +103,6 @@ class TestValidateConfig(unittest.TestCase):
     @mock.patch("src.siseli_bridge.config.os.makedirs")
     def test_inverter_count_zero_fails(self, _mock_makedirs):
         cfg = self._reload_config({"INVERTER_COUNT": "0"})
-        with self.assertRaises(SystemExit):
-            cfg.validate_config()
-
-    @mock.patch("src.siseli_bridge.config.os.makedirs")
-    def test_multiplier_zero_fails(self, _mock_makedirs):
-        cfg = self._reload_config({"INVERTER_POWER_MULTIPLIER": "0"})
         with self.assertRaises(SystemExit):
             cfg.validate_config()
 

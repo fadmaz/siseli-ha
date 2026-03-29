@@ -57,7 +57,8 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(get_sensor_group("out_v"), "load")
         self.assertEqual(get_sensor_group("pv_v"), "pv")
         self.assertEqual(get_sensor_group("mode"), "main")
-        self.assertEqual(get_sensor_group("mains_power_w"), "main")
+        self.assertEqual(get_sensor_group("mains_power_w"), "grid")
+        self.assertEqual(get_sensor_group("c_mains_power_w"), "main")
 
     def test_sensor_grouping_settings_split(self):
         """Ensure diagnostics on the More page are functionally distributed."""

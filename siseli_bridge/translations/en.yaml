@@ -55,16 +55,13 @@ configuration:
     description: "The prefix attached to all individual sensors (e.g., 'Siseli'). Useful if running multiple instances side-by-side."
   INVERTER_COUNT:
     name: 'Inverter Count'
-    description: 'Number of inverters in your parallel setup. Main power summary sensors are multiplied by this count.'
-  INVERTER_POWER_MULTIPLIER:
-    name: 'Inverter Power Multiplier'
-    description: 'Extra multiplier applied on top of Inverter Count for Main power summary sensors (Generation, Mains, Output Active Power).'
+    description: 'Number of inverters in your parallel setup. Calculated c_ power sensors use this count for scaling.'
   BATTERY_COUNT:
     name: 'Battery Count'
-    description: 'Number of batteries in the bank. Used to calculate configured total battery capacity.'
+    description: 'Number of batteries in the bank. Used to calculate c_ BMS capacity helper sensors.'
   BATTERY_CAPACITY_PER_BATTERY_AH:
     name: 'Battery Capacity Per Battery (Ah)'
-    description: 'Capacity of each battery in Ah. Set 0 to disable configured battery-capacity helper sensors.'
+    description: 'Capacity of each battery in Ah. Set 0 to disable c_ BMS capacity helper sensors.'
   STATE_TOPIC:
     name: 'MQTT State Topic'
     description: 'The root MQTT topic where all operational data is published.'

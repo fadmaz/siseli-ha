@@ -47,11 +47,9 @@ class TestParsers(unittest.TestCase):
         # Assert partial bytes were properly left intact in stream
         self.assertEqual(stream, bytearray(b'\x30\x06'))
 
-    def test_scale_main_power_uses_count_and_multiplier(self):
-        with mock.patch("src.siseli_bridge.parsers.INVERTER_COUNT", 3), mock.patch(
-            "src.siseli_bridge.parsers.INVERTER_POWER_MULTIPLIER", 1.5
-        ):
-            self.assertEqual(SolarParser._scale_main_power(100), 450)
+    def test_scale_main_power_uses_count_only(self):
+        with mock.patch("src.siseli_bridge.parsers.INVERTER_COUNT", 3):
+            self.assertEqual(SolarParser._scale_main_power(100), 300)
 
 if __name__ == '__main__':
     unittest.main()

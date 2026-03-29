@@ -25,12 +25,8 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "bat_series_count": sensor("Battery Status - Battery Number In Series", state_class="measurement", icon="mdi:numeric"),
     "battery_status": sensor("Battery Status - Battery Status", icon="mdi:battery-sync"),
     "battery_type": sensor("Battery Status - Battery Type", icon="mdi:battery-unknown"),
-    "configured_inverter_count": sensor("Battery Status - Configured Inverter Count", state_class="measurement", icon="mdi:numeric"),
-    "configured_inverter_power_multiplier": sensor("Battery Status - Configured Inverter Power Multiplier", state_class="measurement", icon="mdi:multiplication"),
-    "configured_battery_count": sensor("Battery Status - Configured Battery Count", state_class="measurement", icon="mdi:battery-multiple"),
-    "battery_capacity_per_battery_ah": sensor("Battery Status - Configured Battery Capacity Per Battery", unit="Ah", state_class="measurement", icon="mdi:battery-outline"),
-    "total_battery_capacity_ah": sensor("Battery Status - Total Configured Battery Capacity", unit="Ah", state_class="measurement", icon="mdi:battery-high"),
-    "battery_remaining_capacity_ah": sensor("Battery Status - Estimated Remaining Battery Capacity", unit="Ah", state_class="measurement", icon="mdi:battery-medium"),
+    "c_bms_total_capacity_ah": sensor("Battery Status - Calculated BMS Total Capacity", unit="Ah", state_class="measurement", icon="mdi:battery-high"),
+    "c_bms_remaining_capacity_ah": sensor("Battery Status - Calculated BMS Remaining Capacity", unit="Ah", state_class="measurement", icon="mdi:battery-medium"),
 
     # BMS page
     "bms_remaining_ah": sensor("BMS Status - Remaining Capacity", unit="Ah", icon="mdi:battery-medium"),
@@ -64,6 +60,7 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "grid_hz": sensor("Grid Status - Mains Frequency", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
     "mains_current_flow_direction": sensor("Grid Status - Mains Current Flow Direction", icon="mdi:swap-horizontal-bold"),
     "mains_power_w": sensor("Grid Status - Mains Power", unit="W", device_class="power", state_class="measurement", icon="mdi:transmission-tower-export"),
+    "c_mains_power_w": sensor("Grid Status - Calculated Mains Power", unit="W", device_class="power", state_class="measurement", icon="mdi:transmission-tower-export"),
     "mains_apparent_va": sensor("Grid Status - Mains Apparent Power", unit="VA", device_class="apparent_power", state_class="measurement", icon="mdi:flash"),
 
     # Load page
@@ -71,11 +68,13 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "out_hz": sensor("Load Status - Output Frequency", unit="Hz", device_class="frequency", state_class="measurement", icon="mdi:current-ac"),
     "apparent_va": sensor("Load Status - Output Apparent Power", unit="VA", device_class="apparent_power", state_class="measurement", icon="mdi:flash"),
     "load_w": sensor("Load Status - Output Active Power", unit="W", device_class="power", state_class="measurement", icon="mdi:home-lightning-bolt"),
+    "c_load_w": sensor("Load Status - Calculated Output Active Power", unit="W", device_class="power", state_class="measurement", icon="mdi:home-lightning-bolt"),
     "load_pct": sensor("Load Status - Output Load Percent", unit="%", state_class="measurement", icon="mdi:gauge"),
     "output_dc_comp": sensor("Load Status - Output DC Component", state_class="measurement", icon="mdi:tune-variant"),
 
     # PV page
     "generation_power_w": sensor("PV Panel Status - Generation Power", unit="W", device_class="power", state_class="measurement", icon="mdi:solar-power"),
+    "c_generation_power_w": sensor("PV Panel Status - Calculated Generation Power", unit="W", device_class="power", state_class="measurement", icon="mdi:solar-power"),
     "pv_v": sensor("PV Panel Status - PV Voltage", unit="V", device_class="voltage", state_class="measurement", icon="mdi:solar-panel"),
     "pv_current_a": sensor("PV Panel Status - PV Current", unit="A", device_class="current", state_class="measurement", icon="mdi:current-dc"),
     "pv_w": sensor("PV Panel Status - PV Power", unit="W", device_class="power", state_class="measurement", icon="mdi:solar-power"),
@@ -236,17 +235,13 @@ SENSOR_GROUP_TITLES: Dict[str, str] = {
 }
 
 MAIN_SENSOR_KEYS = {
-    "mains_power_w",
-    "load_w",
-    "generation_power_w",
+    "c_mains_power_w",
+    "c_load_w",
+    "c_generation_power_w",
     "mode",
     "bms_current_soc",
-    "configured_inverter_count",
-    "configured_inverter_power_multiplier",
-    "configured_battery_count",
-    "battery_capacity_per_battery_ah",
-    "total_battery_capacity_ah",
-    "battery_remaining_capacity_ah",
+    "c_bms_total_capacity_ah",
+    "c_bms_remaining_capacity_ah",
 }
 
 _BATTERY_HINTS = (

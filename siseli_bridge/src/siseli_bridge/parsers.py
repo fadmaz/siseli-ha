@@ -15,7 +15,7 @@ from .config import (
     LOG_VERBOSE, LOG_BLOCKS, LOG_STATE_DIFF, LOG_STATE_SNAPSHOT,
     LOG_RAW_JSON, LOG_CLEAN_STATE, LOG_MQTT_TOPICS,
     LOG_MQTT_PAYLOAD_PREVIEW, LOG_UNPARSED_PUBLISH, LOG_NULL_TARGETS,
-    UPDATE_INTERVAL_SEC, INVERTER_COUNT, INVERTER_POWER_MULTIPLIER,
+    UPDATE_INTERVAL_SEC, INVERTER_COUNT,
     BATTERY_COUNT, BATTERY_CAPACITY_PER_BATTERY_AH,
 )
 
@@ -475,7 +475,7 @@ class SolarParser:
 
     @staticmethod
     def _scale_main_power(raw_value: int) -> int:
-        factor = float(INVERTER_COUNT) * float(INVERTER_POWER_MULTIPLIER)
+        factor = float(INVERTER_COUNT)
         return int(round(float(raw_value) * factor))
 
     @staticmethod
@@ -681,7 +681,8 @@ class SolarParser:
             if out_va is not None:
                 state["apparent_va"] = out_va
             if out_w is not None:
-                state["load_w"] = SolarParser._scale_main_power(out_w)
+                state["load_w"] = out_w
+                state["c_load_w"] = SolarParser._scale_main_power(out_w)
 
         if len(vals) >= 5:
             load_pct = SolarParser._to_int(vals[4])
@@ -746,7 +747,8 @@ class SolarParser:
             if mains_signed is not None:
                 state["mains_wdrr_value"] = mains_signed
                 state["mains_wdrr_abs"] = abs(mains_signed)
-                state["mains_power_w"] = SolarParser._scale_main_power(abs(mains_signed))
+                state["mains_power_w"] = abs(mains_signed)
+                state["c_mains_power_w"] = SolarParser._scale_main_power(abs(mains_signed))
 
         if len(vals) >= 8:
             state["mains_flow_code"] = vals[7]
@@ -911,7 +913,8 @@ class SolarParser:
                 pv_total_w += int(round(float(val)))
                 have_pv_total = True
         if have_pv_total:
-            state["generation_power_w"] = SolarParser._scale_main_power(pv_total_w)
+            state["generation_power_w"] = pv_total_w
+            state["c_generation_power_w"] = SolarParser._scale_main_power(pv_total_w)
             state["solar_charging_switch"] = "Open" if pv_total_w > 0 else "Close"
 
         # Settings candidates -> dHrK
@@ -1226,17 +1229,12 @@ class SolarParser:
         if "battery_type" not in state and _shared_state.LAST_STATE.get("battery_type") is None and "Yavb" in parsed:
             state["battery_type"] = "LIA"
 
-        state["configured_inverter_count"] = INVERTER_COUNT
-        state["configured_inverter_power_multiplier"] = round(INVERTER_POWER_MULTIPLIER, 3)
-        state["configured_battery_count"] = BATTERY_COUNT
         if BATTERY_CAPACITY_PER_BATTERY_AH > 0:
-            capacity_per_battery = round(BATTERY_CAPACITY_PER_BATTERY_AH, 1)
             total_capacity = round(BATTERY_COUNT * BATTERY_CAPACITY_PER_BATTERY_AH, 1)
-            state["battery_capacity_per_battery_ah"] = capacity_per_battery
-            state["total_battery_capacity_ah"] = total_capacity
+            state["c_bms_total_capacity_ah"] = total_capacity
             soc = state.get("bms_current_soc", _shared_state.LAST_STATE.get("bms_current_soc"))
             if isinstance(soc, (int, float)):
-                state["battery_remaining_capacity_ah"] = round(
+                state["c_bms_remaining_capacity_ah"] = round(
                     total_capacity * max(0.0, min(float(soc), 100.0)) / 100.0,
                     1,
                 )

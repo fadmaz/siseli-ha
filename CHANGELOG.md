@@ -9,12 +9,12 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Main Device Sensor Layout**: `Mode` and `BMS Current SOC` now appear in the Main sensors card instead of Diagnostic.
-- **Main Summary Scaling**: Main `Generation Power`, `Mains Power`, and `Output Active Power` now scale by `INVERTER_COUNT * INVERTER_POWER_MULTIPLIER` for parallel inverter setups.
+- **Main Summary Scaling**: Calculated main sensors `c_generation_power_w`, `c_mains_power_w`, and `c_load_w` now scale by `INVERTER_COUNT` for parallel inverter setups, while raw power sensors remain unscaled.
 
 ### Added
 
-- **Parallel Topology Config**: Added `INVERTER_COUNT`, `INVERTER_POWER_MULTIPLIER`, `BATTERY_COUNT`, and `BATTERY_CAPACITY_PER_BATTERY_AH` options.
-- **Configured Capacity Helpers**: Added Main helper sensors for configured inverter/battery topology and computed battery capacity totals.
+- **Parallel Topology Config**: Added `INVERTER_COUNT`, `BATTERY_COUNT`, and `BATTERY_CAPACITY_PER_BATTERY_AH` options.
+- **Calculated Capacity Helpers**: Added `c_bms_total_capacity_ah` and `c_bms_remaining_capacity_ah` main sensors computed from battery config and BMS SOC.
 
 ### Fixed
 
