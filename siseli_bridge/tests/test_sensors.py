@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from src.siseli_bridge.sensors import (
     SENSORS,
     SENSOR_GROUP_TITLES,
+    MAIN_SENSOR_KEYS,
     get_group_title,
     get_grouped_sensor_keys,
     get_sensor_group,
@@ -55,6 +56,8 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(get_sensor_group("grid_v"), "grid")
         self.assertEqual(get_sensor_group("out_v"), "load")
         self.assertEqual(get_sensor_group("pv_v"), "pv")
+        self.assertEqual(get_sensor_group("mode"), "main")
+        self.assertEqual(get_sensor_group("mains_power_w"), "main")
 
     def test_sensor_grouping_settings_split(self):
         """Ensure diagnostics on the More page are functionally distributed."""
@@ -73,6 +76,7 @@ class TestSensors(unittest.TestCase):
     def test_group_titles(self):
         for group in SENSOR_GROUP_TITLES:
             self.assertEqual(get_group_title(group), SENSOR_GROUP_TITLES[group])
+        self.assertEqual(get_group_title("main"), "Main")
         self.assertEqual(get_group_title("unknown-group"), "Diagnostics")
 
 if __name__ == '__main__':

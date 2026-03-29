@@ -1,6 +1,6 @@
 # ☀️ Siseli Solar Cloud Home Assistant Bridge
 
-[![Version](https://img.shields.io/badge/version-2.5.13-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.5.14-blue.svg)](CHANGELOG.md)
 [![HA Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-green.svg)](https://www.home-assistant.io/)
 
 > **⚠️ WARNING:** Do not use this project for your own setup. This repository is purely a testing environment created to experiment with improvements before submitting them back to the original project at [yuraantonov11/siseli-ha](https://github.com/yuraantonov11/siseli-ha).

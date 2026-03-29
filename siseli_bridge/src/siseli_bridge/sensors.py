@@ -220,6 +220,7 @@ SENSORS: Dict[str, Dict[str, object]] = {
 }
 
 SENSOR_GROUP_TITLES: Dict[str, str] = {
+    "main": "Main",
     "battery": "Battery",
     "bms": "BMS",
     "grid": "Grid",
@@ -227,6 +228,8 @@ SENSOR_GROUP_TITLES: Dict[str, str] = {
     "pv": "PV",
     "diagnostics": "Diagnostics",
 }
+
+MAIN_SENSOR_KEYS = {"mains_power_w", "load_w", "generation_power_w", "mode", "bms_current_soc"}
 
 _BATTERY_HINTS = (
     "battery",
@@ -276,6 +279,8 @@ def _settings_group_for_key(key: str) -> str:
 
 
 def get_sensor_group(key: str) -> str:
+    if key in MAIN_SENSOR_KEYS:
+        return "main"
     meta = SENSORS.get(key)
     if not meta:
         return "diagnostics"

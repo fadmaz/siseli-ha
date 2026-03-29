@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+## [2.5.14] - 2026-03-29
+
+### Changed
+
+- **Main Summary Device**: The root HA device now publishes five key summary sensors (Mains Power, Output Active Power, PV Generation Power, Mode, BMS Current SOC) directly on the root `DEVICE_ID` with no `via_device` indirection.
+- **Sensor Name Shortening**: Section prefixes (`Battery Status - `, `Load Status - `, etc.) are stripped from entity display names since sensors are already grouped by device card.
+
 ## [2.5.13] - 2026-03-29
 
 ### Changed

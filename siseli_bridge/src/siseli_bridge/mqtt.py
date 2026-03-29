@@ -10,27 +10,59 @@ from .sensors import SENSORS, get_group_title, get_grouped_sensor_keys, get_sens
 
 RUNNING = True
 
+_SECTION_PREFIXES = (
+    "Device Info - ",
+    "Battery Status - ",
+    "BMS Status - ",
+    "Grid Status - ",
+    "Load Status - ",
+    "PV Panel Status - ",
+    "Settings - ",
+)
+
+
+def _trim_section_prefix(name: str) -> str:
+    for prefix in _SECTION_PREFIXES:
+        if name.startswith(prefix):
+            return name[len(prefix):]
+    return name
+
+
 def display_sensor_name(base_name: str) -> str:
-    return f"{ENTITY_PREFIX} {base_name}".strip() if ENTITY_PREFIX else base_name
+    trimmed = _trim_section_prefix(base_name)
+    return f"{ENTITY_PREFIX} {trimmed}".strip() if ENTITY_PREFIX else trimmed
 
 
 def device_id_for_group(group: str) -> str:
+    if group == "main":
+        return DEVICE_ID
     return f"{DEVICE_ID}_{group}"
 
 
 def state_topic_for_group(group: str) -> str:
+    if group == "main":
+        return STATE_TOPIC
     if STATE_TOPIC.endswith("/state"):
         return f"{STATE_TOPIC[:-6]}/{group}/state"
     return f"{STATE_TOPIC}/{group}"
 
 
 def availability_topic_for_group(group: str) -> str:
+    if group == "main":
+        return AVAILABILITY_TOPIC
     if AVAILABILITY_TOPIC.endswith("/availability"):
         return f"{AVAILABILITY_TOPIC[:-13]}/{group}/availability"
     return f"{AVAILABILITY_TOPIC}/{group}"
 
 
 def device_info(group: str) -> Dict[str, object]:
+    if group == "main":
+        return {
+            "identifiers": [DEVICE_ID],
+            "name": DEVICE_NAME,
+            "manufacturer": MANUFACTURER,
+            "model": MODEL_NAME,
+        }
     group_title = get_group_title(group)
     group_device_id = device_id_for_group(group)
     return {
