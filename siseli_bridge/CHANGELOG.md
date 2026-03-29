@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.5.20] - 2026-03-29
+
+### Added
+
+- **Energy Dashboard Battery Sensors**: Added calculated battery charge/discharge power and cumulative energy sensors (`c_battery_charge_power_w`, `c_battery_discharge_power_w`, `c_battery_charge_energy_kwh`, `c_battery_discharge_energy_kwh`) for Home Assistant Energy Dashboard use.
+- **Energy Dashboard Grid Sensor**: Added calculated grid import power/energy sensors (`c_grid_import_power_w`, `c_grid_import_energy_kwh`) for grid consumption tracking.
+
+### Changed
+
+- **Energy Integration Logic**: Parser now computes battery/grid energy counters from power over elapsed time, scales by `INVERTER_COUNT`, and keeps counters monotonic as `total_increasing` values suitable for Energy Dashboard.
+- **Test Coverage Expansion**: Added parser/sensor tests for calculated energy metadata, grouping, scaling, and accumulation behavior.
+
 ## [2.5.19] - 2026-03-29
 
 ### Fixed

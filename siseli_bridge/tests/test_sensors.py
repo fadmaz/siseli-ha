@@ -88,5 +88,38 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(SENSORS["mains_eo8w_code"].get("entity_category"), "diagnostic")
         self.assertFalse(SENSORS["mains_eo8w_code"].get("enabled_by_default", True))
 
+    def test_energy_dashboard_calculated_sensors_metadata(self):
+        self.assertEqual(SENSORS["c_battery_charge_power_w"].get("device_class"), "power")
+        self.assertEqual(SENSORS["c_battery_charge_power_w"].get("state_class"), "measurement")
+        self.assertEqual(SENSORS["c_battery_charge_power_w"].get("unit"), "W")
+
+        self.assertEqual(SENSORS["c_battery_discharge_power_w"].get("device_class"), "power")
+        self.assertEqual(SENSORS["c_battery_discharge_power_w"].get("state_class"), "measurement")
+        self.assertEqual(SENSORS["c_battery_discharge_power_w"].get("unit"), "W")
+
+        self.assertEqual(SENSORS["c_grid_import_power_w"].get("device_class"), "power")
+        self.assertEqual(SENSORS["c_grid_import_power_w"].get("state_class"), "measurement")
+        self.assertEqual(SENSORS["c_grid_import_power_w"].get("unit"), "W")
+
+        self.assertEqual(SENSORS["c_battery_charge_energy_kwh"].get("device_class"), "energy")
+        self.assertEqual(SENSORS["c_battery_charge_energy_kwh"].get("state_class"), "total_increasing")
+        self.assertEqual(SENSORS["c_battery_charge_energy_kwh"].get("unit"), "kWh")
+
+        self.assertEqual(SENSORS["c_battery_discharge_energy_kwh"].get("device_class"), "energy")
+        self.assertEqual(SENSORS["c_battery_discharge_energy_kwh"].get("state_class"), "total_increasing")
+        self.assertEqual(SENSORS["c_battery_discharge_energy_kwh"].get("unit"), "kWh")
+
+        self.assertEqual(SENSORS["c_grid_import_energy_kwh"].get("device_class"), "energy")
+        self.assertEqual(SENSORS["c_grid_import_energy_kwh"].get("state_class"), "total_increasing")
+        self.assertEqual(SENSORS["c_grid_import_energy_kwh"].get("unit"), "kWh")
+
+    def test_energy_dashboard_calculated_sensors_grouping(self):
+        self.assertEqual(get_sensor_group("c_battery_charge_power_w"), "battery")
+        self.assertEqual(get_sensor_group("c_battery_discharge_power_w"), "battery")
+        self.assertEqual(get_sensor_group("c_battery_charge_energy_kwh"), "battery")
+        self.assertEqual(get_sensor_group("c_battery_discharge_energy_kwh"), "battery")
+        self.assertEqual(get_sensor_group("c_grid_import_power_w"), "grid")
+        self.assertEqual(get_sensor_group("c_grid_import_energy_kwh"), "grid")
+
 if __name__ == '__main__':
     unittest.main()

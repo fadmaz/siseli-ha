@@ -22,6 +22,10 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "bat_cap": sensor("Battery Status - Battery Capacity", unit="%", device_class="battery", state_class="measurement", icon="mdi:battery-high"),
     "bat_charge_current": sensor("Battery Status - Battery Charging Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-plus"),
     "dischg_current": sensor("Battery Status - Battery Discharge Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-minus"),
+    "c_battery_charge_power_w": sensor("Battery Status - Calculated Battery Charge Power", unit="W", device_class="power", state_class="measurement", icon="mdi:battery-charging-high"),
+    "c_battery_discharge_power_w": sensor("Battery Status - Calculated Battery Discharge Power", unit="W", device_class="power", state_class="measurement", icon="mdi:battery-minus"),
+    "c_battery_charge_energy_kwh": sensor("Battery Status - Calculated Battery Charge Energy", unit="kWh", device_class="energy", state_class="total_increasing", icon="mdi:battery-arrow-up"),
+    "c_battery_discharge_energy_kwh": sensor("Battery Status - Calculated Battery Discharge Energy", unit="kWh", device_class="energy", state_class="total_increasing", icon="mdi:battery-arrow-down"),
     "bat_series_count": sensor("Battery Status - Battery Number In Series", state_class="measurement", icon="mdi:numeric"),
     "battery_status": sensor("Battery Status - Battery Status", icon="mdi:battery-sync"),
     "battery_type": sensor("Battery Status - Battery Type", icon="mdi:battery-unknown"),
@@ -60,6 +64,8 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "mains_current_flow_direction": sensor("Grid Status - Mains Current Flow Direction", icon="mdi:swap-horizontal-bold"),
     "mains_power_w": sensor("Grid Status - Mains Power", unit="W", device_class="power", state_class="measurement", icon="mdi:transmission-tower-export"),
     "c_mains_power_w": sensor("Grid Status - Calculated Mains Power", unit="W", device_class="power", state_class="measurement", icon="mdi:transmission-tower-export"),
+    "c_grid_import_power_w": sensor("Grid Status - Calculated Grid Import Power", unit="W", device_class="power", state_class="measurement", icon="mdi:transmission-tower-import"),
+    "c_grid_import_energy_kwh": sensor("Grid Status - Calculated Grid Imported Energy", unit="kWh", device_class="energy", state_class="total_increasing", icon="mdi:transmission-tower-import"),
     "mains_apparent_va": sensor("Grid Status - Mains Apparent Power", unit="VA", device_class="apparent_power", state_class="measurement", icon="mdi:flash"),
 
     # Load page

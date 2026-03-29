@@ -227,7 +227,7 @@ def shutdown(*_args) -> None:
 signal.signal(signal.SIGTERM, shutdown)
 signal.signal(signal.SIGINT, shutdown)
 
-VERSION = "2.5.19"  # Keep in sync with siseli_bridge/config.yaml
+VERSION = "2.5.20"  # Keep in sync with siseli_bridge/config.yaml
 
 
 if __name__ == "__main__":

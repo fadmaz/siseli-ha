@@ -62,6 +62,7 @@ FLOW_STATES: Dict[Tuple[str, int, str, int], TcpFlowState] = {}
 SEEN_MQTT_TOPICS: Dict[str, int] = {}
 IMPORTANT_DEBUG_KEYS = ("bms_avg_temp_c", "mains_current_flow_direction")
 LAST_PUBLISH_TS: float = 0.0
+LAST_ENERGY_TS: Optional[float] = None
 _FLOW_EVICT_COUNTER: int = 0
 _FLOW_EVICT_INTERVAL: int = 200  # Prune stale TCP flows every N state lookups.
 
@@ -325,6 +326,100 @@ def _log_debug_block(block_name: str, raw_text: str) -> None:
 
 
 class SolarParser:
+    @staticmethod
+    def _to_float_or_none(value: object) -> Optional[float]:
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value.strip())
+            except ValueError:
+                return None
+        return None
+
+    @staticmethod
+    def _power_to_kwh_delta(power_w: float, dt_seconds: float) -> float:
+        if power_w <= 0 or dt_seconds <= 0:
+            return 0.0
+        return (power_w * dt_seconds) / 3_600_000.0
+
+    @staticmethod
+    def _energy_dt_seconds(now_ts: float) -> float:
+        global LAST_ENERGY_TS
+        if LAST_ENERGY_TS is None:
+            LAST_ENERGY_TS = now_ts
+            return 0.0
+
+        dt_seconds = max(0.0, now_ts - LAST_ENERGY_TS)
+        LAST_ENERGY_TS = now_ts
+        # Bound dt so stale timestamps do not create unrealistic jumps.
+        max_dt_seconds = max(float(UPDATE_INTERVAL_SEC) * 6.0, 60.0)
+        return min(dt_seconds, max_dt_seconds)
+
+    @staticmethod
+    def _apply_energy_dashboard_calculations(state: Dict[str, object], now_ts: Optional[float] = None) -> None:
+        factor = max(0.0, float(INVERTER_COUNT))
+        if factor <= 0:
+            factor = 1.0
+
+        bat_v = SolarParser._to_float_or_none(state.get("bat_v", _shared_state.LAST_STATE.get("bat_v")))
+
+        charge_a = SolarParser._to_float_or_none(
+            state.get("bms_charging_current_a", _shared_state.LAST_STATE.get("bms_charging_current_a"))
+        )
+        if charge_a is None:
+            charge_a = SolarParser._to_float_or_none(
+                state.get("bat_charge_current", _shared_state.LAST_STATE.get("bat_charge_current"))
+            )
+
+        discharge_a = SolarParser._to_float_or_none(
+            state.get("bms_discharge_current_a", _shared_state.LAST_STATE.get("bms_discharge_current_a"))
+        )
+        if discharge_a is None:
+            discharge_a = SolarParser._to_float_or_none(
+                state.get("dischg_current", _shared_state.LAST_STATE.get("dischg_current"))
+            )
+
+        charge_power_w = 0.0
+        discharge_power_w = 0.0
+        if bat_v is not None and bat_v >= 0:
+            if charge_a is not None and charge_a > 0:
+                charge_power_w = bat_v * charge_a * factor
+            if discharge_a is not None and discharge_a > 0:
+                discharge_power_w = bat_v * discharge_a * factor
+
+        mains_signed_w = SolarParser._to_float_or_none(
+            state.get("mains_wdrr_value", _shared_state.LAST_STATE.get("mains_wdrr_value"))
+        )
+        grid_import_power_w = 0.0
+        if mains_signed_w is not None and mains_signed_w > 0:
+            grid_import_power_w = mains_signed_w * factor
+
+        state["c_battery_charge_power_w"] = int(round(charge_power_w))
+        state["c_battery_discharge_power_w"] = int(round(discharge_power_w))
+        state["c_grid_import_power_w"] = int(round(grid_import_power_w))
+
+        now = now_ts if now_ts is not None else time.time()
+        dt_seconds = SolarParser._energy_dt_seconds(now)
+
+        prev_charge_kwh = SolarParser._to_float_or_none(
+            _shared_state.LAST_STATE.get("c_battery_charge_energy_kwh")
+        ) or 0.0
+        prev_discharge_kwh = SolarParser._to_float_or_none(
+            _shared_state.LAST_STATE.get("c_battery_discharge_energy_kwh")
+        ) or 0.0
+        prev_grid_import_kwh = SolarParser._to_float_or_none(
+            _shared_state.LAST_STATE.get("c_grid_import_energy_kwh")
+        ) or 0.0
+
+        charge_kwh = prev_charge_kwh + SolarParser._power_to_kwh_delta(charge_power_w, dt_seconds)
+        discharge_kwh = prev_discharge_kwh + SolarParser._power_to_kwh_delta(discharge_power_w, dt_seconds)
+        grid_import_kwh = prev_grid_import_kwh + SolarParser._power_to_kwh_delta(grid_import_power_w, dt_seconds)
+
+        state["c_battery_charge_energy_kwh"] = round(max(prev_charge_kwh, charge_kwh), 6)
+        state["c_battery_discharge_energy_kwh"] = round(max(prev_discharge_kwh, discharge_kwh), 6)
+        state["c_grid_import_energy_kwh"] = round(max(prev_grid_import_kwh, grid_import_kwh), 6)
+
     @staticmethod
     def _safe_b64decode(value: str) -> Optional[bytes]:
         try:
@@ -1232,6 +1327,8 @@ class SolarParser:
         if BATTERY_CAPACITY_PER_BATTERY_AH > 0:
             total_capacity = round(BATTERY_COUNT * BATTERY_CAPACITY_PER_BATTERY_AH, 1)
             state["c_bms_total_capacity_ah"] = total_capacity
+
+        SolarParser._apply_energy_dashboard_calculations(state)
 
         return state
 
