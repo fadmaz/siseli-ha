@@ -1,7 +1,7 @@
-name: "Siseli Inverter Bridge"
-description: "Local bridge for Siseli-compatible inverters with MQTT discovery for Home Assistant."
-version: "2.5.11"
-slug: "siseli_bridge"
+name: 'Siseli Inverter Bridge'
+description: 'Local bridge for Siseli-compatible inverters with MQTT discovery for Home Assistant.'
+version: '2.5.12'
+slug: 'siseli_bridge'
 init: false
 arch:
   - aarch64
@@ -9,7 +9,7 @@ arch:
   - armhf
   - armv7
   - i386
-startup: "application"
+startup: 'application'
 host_network: true
 privileged:
   - NET_ADMIN
@@ -17,33 +17,33 @@ privileged:
 apparmor: false
 
 options:
-  MQTT_HOST: "core-mosquitto"
+  MQTT_HOST: 'core-mosquitto'
   MQTT_PORT: 1883
-  MQTT_USER: ""
-  MQTT_PASSWORD: ""
+  MQTT_USER: ''
+  MQTT_PASSWORD: ''
 
-  TARGET_HOST: "8.212.18.157"
+  TARGET_HOST: '8.212.18.157'
   TARGET_PORT: 1883
   LISTEN_PORT: 18899
 
-  INVERTER_IP: "192.168.1.139"
-  ROUTER_IP: "192.168.1.1"
-  INVERTER_MAC: ""
-  ROUTER_MAC: ""
+  INVERTER_IP: '192.168.1.139'
+  ROUTER_IP: '192.168.1.1'
+  INVERTER_MAC: ''
+  ROUTER_MAC: ''
   AUTO_INTERCEPT: true
 
-  MQTT_DISCOVERY_PREFIX: "homeassistant"
-  DEVICE_ID: "siseli_inverter_1"
-  DEVICE_NAME: "Siseli Inverter 1"
-  MODEL_NAME: "Siseli Inverter 1"
-  MANUFACTURER: "Siseli Compatible"
-  ENTITY_PREFIX: "Siseli"
+  MQTT_DISCOVERY_PREFIX: 'homeassistant'
+  DEVICE_ID: 'siseli_inverter_1'
+  DEVICE_NAME: 'Siseli Inverter 1'
+  MODEL_NAME: 'Siseli Inverter 1'
+  MANUFACTURER: 'Siseli Compatible'
+  ENTITY_PREFIX: 'Siseli'
 
-  STATE_TOPIC: "siseli/siseli_inverter_1/state"
-  AVAILABILITY_TOPIC: "siseli/siseli_inverter_1/availability"
-  SNIFF_IFACE: ""
+  STATE_TOPIC: 'siseli/siseli_inverter_1/state'
+  AVAILABILITY_TOPIC: 'siseli/siseli_inverter_1/availability'
+  SNIFF_IFACE: ''
   LOG_VERBOSE: true
-  LOG_LEVEL: "info"
+  LOG_LEVEL: 'info'
   UPDATE_INTERVAL_SEC: 10
   MQTT_RETAIN: true
 

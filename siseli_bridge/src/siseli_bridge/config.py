@@ -1,3 +1,4 @@
+import ipaddress
 import re
 import os
 
@@ -81,3 +82,48 @@ SLUG_RE = re.compile(r"[^a-z0-9]+")
 MAX_MQTT_PACKET = 1024 * 64
 STREAM_STALE_SECONDS = 30
 MAX_STREAM_BUFFER = 1024 * 256
+
+
+def validate_config() -> None:
+    """Validate critical configuration at startup. Calls sys.exit on fatal errors."""
+    import sys
+
+    errors: list = []
+
+    for name, val in [("INVERTER_IP", INVERTER_IP), ("ROUTER_IP", ROUTER_IP)]:
+        try:
+            ipaddress.ip_address(val)
+        except ValueError:
+            errors.append(f"{name} is not a valid IP address: {val!r}")
+
+    for name, val in [
+        ("TARGET_PORT", TARGET_PORT),
+        ("MQTT_PORT", MQTT_PORT),
+        ("LISTEN_PORT", LISTEN_PORT),
+    ]:
+        if not (1 <= val <= 65535):
+            errors.append(f"{name} must be 1-65535, got {val}")
+
+    if UPDATE_INTERVAL_SEC < 1:
+        errors.append(f"UPDATE_INTERVAL_SEC must be >= 1, got {UPDATE_INTERVAL_SEC}")
+
+    if not MQTT_HOST.strip():
+        errors.append("MQTT_HOST must not be empty")
+
+    if not TARGET_HOST.strip():
+        errors.append("TARGET_HOST must not be empty")
+
+    data_dir = os.path.dirname(STATE_CACHE_FILE)
+    if data_dir:
+        try:
+            os.makedirs(data_dir, exist_ok=True)
+        except OSError as exc:
+            print(
+                f"[CONFIG WARNING] Cannot create state cache directory {data_dir!r}: {exc}",
+                flush=True,
+            )
+
+    if errors:
+        for err in errors:
+            print(f"[CONFIG ERROR] {err}", flush=True)
+        sys.exit(f"[Config] Aborting: {len(errors)} configuration error(s) found.")

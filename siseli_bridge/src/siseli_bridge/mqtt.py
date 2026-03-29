@@ -3,13 +3,11 @@ from typing import Dict
 
 import paho.mqtt.client as mqtt
 
+from . import state as _state
 from .config import *
 from .loggers import log
 from .sensors import SENSORS
 
-DISCOVERY_PUBLISHED = False
-PUBLISHED_SENSOR_KEYS = set()
-LAST_STATE: Dict[str, object] = {}
 RUNNING = True
 
 def display_sensor_name(base_name: str) -> str:
@@ -76,17 +74,15 @@ def publish_sensor_discovery(key: str) -> None:
         payload["enabled_by_default"] = bool(meta["enabled_by_default"])
 
     client.publish(topic, json.dumps(payload), retain=True)
-    PUBLISHED_SENSOR_KEYS.add(key)
+    _state.PUBLISHED_SENSOR_KEYS.add(key)
 
 
 def publish_discovery() -> None:
-    global DISCOVERY_PUBLISHED
-
     for key in sorted(SENSORS.keys()):
         publish_sensor_discovery(key)
 
     client.publish(AVAILABILITY_TOPIC, "online", retain=True)
-    DISCOVERY_PUBLISHED = True
+    _state.DISCOVERY_PUBLISHED = True
     log("[HA MQTT] Discovery published")
 
 
@@ -95,8 +91,8 @@ def on_connect(_client, _userdata, _flags, rc, _properties=None):
     if code == 0:
         log(f"[HA MQTT] Connected to {MQTT_HOST}:{MQTT_PORT}")
         publish_discovery()
-        if any(v is not None for v in LAST_STATE.values()):
-            client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=MQTT_RETAIN)
+        if any(v is not None for v in _state.LAST_STATE.values()):
+            client.publish(STATE_TOPIC, json.dumps(_state.LAST_STATE), retain=MQTT_RETAIN)
     else:
         log(f"[HA MQTT ERROR] Connection failed with rc={code}")
 

@@ -6,7 +6,9 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+from . import state as _shared_state
 from .loggers import log, log_kv, json_log, log_payload_preview
+from .sensors import SENSORS
 from .config import (
     STATE_CACHE_FILE, STREAM_STALE_SECONDS, LOG_STREAM_EVENTS, MAX_STREAM_BUFFER,
     MAX_MQTT_PACKET, PRINTABLE_ASCII_RE, STRICT_NUM_RE, SLUG_RE,
@@ -56,10 +58,21 @@ class TcpFlowState:
 
 
 FLOW_STATES: Dict[Tuple[str, int, str, int], TcpFlowState] = {}
-PUBLISHED_SENSOR_KEYS = set()
 SEEN_MQTT_TOPICS: Dict[str, int] = {}
 IMPORTANT_DEBUG_KEYS = ("bms_avg_temp_c", "mains_current_flow_direction")
 LAST_PUBLISH_TS: float = 0.0
+_FLOW_EVICT_COUNTER: int = 0
+_FLOW_EVICT_INTERVAL: int = 200  # Prune stale TCP flows every N state lookups.
+
+
+def _evict_stale_flows() -> None:
+    """Remove FLOW_STATES entries inactive for longer than STREAM_STALE_SECONDS."""
+    now = time.time()
+    stale = [k for k, v in FLOW_STATES.items() if now - v.last_seen > STREAM_STALE_SECONDS]
+    for k in stale:
+        del FLOW_STATES[k]
+    if stale and LOG_STREAM_EVENTS:
+        log_kv("[STREAM EVICT]", removed=len(stale), remaining=len(FLOW_STATES))
 
 
 def decode_remaining_length(buf: bytes, start_index: int = 1) -> Tuple[Optional[int], Optional[int]]:
@@ -219,8 +232,14 @@ def extract_publish_payload(packet: bytes) -> Tuple[Optional[str], Optional[byte
 
 
 def get_flow_state(flow_key: Tuple[str, int, str, int]) -> TcpFlowState:
+    global _FLOW_EVICT_COUNTER
     state = FLOW_STATES.get(flow_key)
     now = time.time()
+
+    _FLOW_EVICT_COUNTER += 1
+    if _FLOW_EVICT_COUNTER >= _FLOW_EVICT_INTERVAL:
+        _FLOW_EVICT_COUNTER = 0
+        _evict_stale_flows()
 
     if state is None:
         state = TcpFlowState()
@@ -293,10 +312,10 @@ def sanitize_block_key(name: str) -> str:
     return slug
 
 
-def _get_mqtt_globals():
-    """Deferred import to break the parsers <-> mqtt circular dependency."""
+def _get_mqtt_publish():
+    """Minimal deferred import — only for MQTT publish callables not available in state.py."""
     from . import mqtt
-    return mqtt.SENSORS, mqtt.LAST_STATE, mqtt.DISCOVERY_PUBLISHED, mqtt.publish_sensor_discovery, mqtt.client, mqtt.PUBLISHED_SENSOR_KEYS
+    return mqtt.publish_sensor_discovery, mqtt.client
 
 
 def _log_debug_block(block_name: str, raw_text: str) -> None:
@@ -878,11 +897,10 @@ class SolarParser:
                 state["dc_rectification_temperature_c"] = round(dc_rect_temp, 1)
 
         # Generic computed PV total
-        _, LAST_STATE, _, _, _, _ = _get_mqtt_globals()
         pv_total_w = 0
         have_pv_total = False
         for key in ("pv_w", "pv2_power_w"):
-            val = state.get(key, LAST_STATE.get(key))
+            val = state.get(key, _shared_state.LAST_STATE.get(key))
             if isinstance(val, (int, float)):
                 pv_total_w += int(round(float(val)))
                 have_pv_total = True
@@ -1171,9 +1189,8 @@ class SolarParser:
             state.update(SolarParser._parse_bms_capacity(vals))
 
         # Friendly derived values / compatibility helpers
-        _, _LAST_STATE, _, _, _, _ = _get_mqtt_globals()
-        charge_a = state.get("bat_charge_current", _LAST_STATE.get("bat_charge_current"))
-        discharge_a = state.get("dischg_current", _LAST_STATE.get("dischg_current"))
+        charge_a = state.get("bat_charge_current", _shared_state.LAST_STATE.get("bat_charge_current"))
+        discharge_a = state.get("dischg_current", _shared_state.LAST_STATE.get("dischg_current"))
         if isinstance(charge_a, (int, float)) and float(charge_a) > 0.01:
             state["battery_status"] = "Charge"
         elif isinstance(discharge_a, (int, float)) and float(discharge_a) > 0.01:
@@ -1200,7 +1217,7 @@ class SolarParser:
             state["bulk_v"] = state["return_to_mains_mode_voltage_v"]
         if state.get("mains_current_flow_direction") is not None:
             state["mains_flow_state"] = state["mains_current_flow_direction"]
-        if "battery_type" not in state and _LAST_STATE.get("battery_type") is None and "Yavb" in parsed:
+        if "battery_type" not in state and _shared_state.LAST_STATE.get("battery_type") is None and "Yavb" in parsed:
             state["battery_type"] = "LIA"
 
         return state
@@ -1285,9 +1302,9 @@ class SolarParser:
                         log_payload_preview("[UNPARSED PAYLOAD: EMPTY CLEAN STATE]", payload_bytes, topic=source_topic, block_names=sorted(blocks.keys()))
                     return False
 
-                SENSORS, LAST_STATE, DISCOVERY_PUBLISHED, publish_sensor_discovery, client, _PUB_KEYS = _get_mqtt_globals()
+                publish_sensor_discovery, client = _get_mqtt_publish()
 
-                previous_state = dict(LAST_STATE)
+                previous_state = dict(_shared_state.LAST_STATE)
                 changed_keys = []
                 changed_data = []
                 for key in sorted(clean_state.keys()):
@@ -1302,37 +1319,37 @@ class SolarParser:
                 if LOG_CLEAN_STATE:
                     log_kv("[CLEAN STATE]", topic=source_topic, values=clean_state)
 
-                LAST_STATE.update(clean_state)
+                _shared_state.LAST_STATE.update(clean_state)
 
                 # Persist state cache to survive container restarts
                 try:
                     os.makedirs(os.path.dirname(STATE_CACHE_FILE), exist_ok=True)
                     with open(STATE_CACHE_FILE, "w") as _sf:
-                        json.dump(dict(LAST_STATE), _sf)
-                except Exception:
-                    pass
+                        json.dump(dict(_shared_state.LAST_STATE), _sf)
+                except Exception as _cache_exc:
+                    log(f"[CACHE WRITE ERROR] {_cache_exc}")
 
                 unresolved_debug = []
                 if LOG_NULL_TARGETS:
                     for key in IMPORTANT_DEBUG_KEYS:
-                        if LAST_STATE.get(key) is None:
+                        if _shared_state.LAST_STATE.get(key) is None:
                             unresolved_debug.append(key)
                     if unresolved_debug:
                         log_kv("[UNRESOLVED TARGETS]", topic=source_topic, keys=unresolved_debug, block_names=sorted(blocks.keys()))
 
                 if LOG_STATE_SNAPSHOT:
-                    log_kv("[STATE SNAPSHOT]", topic=source_topic, values=LAST_STATE)
+                    log_kv("[STATE SNAPSHOT]", topic=source_topic, values=_shared_state.LAST_STATE)
 
-                if DISCOVERY_PUBLISHED:
+                if _shared_state.DISCOVERY_PUBLISHED:
                     # Publish discovery for any late-bound raw block sensors.
                     for key in clean_state.keys():
-                        if key in SENSORS and key not in _PUB_KEYS:
+                        if key in SENSORS and key not in _shared_state.PUBLISHED_SENSOR_KEYS:
                             publish_sensor_discovery(key)
-                    
+
                     global LAST_PUBLISH_TS
                     now = time.time()
                     if len(changed_keys) > 0 or (now - LAST_PUBLISH_TS) >= UPDATE_INTERVAL_SEC:
-                        client.publish(STATE_TOPIC, json.dumps(LAST_STATE), retain=MQTT_RETAIN)
+                        client.publish(STATE_TOPIC, json.dumps(_shared_state.LAST_STATE), retain=MQTT_RETAIN)
                         LAST_PUBLISH_TS = now
 
                 log_kv(

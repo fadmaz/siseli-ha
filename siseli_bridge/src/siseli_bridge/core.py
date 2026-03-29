@@ -12,7 +12,8 @@ from scapy.all import ARP, Ether, IP, Raw, TCP, UDP, AsyncSniffer, getmacbyip, s
 from .config import *
 from .loggers import log, log_kv, json_log, log_payload_preview, printable_text_preview, hex_preview
 from .sensors import SENSORS
-from .mqtt import client, start_mqtt, publish_discovery, LAST_STATE, DISCOVERY_PUBLISHED, RUNNING
+from . import state as _state
+from .mqtt import client, start_mqtt, publish_discovery, RUNNING
 from .parsers import SolarParser, extract_publish_payload, append_stream_data, mqtt_type_name, SEEN_MQTT_TOPICS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -38,7 +39,7 @@ from .config import STATE_CACHE_FILE
 try:
     if os.path.exists(STATE_CACHE_FILE):
         with open(STATE_CACHE_FILE, "r") as f:
-            LAST_STATE.update(json.load(f))
+            _state.LAST_STATE.update(json.load(f))
 except Exception as e:
     log(f"[CACHE] Error loading state: {e}")
 
@@ -225,9 +226,13 @@ def shutdown(*_args) -> None:
 signal.signal(signal.SIGTERM, shutdown)
 signal.signal(signal.SIGINT, shutdown)
 
+VERSION = "2.5.12"  # Keep in sync with siseli_bridge/config.yaml
+
 
 if __name__ == "__main__":
-    log("--- Siseli Inverter Bridge 2.5.11 ---")
+    from .config import validate_config
+    validate_config()
+    log(f"--- Siseli Inverter Bridge {VERSION} ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
     log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} LISTEN_PORT={LISTEN_PORT}")
@@ -237,7 +242,7 @@ if __name__ == "__main__":
     log(f"[Config] DEBUG_FLAGS verbose={LOG_VERBOSE} blocks={LOG_BLOCKS} state_diff={LOG_STATE_DIFF} state_snapshot={LOG_STATE_SNAPSHOT} raw_json={LOG_RAW_JSON} clean_state={LOG_CLEAN_STATE} mqtt_topics={LOG_MQTT_TOPICS} payload_preview={LOG_MQTT_PAYLOAD_PREVIEW} unparsed={LOG_UNPARSED_PUBLISH} stream_events={LOG_STREAM_EVENTS} null_targets={LOG_NULL_TARGETS}")
 
     for key in SENSORS.keys():
-        LAST_STATE.setdefault(key, None)
+        _state.LAST_STATE.setdefault(key, None)
 
     start_mqtt()
 
