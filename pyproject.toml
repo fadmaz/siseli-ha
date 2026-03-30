@@ -4,7 +4,7 @@ build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "siseli-bridge"
-version = "2.5.21"
+version = "2.5.22"
 requires-python = ">=3.9"
 dependencies = [
     "paho-mqtt>=1.6,<2.0",

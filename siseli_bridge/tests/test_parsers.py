@@ -81,11 +81,11 @@ class TestParsers(unittest.TestCase):
         with mock.patch("src.siseli_bridge.parsers.INVERTER_COUNT", 2):
             SolarParser._apply_energy_dashboard_calculations(state, now_ts=110.0)
 
-        self.assertEqual(state["c_battery_charge_power_w"], 1000)
-        self.assertEqual(state["c_battery_discharge_power_w"], 200)
+        self.assertEqual(state["c_battery_charge_power_w"], 500)
+        self.assertEqual(state["c_battery_discharge_power_w"], 100)
         self.assertEqual(state["c_grid_import_power_w"], 200)
-        self.assertAlmostEqual(state["c_battery_charge_energy_kwh"], 1.002778, places=6)
-        self.assertAlmostEqual(state["c_battery_discharge_energy_kwh"], 2.000556, places=6)
+        self.assertAlmostEqual(state["c_battery_charge_energy_kwh"], 1.001389, places=6)
+        self.assertAlmostEqual(state["c_battery_discharge_energy_kwh"], 2.000278, places=6)
         self.assertAlmostEqual(state["c_grid_import_energy_kwh"], 3.000556, places=6)
 
     def test_energy_dashboard_calculations_fallback_and_no_export_import(self):

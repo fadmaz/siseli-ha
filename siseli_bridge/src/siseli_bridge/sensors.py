@@ -111,7 +111,7 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "bms_charging_overcurrent_sign": sensor("Settings - BMS Charging Overcurrent Sign", icon="mdi:alert", entity_category="diagnostic"),
     "bms_communication_control_function": sensor("Settings - BMS Communication Control Function", icon="mdi:lan-connect", entity_category="diagnostic"),
     "bms_communication_normal": sensor("Settings - BMS Communication Normal", icon="mdi:lan-check", entity_category="diagnostic"),
-    "bms_current_soc": sensor("Settings - BMS Current SOC", unit="%", state_class="measurement", icon="mdi:battery-high"),
+    "bms_current_soc": sensor("Settings - BMS Current SOC", unit="%", device_class="battery", state_class="measurement", icon="mdi:battery-high"),
     "bms_discharge_current_a": sensor("Settings - BMS Discharge Current", unit="A", device_class="current", state_class="measurement", icon="mdi:battery-minus", entity_category="diagnostic"),
     "bms_discharge_overcurrent_flag": sensor("Settings - BMS Discharge Overcurrent Flag", icon="mdi:alert", entity_category="diagnostic"),
     "bms_discharge_voltage_limit_v": sensor("Settings - BMS Discharge Voltage Limit", unit="V", device_class="voltage", state_class="measurement", icon="mdi:battery-arrow-down", entity_category="diagnostic"),

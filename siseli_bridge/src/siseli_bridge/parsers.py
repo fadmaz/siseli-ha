@@ -384,9 +384,9 @@ class SolarParser:
         discharge_power_w = 0.0
         if bat_v is not None and bat_v >= 0:
             if charge_a is not None and charge_a > 0:
-                charge_power_w = bat_v * charge_a * factor
+                charge_power_w = bat_v * charge_a
             if discharge_a is not None and discharge_a > 0:
-                discharge_power_w = bat_v * discharge_a * factor
+                discharge_power_w = bat_v * discharge_a
 
         mains_signed_w = SolarParser._to_float_or_none(
             state.get("mains_wdrr_value", _shared_state.LAST_STATE.get("mains_wdrr_value"))

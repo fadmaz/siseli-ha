@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.5.22] - 2026-03-30
+
+### Changed
+
+- **Battery Power Calculation**: `c_battery_charge_power_w` and `c_battery_discharge_power_w` are no longer scaled by `INVERTER_COUNT`; they reflect the per-inverter BMS reading directly (`bat_v × current_a`).
+
 ## [2.5.21] - 2026-03-30
 
 ### Changed
