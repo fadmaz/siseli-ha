@@ -1068,5 +1068,20 @@ class TestCachedFabricationsArePurged(unittest.TestCase):
             self.assertTrue(any("no decode path" in line for line in lines))
 
 
+class TestStartupPrintsTheForwardingMode(unittest.TestCase):
+    """AUTO_INTERCEPT and FORWARD_ALL_INVERTER_TRAFFIC together decide what is relayed,
+    and FORWARD_ALL was never printed, so no log -- the reference captures included --
+    showed which mode was running. Both are pinned options, so the running value can
+    differ from the shipped default."""
+
+    def test_both_forwarding_options_are_printed_on_one_line(self):
+        lines = []
+        with mock.patch("src.siseli_bridge.core.log", side_effect=lines.append):
+            core.log_startup_configuration()
+        mode = [ln for ln in lines if "AUTO_INTERCEPT=" in ln]
+        self.assertEqual(len(mode), 1)
+        self.assertIn(f"FORWARD_ALL_INVERTER_TRAFFIC={core.FORWARD_ALL_INVERTER_TRAFFIC}", mode[0])
+
+
 if __name__ == "__main__":
     unittest.main()

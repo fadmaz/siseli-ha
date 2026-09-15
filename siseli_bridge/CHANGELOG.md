@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **The Startup Log Shows The Forwarding Mode**: the `[Config] AUTO_INTERCEPT=` line now
+  also prints `FORWARD_ALL_INVERTER_TRAFFIC`. The two decide together what is relayed, and
+  no log — the reference captures included — recorded which mode was running.
 - **`BMS Cell Count` Is Renamed `Cell Voltages Decoded`**: it counts the per-cell voltages
   the payload carried — at most 16 of a 32-cell pack on the reference install, and 2 when
   cell 3 collapses — not the cells in the pack, which no field states. Friendly name only:
@@ -29,6 +32,19 @@ All notable changes to this project will be documented in this file.
   grid, so which of the two is right is unknown, and `c_grid_import_energy_kwh` can never go
   down. The disagreement is now logged once as `[GRID DIRECTION CONFLICT]` with both raw
   tokens. Crediting is deliberately unchanged until a real on-grid report settles it.
+- **A `TARGET_HOST` That Could Never Match Is Now Refused At Startup**: it is compared as
+  a string with each packet's IPv4 destination, so a hostname, an IPv6 address or a stray
+  space matched nothing and every broker packet was silently dropped — no sensors, and with
+  interception on, no cloud either. The add-on now refuses to start and says why. The
+  schema is deliberately unchanged, so an install that stored such a value can still
+  upgrade and correct it.
+- **The Docs Overstated What Is Forwarded**: `SECURITY.md`, the README and the architecture
+  map said every captured packet is relayed. By default only the inverter's broker
+  connection and everything the router sends to the inverter are relayed; its DNS, NTP and
+  other traffic are dropped unless `FORWARD_ALL_INVERTER_TRAFFIC` is on, and passive mode
+  relays nothing. The forwarding caveat now also covers a dongle that re-bootstraps over DNS
+  and HTTP (reported in PR #43, not verified), and what `TCP:1883` in the drop counter
+  means. Two `[HEALTH]` examples used a format the code no longer prints.
 - **The Star-Import Guard Could Never Fail**: the test that stops `core.py`, `mqtt.py`
   and `parsers.py` from referencing a `_private` name from `config.py` — the fault that
   crash-looped 2.6.2 on start — ended its pattern in a literal backspace byte where the

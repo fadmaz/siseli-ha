@@ -244,6 +244,18 @@ def validate_config() -> None:
 
     if not TARGET_HOST.strip():
         errors.append("TARGET_HOST must not be empty")
+    else:
+        # Checked on the exact string, because that is what the capture compares with
+        # each packet's destination: a hostname, an IPv6 address or a stray space can
+        # never match, and every broker packet would be dropped with no other symptom.
+        try:
+            ipaddress.IPv4Address(TARGET_HOST)
+        except ValueError:
+            errors.append(
+                f"TARGET_HOST must be an IPv4 address, got {TARGET_HOST!r}: it is compared "
+                f"with each packet's destination, so anything else never matches and the "
+                f"inverter's cloud traffic would be dropped"
+            )
 
     if DEVICE_ID != "siseli_inverter_1":
         for name, value, legacy in (

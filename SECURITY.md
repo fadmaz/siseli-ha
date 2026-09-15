@@ -31,20 +31,25 @@ already flowing.
    you put the wrong IP in, it poisons the wrong host, and nothing in the add-on will
    notice.
 2. **Passive capture.** A scapy `AsyncSniffer` reads the frames that now arrive.
-3. **Forwarding.** Every captured packet is re-emitted toward its real destination
-   unchanged. The connection is never terminated, never proxied, never modified. If the
-   add-on stops, the inverter's traffic goes back to the real gateway as its ARP cache
-   ages out.
+3. **Forwarding.** Three kinds of frame are re-emitted toward their real destination:
+   the inverter's connection to the cloud broker (`TARGET_HOST:TARGET_PORT`), and
+   everything the router sends to the inverter. The IP datagram goes out as captured;
+   only the Ethernet header is rebuilt. That connection is never terminated, never
+   proxied, never modified. **Everything else the inverter sends — DNS, NTP, HTTP, any
+   other endpoint — is dropped**, unless you enable `FORWARD_ALL_INVERTER_TRAFFIC`. On a
+   clean stop the add-on sends corrective ARP replies, so both peers go back to talking
+   directly at once; only after a crash do they wait for their ARP caches to expire.
 4. **Publishing.** Decoded values go to your own MQTT broker.
 
-`AUTO_INTERCEPT: false` turns off step 1 entirely, for people who have arranged the
-traffic another way (a port mirror, a router-side rule). Steps 2–4 are unaffected.
+`AUTO_INTERCEPT: false` turns off steps 1 and 3, for people who have arranged the
+traffic another way (a port mirror, a router-side rule). Nothing is relayed in that mode;
+steps 2 and 4 are unaffected.
 
 ## Privileges it holds, and why
 
 | Privilege | Why |
 |---|---|
-| `NET_RAW` | The `AsyncSniffer` needs a raw socket to read frames, and `sendp()` needs one to emit the ARP replies and forwarded packets. There are two `sendp()` call sites, both in `core.py`. |
+| `NET_RAW` | The `AsyncSniffer` needs a raw socket to read frames, and `sendp()` needs one to emit the ARP replies and forwarded packets. Every frame goes out through one helper, `send_layer2` in `core.py`, which holds the only two `sendp()` calls. |
 | `NET_ADMIN` | Putting the interface into promiscuous mode, so frames addressed to another MAC are delivered. |
 | `host_network: true` | Both the spoofing and the capture happen on the host's LAN segment. Inside a bridged container namespace there is nothing to see and nobody to spoof. |
 | `apparmor: false` | See below. This is the weakest part of the posture. |
@@ -71,7 +76,7 @@ packet`, the `/data` writes described below, and nothing else. Contributions wel
   deprecated no-op retained only so existing installs keep validating.
 - **No outbound connections of its own**, other than to the MQTT broker you configure.
   It never contacts the vendor cloud on its own behalf — it only relays the inverter's
-  existing packets onward.
+  own packets, and by default only its broker connection (see step 3).
 - **It never writes toward the inverter.** No command, no setting, no control frame. The
   decoder is read-only by construction; there is no code path that constructs an inverter
   MQTT message.

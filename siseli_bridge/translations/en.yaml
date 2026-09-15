@@ -22,10 +22,10 @@ configuration:
     description: 'The local IPv4 address of your main internet router/gateway (e.g. 192.168.1.1).'
   AUTO_INTERCEPT:
     name: 'Auto-Intercept (ARP Spoofing)'
-    description: 'Tricks the inverter into sending data to Home Assistant instead of the cloud. Required unless you configured a manual static route on your router.'
+    description: 'Makes the inverter send its traffic through Home Assistant, which reads the telemetry and relays its cloud connection onward. Required unless you arranged the traffic another way, such as a router-side rule.'
   TARGET_HOST:
     name: 'Target Cloud Host'
-    description: 'The official Siseli cloud server. DO NOT CHANGE unless the cloud IP changes (default: 8.212.18.157).'
+    description: 'The official Siseli cloud server, as an IPv4 address: a hostname never matches and the add-on refuses to start. DO NOT CHANGE unless the cloud IP changes (default: 8.212.18.157).'
   TARGET_PORT:
     name: 'Target Cloud Port'
     description: 'The MQTT port used by the Siseli cloud (default: 1883).'
@@ -88,7 +88,7 @@ configuration:
     description: 'How long a sensor keeps its last value before Home Assistant marks it unavailable. This is what stops stale readings looking live if the bridge stops receiving data. Must be larger than Update Throttling and than Telemetry Timeout. Inverters report every few minutes, so this is measured in minutes, not seconds. Set 0 to disable (Default: 1800).'
   RESET_ENERGY_COUNTERS:
     name: 'Reset Calculated Energy Counters'
-    description: 'Zeroes the calculated battery and grid energy totals on the next start. These are total_increasing sensors, so an inflated value can never correct itself downward. Turn on, restart once, then turn off again.'
+    description: 'Zeroes the five calculated energy totals (battery charge and discharge, grid import, generation, load) on the next start. These are total_increasing sensors, so an inflated value can never correct itself downward. Turn on, restart once, then turn off again.'
   DISCOVERY_CLEANUP:
     name: 'Clean Up Stale Entities'
     description: 'On the first start after an upgrade, removes leftover Home Assistant entities from earlier versions that grouped sensors differently. Leave enabled unless you are troubleshooting.'

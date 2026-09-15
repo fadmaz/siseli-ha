@@ -729,7 +729,13 @@ def log_startup_configuration() -> None:
     log(f"--- Siseli Inverter Bridge {VERSION} ---")
     log(f"[Config] INVERTER_IP={INVERTER_IP} ROUTER_IP={ROUTER_IP}")
     log(f"[Config] TARGET={TARGET_HOST}:{TARGET_PORT} MQTT={MQTT_HOST}:{MQTT_PORT}")
-    log(f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT}")
+    # Both, because together they decide what is relayed: nothing in passive mode, the
+    # broker connection by default, everything addressed to us with FORWARD_ALL on.
+    # No log -- the reference captures included -- recorded which mode was running.
+    log(
+        f"[Config] AUTO_INTERCEPT={AUTO_INTERCEPT} "
+        f"FORWARD_ALL_INVERTER_TRAFFIC={FORWARD_ALL_INVERTER_TRAFFIC}"
+    )
     log(f"[Config] INVERTER_COUNT={INVERTER_COUNT}")
     log(f"[Config] BATTERY_COUNT={BATTERY_COUNT} BATTERY_CAPACITY_PER_BATTERY_AH={BATTERY_CAPACITY_PER_BATTERY_AH}")
     log(f"[Config] DEVICE_NAME={DEVICE_NAME} MANUFACTURER={MANUFACTURER}")

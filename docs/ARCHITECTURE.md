@@ -9,8 +9,8 @@ Anchors: a bare `core.py:N` means `siseli_bridge/src/siseli_bridge/core.py`; `te
 A Home Assistant add-on that ARP-spoofs a Siseli-platform solar inverter and its router so both send their frames through the bridge (`core.py:172-207`).
 It passively reassembles the inverter's TCP stream to the vendor MQTT cloud (`parsers.py:505`), extracts the MQTT PUBLISH packets (`parsers.py:363`), and decodes the base64 "blocks" inside each one into sensor values (`parsers.py:1274`).
 Values merge into one shared dict (`state.py:12`) and are republished to the local broker under HA MQTT auto-discovery (`mqtt.py:124`, `mqtt.py:278`).
-Every captured frame is re-emitted to its real destination (`core.py:320-325`, `core.py:355-360`), so the vendor app keeps working.
-The bridge observes; it never terminates or answers a connection. Only the inverter-to-cloud direction is parsed; cloud-to-inverter is forwarded untouched (`core.py:348-360`).
+The inverter's connection to the cloud broker is relayed (`core.py:347-359`), and so is everything the router sends to the inverter (`core.py:381-393`), so the vendor app keeps its session. The inverter's other traffic — DNS, NTP, other endpoints — is dropped unless `FORWARD_ALL_INVERTER_TRAFFIC` is set (`core.py:361-379`), and with `AUTO_INTERCEPT` off nothing is relayed at all.
+The bridge observes; it never terminates or answers a connection. Only the inverter-to-cloud direction is parsed; router-to-inverter frames are relayed untouched and unparsed.
 Block positions were reverse-engineered from one device with no schema, so the governing rule of the parser is: publish a value only when this payload contains evidence for it.
 
 ## Top-level layout
@@ -85,10 +85,11 @@ core.packet_callback (:277)        stamp LAST_PACKET_TS, drop own re-emitted fra
    |      '-- publish_grouped_state (mqtt.py:278) if a change is pending AND UPDATE_INTERVAL_SEC elapsed (parsers.py:1993-2007)
    |             one retained JSON object per HA device group -> siseli/<id>/<group>/state (mqtt.py:45-50)
    |
-   '-- always: re-emit pkt[IP] to the router MAC (core.py:320-325); cloud->inverter re-emitted to INV_MAC (:355-360)
+   '-- broker frames: re-emit pkt[IP] to the router MAC if AUTO_INTERCEPT and RTR_MAC are set (core.py:353-358);
+       router->inverter frames re-emitted to INV_MAC (:388-393)
 ```
 
-Non-broker inverter traffic is counted in `DROPPED_NON_TARGET` and forwarded only when `FORWARD_ALL_INVERTER_TRAFFIC` is set and the frame was L2-addressed to us (`core.py:181`).
+Non-broker inverter traffic (`core.py:361-379`) is counted in `DROPPED_NON_TARGET` (`core.py:181`). It is forwarded only when `FORWARD_ALL_INVERTER_TRAFFIC` and `AUTO_INTERCEPT` are both set, the router's MAC and our own are known, and the frame was L2-addressed to us. Broadcast and multicast are never re-emitted; they reach the router directly.
 
 ### Threads and the lock
 

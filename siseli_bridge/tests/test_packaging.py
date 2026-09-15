@@ -111,6 +111,11 @@ class TestSchemaValidatorParity(unittest.TestCase):
     Before this test, UPDATE_INTERVAL_SEC was declared int(0,) while the validator
     rejected anything below 1 -- so a UI-legal 0 put the add-on in a restart loop
     with the options page still showing the value as valid.
+
+    One deliberate exception: TARGET_HOST is a plain `str` in the schema but must be an
+    IPv4 address at startup. A hostname there never matched anything, so it silently
+    dropped all broker traffic; refusing to start is strictly better. Tightening the
+    schema instead would block the upgrade for anyone who stored a hostname.
     """
 
     def setUp(self):

@@ -12,7 +12,8 @@ decoding the telemetry it already sends to the vendor cloud — and publishes it
 Assistant through MQTT auto-discovery.
 
 Your inverter keeps talking to the cloud, so the official mobile app carries on working.
-The bridge only listens in.
+The bridge sits in the path and relays that connection unchanged; it reads the telemetry
+on the way through and never sends the inverter anything of its own.
 
 **207 sensors across 7 devices**, 143 enabled on a fresh install. No cloud API, no
 polling, no credentials for anything but your own broker.
@@ -49,7 +50,10 @@ Your inverter's WiFi dongle publishes telemetry over MQTT to the Siseli cloud at
 3. **Decodes the payload** — base64 blocks keyed by four-character names (`2ONL`, `WdRR`,
    `Yavb`, …), each a list of space-separated values read by position.
 4. **Publishes to your broker** with MQTT auto-discovery, so entities appear on their own.
-5. **Forwards the traffic onward** to the cloud, unchanged.
+5. **Forwards the cloud connection onward**, unchanged. By default that connection is all
+   it relays: other traffic from the inverter (DNS, NTP, …) is dropped unless you enable
+   `FORWARD_ALL_INVERTER_TRAFFIC` — see
+   [A caveat on forwarding](siseli_bridge/DOCS.md#a-caveat-on-forwarding).
 
 It never terminates a connection and never opens a listening socket. It observes, decodes,
 and relays.
