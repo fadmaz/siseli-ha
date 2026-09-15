@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# Read-only token. The repository's default workflow token can write, and
+# actions/checkout stores it in .git/config for the rest of the job, so any step --
+# a third-party action included -- could have pushed to main. Nothing here writes.
+# TestCiTokenIsReadOnly pins this; a job that ever needs more must ask for it.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

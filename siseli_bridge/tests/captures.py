@@ -225,9 +225,10 @@ CAPTURE_DEVICE_B_FOREIGN = {
 # subset. `(PI30` is the protocol identifying itself -- Voltronic/Axpert PI30.
 #
 # Note what the CRC bytes did to the debug output that carried them: the bridge
-# logged the firmware as "VERFW:00025.129" and the serial as "96322406612709DN",
-# because the trailing CRC bytes happen to be printable ASCII. The real values are
-# "VERFW:00025.12" and "96322406612709".
+# logged the firmware as "VERFW:00025.129" and the serial with two stray letters
+# appended, because the trailing CRC bytes happen to be printable ASCII. The real
+# firmware value is "VERFW:00025.12". captures/2026-09-02_device-c-voltronic-pi30.md
+# records the complete re-capture from the same device.
 #
 # The two telemetry-bearing blocks, G4WT and MrfS, are absent: hex_preview capped
 # them at 64 bytes, so they are not verbatim. That cap is removed in 2.6.18.

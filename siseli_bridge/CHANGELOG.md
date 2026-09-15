@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **CI Runs With A Read-Only Token**: `ci.yml` now declares `permissions: contents: read`.
+  The repository's default workflow token can write, and `actions/checkout` stores it in
+  the checkout for the rest of the job, so any step — a third-party action included —
+  could have pushed to `main`. Nothing in CI writes, so it no longer holds the right to.
+  A test pins the block and refuses a job-level override. Nothing that ships changes.
+
+### Fixed
+
+- **The Star-Import Guard Could Never Fail**: the test that stops `core.py`, `mqtt.py`
+  and `parsers.py` from referencing a `_private` name from `config.py` — the fault that
+  crash-looped 2.6.2 on start — ended its pattern in a literal backspace byte where the
+  regex escape `\b` was meant. A shell heredoc had turned the escape into the character.
+  The pattern could not match anything, so the guard had checked nothing since it was
+  added in 2.6.3. It now uses `\b`, first asserts that its own pattern matches a
+  planted reference, and refuses an empty set of names. A scan of every tracked file
+  found no other stray control bytes.
+
 ## [2.6.22] - 2026-09-02
 
 ### Fixed

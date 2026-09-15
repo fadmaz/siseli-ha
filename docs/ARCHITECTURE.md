@@ -25,14 +25,14 @@ Block positions were reverse-engineered from one device with no schema, so the g
 | `siseli_bridge/translations/en.yaml` | UI labels for every option | Its key set must equal the schema's (`tests/test_packaging.py:94`) |
 | `.github/` | CI workflow, dependabot, issue and PR templates | The seven CI check names are branch-protection requirements on `main`; nothing in the checkout says so except `tests/test_packaging.py:263-305` |
 | `scripts/smoke-test.sh` | Build the image and wait for a running sniffer | Bypasses `run.sh` (`:46` overrides the entrypoint) and runs with `AUTO_INTERCEPT=false` (`:39`), so no ARP frame is ever sent under CI |
-| `captures/` | Paired bridge-log / vendor-portal readings of the same device at the same second | `tests/captures.py` proves the parser does not regress; `captures/` is the only evidence that a decode is *correct* (`captures/README.md:19-24`) |
+| `captures/` | Paired bridge-log / vendor-portal readings of the same device at the same second | `tests/captures.py` proves the parser does not regress; `captures/` is the only evidence that a decode is *correct* (`captures/README.md:20-25`) |
 | `sensor_mapping_verified.md`, `sensor_mapping.md` | Per-token decode map for HPVINV04; the superseded 2.6.0 map | The verified file supersedes its own tables: Section 0 (`:25-124`) is the simultaneous reading, the later tables were 17 minutes apart (`:18-21`) |
 | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` | GitHub landing page, dev procedure, security posture, conduct | `README.md` may use relative links; `DOCS.md` may not (`tests/test_packaging.py:227-234`). `SECURITY.md:30-32` states that a wrong `INVERTER_IP` poisons the wrong host by design |
 | `CHANGELOG.md` (root) | A nine-line pointer | Must not carry any `## [N` heading (`tests/test_packaging.py:51-56`); the canonical history is `siseli_bridge/CHANGELOG.md` |
 | `LICENSE`, `NOTICE` | MIT; scope statement | Upstream `yuraantonov11/siseli-ha` carries no licence, so the MIT grant covers only work done here (`NOTICE:3-16`) |
 | `pyproject.toml`, `repository.yaml` | Dev/CI packaging; the add-on repository manifest | `pyproject.toml:30-36` declares the top-level package as literally `src` because `siseli_bridge/` has no `__init__.py` |
 | `CLAUDE.md` | Local agent notes | Untracked by design (`.gitignore:39`) |
-| `docs/` | This file | Not read by any test |
+| `docs/` | This file; `DTU_PROTOCOL.md`, what is known of the DTU's MQTT envelope and cloud protocol | This file's anchors are checked by `TestArchitectureDocAnchors`; `DTU_PROTOCOL.md` separates what captures here show from what PR #43 reported |
 
 ## Runtime
 
@@ -128,13 +128,13 @@ Consequences:
 
 **Isolation helper**: `helpers.isolated_state` (`tests/helpers.py:121-167`) saves and restores 17 module globals across `parsers.py` and `state.py`, including every once-logged flag. It does **not** cover `core.py` globals (`INV_MAC`, `KNOWN_*_MACS`, `LAST_PACKET_TS`, `DROPPED_NON_TARGET`), `state.RUNNING` or `state.DISCOVERY_CLEANED`; `test_core._CoreTestCase` (`tests/test_core.py:44-93`) restores those by hand. `BASE_ENV` (`:22-57`) is pinned to `config.yaml` by `tests/test_packaging.py:645-676` because `reload_config` (`:73`) reloads `config.py` in place and never restores it; `tests/test_packaging.py:645-649` records the order-dependent false pass that caused. `FakeMqttClient` (`:176`) records publishes, retained topics and the will.
 
-**Coverage**: 323 tests + 1132 subtests, ~7 s. Measured 84 % overall and 74 % for `mqtt.py`+`core.py` against floors of 78 and 65 (`.github/workflows/ci.yml:46-47`); the "~2 points under" comment at `:43-44` is stale. `core.py` alone sits at 65 %, carried by `mqtt.py` at 94 %; nothing gates `core.py` individually.
+**Coverage**: 323 tests + 1132 subtests, ~7 s. Measured 84 % overall and 74 % for `mqtt.py`+`core.py` against floors of 78 and 65 (`.github/workflows/ci.yml:53-54`); the "~2 points under" comment at `:50-51` is stale. `core.py` alone sits at 65 %, carried by `mqtt.py` at 94 %; nothing gates `core.py` individually.
 
 **What only the smoke test proves**: the `__main__` body (`core.py:580-622`), `start_mqtt` (`mqtt.py:393-325`), and that the image starts at all. **What nothing proves**: the ARP send path (`core.py:172-207`, `:50-54`, always mocked at `tests/test_core.py:63-68`, disabled in smoke at `scripts/smoke-test.sh:39`); `SIGTERM -> shutdown` (`core.py:572-577` is only asserted callable at `tests/test_core.py:373-374`, and smoke tears down with `docker rm -f`, `scripts/smoke-test.sh:25`); the `health_logger` loop body (`core.py:601`); `run.sh` itself (entrypoint overridden at `scripts/smoke-test.sh:46`; only grepped by `tests/test_packaging.py:97-100`). One test is vacuous: `tests/test_core.py:309-314` patches `core.client` but `shutdown` publishes through `mqtt.py`'s own client (`core.py:694` -> `mqtt.py:179-181`), so the `except` at `core.py:536` never runs.
 
 **Source-as-data tests**: five tests parse source text rather than executing it and will fail on a purely stylistic rewrite: `tests/test_sensors.py:147-190` (regex over `parsers.py` for `state["key"] =`), `tests/test_core.py:577-600`, `tests/test_truthfulness.py:709-721`, `tests/test_packaging.py:285-305` (ci.yml -> check names), `tests/test_packaging.py:102-105` (`os.getenv("KEY"` literals).
 
-**`captures/`**: three reference captures. `2026-08-21_1341_charging.md` (2.6.10, 202 parameters, none disagree); `2026-08-21_2341_discharging.md` (2.6.15, same device ten hours later, refutes three candidate decodes at `:66-86`); `2026-08-22_device-b-modbus.md` (issue #30, binary Modbus RTU inside the same DTU envelope, not a decode). `captures/README.md:36-51` lists which device states would settle which open question; every flag has read its safe value in every capture so far.
+**`captures/`**: two reference captures and two unsupported-device notes. `2026-08-21_1341_charging.md` (2.6.10, 202 parameters, none disagree); `2026-08-21_2341_discharging.md` (2.6.15, same device ten hours later, refutes three candidate decodes at `:66-86`); `2026-08-22_device-b-modbus.md` (issue #30, binary Modbus RTU inside the same DTU envelope, not a decode); `2026-09-02_device-c-voltronic-pi30.md` (issue #32, Voltronic PI30 inside the same envelope, every frame CRC-verified and paired to the portal to the second, not yet a decode). `captures/README.md:37-53` lists which device states would settle which open question; every flag has read its safe value in every capture so far.
 
 ## Packaging and CI
 
@@ -148,12 +148,14 @@ Consequences:
 
 | Job | Runner | Produces |
 |---|---|---|
-| `test` (`:10`) | `ubuntu-latest` x Python 3.9/3.11/3.12 (`:13-14`) | `test (3.9)`, `test (3.11)`, `test (3.12)`; coverage floors at `:46-47` |
-| `lint` (`:58`) | `ubuntu-latest` | `lint` (`ruff check .`) |
-| `addon-lint` (`:75`) | `ubuntu-latest` | `addon-lint` via `frenck/action-app-linter@v2` (`:85`; renamed from action-addon-linter, warnings do not fail) |
-| `smoke` (`:92`) | `ubuntu-24.04` / `ubuntu-24.04-arm` (`:104-110`), `fail-fast: false` | `smoke (amd64, ubuntu-24.04)`, `smoke (aarch64, ubuntu-24.04-arm)`; runs `scripts/smoke-test.sh` (`:119`) |
+| `test` (`:17`) | `ubuntu-latest` x Python 3.9/3.11/3.12 (`:20-21`) | `test (3.9)`, `test (3.11)`, `test (3.12)`; coverage floors at `:53-54` |
+| `lint` (`:65`) | `ubuntu-latest` | `lint` (`ruff check .`) |
+| `addon-lint` (`:82`) | `ubuntu-latest` | `addon-lint` via `frenck/action-app-linter@v2` (`:92`; renamed from action-addon-linter, warnings do not fail) |
+| `smoke` (`:99`) | `ubuntu-24.04` / `ubuntu-24.04-arm` (`:111-117`), `fail-fast: false` | `smoke (amd64, ubuntu-24.04)`, `smoke (aarch64, ubuntu-24.04-arm)`; runs `scripts/smoke-test.sh` (`:126`) |
 
-There is no separate docker build job; smoke builds first (`:98`). **Branch protection on `main` requires exactly those seven check names**, derived by GitHub from job id plus every matrix value, so bumping `runner: ubuntu-24.04` alone renames a check and blocks every PR with no error naming the cause. `tests/test_packaging.py:263-305` pins the derived set; the protection rule must be edited in the same change.
+Every job runs with a read-only token (`permissions: contents: read`, `:13-14`), pinned by `TestCiTokenIsReadOnly` (`tests/test_packaging.py:803`).
+
+There is no separate docker build job; smoke builds first (`:105`). **Branch protection on `main` requires exactly those seven check names**, derived by GitHub from job id plus every matrix value, so bumping `runner: ubuntu-24.04` alone renames a check and blocks every PR with no error naming the cause. `tests/test_packaging.py:263-305` pins the derived set; the protection rule must be edited in the same change.
 
 **Pins are written twice**: `pyproject.toml:17-20` (what CI installs) and `siseli_bridge/requirements.txt` (what the image installs) must agree, and `Dockerfile:1` must equal `scripts/smoke-test.sh:18` (`tests/test_packaging.py:436-471`). Dependabot is registered for both pip roots and for docker (`.github/dependabot.yml:8-26`), so each single-file bot PR fails CI until a human lands the pair; this is the documented intent.
 
@@ -187,7 +189,7 @@ which needs a second of wall time has to run on the main thread.
 Fix: have `health_logger` or the main loop check `sniffer.running` and either restart the sniffer or clear `RUNNING` so the container exits and Supervisor restarts it. The smoke test cannot catch this; its ready marker is the same log line (`scripts/smoke-test.sh:20`).
 
 **2. The `INVERTER_COUNT` scaling basis is unproven.**
-`_scale_main_power` (`parsers.py:1230`) multiplies load, mains and generation power by `INVERTER_COUNT` (`:1316`, `:1387`, `:1581`), the factor also enters grid import (`:863`) and the legacy battery current (`:744`, `:768`), and all of it feeds five monotonic kWh counters (`:772-778`) that persist across restarts (`:1974` -> `core.py:140`). Whether the inverter's blocks carry per-unit or system figures is recorded as the top open question in `captures/README.md:64-66` and `captures/2026-08-21_2341_discharging.md:108-122`, yet `DOCS.md:209` says "per-unit figures" flatly and `siseli_bridge/CHANGELOG.md:259` calls the 11 kW nameplate confirmed. The proposed 24-hour `c_generation_energy_kwh` vs `pv_today_kwh` ratio (`CHANGELOG.md:237`) cannot discriminate, because both derive from the same device's blocks (`parsers.py:1572-1581`, `:1187-1188`). The shipped default `INVERTER_COUNT: 1` (`config.yaml:38`) is unaffected, and the night-time efficiency figure (89.6 %) leans the code's way.
+`_scale_main_power` (`parsers.py:1230`) multiplies load, mains and generation power by `INVERTER_COUNT` (`:1316`, `:1387`, `:1581`), the factor also enters grid import (`:863`) and the legacy battery current (`:744`, `:768`), and all of it feeds five monotonic kWh counters (`:772-778`) that persist across restarts (`:1974` -> `core.py:140`). Whether the inverter's blocks carry per-unit or system figures is recorded as the top open question in `captures/README.md:66-68` and `captures/2026-08-21_2341_discharging.md:108-122`, yet `DOCS.md:209` says "per-unit figures" flatly and `siseli_bridge/CHANGELOG.md:259` calls the 11 kW nameplate confirmed. The proposed 24-hour `c_generation_energy_kwh` vs `pv_today_kwh` ratio (`CHANGELOG.md:237`) cannot discriminate, because both derive from the same device's blocks (`parsers.py:1572-1581`, `:1187-1188`). The shipped default `INVERTER_COUNT: 1` (`config.yaml:38`) is unaffected, and the night-time efficiency figure (89.6 %) leans the code's way.
 Status: **open question — still open.** The docs no longer state the basis as fact (2.6.19); the
 question itself is unresolved and only a rating plate or a clamp meter settles it.
 Settle: a rating-plate photo or a clamp-meter reading on the maintainer's install at night with PV = 0; soften `DOCS.md:209` until then.
@@ -206,7 +208,7 @@ three things happened, and the health line opens with `broker=up`/`broker=DOWN`.
 Fix: register `on_connect_fail`, print `client.is_connected()` in the `[HEALTH]` line, and gate the "Published" line on an actual publish.
 
 **5. Grid import has never been captured non-zero, and its label and integrator consult different sources.**
-Import is integrated only when WdRR[6] is positive (`parsers.py:862-863`) and feeds a monotonic `total_increasing` counter (`:868-870`, `sensors.py:70`); every recorded token is `+00000` (`captures/README.md:48`, `captures/2026-08-21_1341_charging.md:347`), yet the reference install carries 56 kWh of import (`captures/2026-08-21_1341_charging.md:114`). Git shows the `> 0` rule unchanged since the counter was introduced (`2d8b3e6`), so the token has been positive at some point, presumably below the 35 % return-to-mains SOC (`captures/2026-08-21_1341_charging.md:68`) that neither capture reached. The direction label is decided by the flow code before the sign is read (`:1153-1161`): running the parser with token `-01500` and code `0` yields "Mains To Inverter" and 0 W, so label and integrator can contradict.
+Import is integrated only when WdRR[6] is positive (`parsers.py:862-863`) and feeds a monotonic `total_increasing` counter (`:868-870`, `sensors.py:70`); every recorded token is `+00000` (`captures/README.md:49`, `captures/2026-08-21_1341_charging.md:347`), yet the reference install carries 56 kWh of import (`captures/2026-08-21_1341_charging.md:114`). Git shows the `> 0` rule unchanged since the counter was introduced (`2d8b3e6`), so the token has been positive at some point, presumably below the 35 % return-to-mains SOC (`captures/2026-08-21_1341_charging.md:68`) that neither capture reached. The direction label is decided by the flow code before the sign is read (`:1153-1161`): running the parser with token `-01500` and code `0` yields "Mains To Inverter" and 0 W, so label and integrator can contradict.
 Status: open question (sign convention unverified) with one demonstrable inconsistency.
 Settle: a capture on grid with SOC below the return threshold; until then make the label and the integrator read the same source.
 
