@@ -421,6 +421,17 @@ Configuration page. Values stored by an older release are not updated by an upgr
 If the totals are inflated or were accumulated by a version before 2.6.7, set
 `RESET_ENERGY_COUNTERS` to `true`, restart the add-on once, then set it back to `false`.
 
+### The log says [GRID DIRECTION CONFLICT]
+
+The inverter reported grid power with one sign while its flow-direction code said the
+opposite, or said idle. The two come from different fields, and no capture has yet recorded
+the grid path while power was actually flowing, so the add-on cannot tell which one is
+right. Nothing changes because of it: grid import is still credited from the power sign, as
+before. The line is logged once per start.
+
+That line is the evidence that settles the question. Please open an issue with it and, if
+you can, a screenshot of the vendor app's grid page taken in the same minute.
+
 ### PV1 reads zero on a single-string system
 
 Expected. Some inverters report the live string on the second MPPT input, and the official

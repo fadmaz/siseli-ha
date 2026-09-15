@@ -1008,5 +1008,86 @@ class TestBatteryStatusMatchesReportedPower(_ParserTestCase):
         self.assertNotIn("[ENERGY SOURCE DISAGREEMENT]", tags)
 
 
+class TestGridDirectionConflictIsReported(_ParserTestCase):
+    """WdRR[6]'s sign drives the grid-import counter; WdRR[7]'s flow code drives the
+    label. Nothing forced them to agree: +01500 with code 1 labelled the flow
+    "Inverter To Mains" while crediting 1500 W of import. Every capture is +00000 with
+    code 0, so which token is right is unknown -- and the counter can never go down.
+    2.6.23 reports the disagreement and deliberately leaves crediting alone."""
+
+    CONFLICT = "[GRID DIRECTION CONFLICT]"
+
+    def _decode(self, token, code, now=1000.0):
+        block = captures.BLOCK_WDRR_NO_GRID_FLOW.replace(
+            b"+00000 0 ", token.encode("ascii") + b" " + code.encode("ascii") + b" ", 1
+        )
+        with mock.patch("src.siseli_bridge.parsers.time.monotonic", return_value=now):
+            return SolarParser._try_ascii_schema({"WdRR": block})
+
+    def _conflicts(self, logged):
+        return [c for c in logged.call_args_list if c.args and c.args[0] == self.CONFLICT]
+
+    def test_every_sign_and_direction_combination(self):
+        cases = [
+            (1500, "Mains To Inverter", False),
+            (1500, "Inverter To Mains", True),
+            (1500, "Idle", True),
+            (-1500, "Mains To Inverter", True),
+            (-1500, "Inverter To Mains", False),
+            (-1500, "Idle", True),
+            (0, "Inverter To Mains", False),
+            (None, "Idle", False),
+            (1500, None, False),
+        ]
+        for signed, direction, expected in cases:
+            with self.subTest(signed=signed, direction=direction):
+                self.assertEqual(
+                    SolarParser._grid_direction_conflicts(signed, direction), expected
+                )
+
+    def test_the_reproduced_contradiction_is_reported_once_with_its_raw_tokens(self):
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            for i in range(3):
+                state = self._decode("+01500", "1", now=1000.0 + 300 * i)
+        self.assertEqual(state["mains_current_flow_direction"], "Inverter To Mains")
+        conflicts = self._conflicts(logged)
+        self.assertEqual(len(conflicts), 1, "one report per process, not per payload")
+        self.assertEqual(conflicts[0].kwargs["level"], "warning")
+        self.assertEqual(conflicts[0].kwargs["token"], "+01500")
+        self.assertEqual(conflicts[0].kwargs["flow_code"], "1")
+        self.assertEqual(conflicts[0].kwargs["direction"], "Inverter To Mains")
+
+    def test_a_negative_sign_under_code_zero_is_reported(self):
+        """The case the architecture map names: the code wins the label, so -01500
+        with code 0 reads "Mains To Inverter" while the counter credits nothing."""
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            state = self._decode("-01500", "0")
+        self.assertEqual(state["mains_current_flow_direction"], "Mains To Inverter")
+        self.assertEqual(len(self._conflicts(logged)), 1)
+
+    def test_crediting_is_unchanged(self):
+        """Pinned on purpose. Changing which token credits import is a decision for
+        evidence, not for this release -- a wrong change is permanent on the counter."""
+        factor = max(1.0, float(parser_module.INVERTER_COUNT))
+        first = self._decode("+01500", "1", now=1000.0)
+        self.assertEqual(first["c_grid_import_power_w"], int(round(1500 * factor)))
+        shared_state.LAST_STATE.update(first)
+        second = self._decode("+01500", "1", now=1300.0)
+        self.assertGreater(second["c_grid_import_energy_kwh"], first.get("c_grid_import_energy_kwh", 0))
+
+    def test_agreeing_tokens_raise_nothing(self):
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            self._decode("+01500", "0")
+            self._decode("-01500", "1")
+        self.assertEqual(self._conflicts(logged), [])
+
+    def test_the_off_grid_capture_raises_nothing(self):
+        """Every real payload ever captured. A false alarm here would fire on every
+        install at every start."""
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            SolarParser._try_ascii_schema(captures.CAPTURE_TELEMETRY)
+        self.assertEqual(self._conflicts(logged), [])
+
+
 if __name__ == "__main__":
     unittest.main()

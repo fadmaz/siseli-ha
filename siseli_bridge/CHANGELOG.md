@@ -17,6 +17,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A Grid Direction That Contradicts The Grid Power Is Now Reported**: the grid-import
+  counter reads the sign of the grid power, while the flow-direction label reads a separate
+  code, so nothing forced them to agree — `+01500` with code `1` labelled the flow
+  "Inverter To Mains" while crediting 1500 W of import. Every capture ever taken is off
+  grid, so which of the two is right is unknown, and `c_grid_import_energy_kwh` can never go
+  down. The disagreement is now logged once as `[GRID DIRECTION CONFLICT]` with both raw
+  tokens. Crediting is deliberately unchanged until a real on-grid report settles it.
 - **The Star-Import Guard Could Never Fail**: the test that stops `core.py`, `mqtt.py`
   and `parsers.py` from referencing a `_private` name from `config.py` — the fault that
   crash-looped 2.6.2 on start — ended its pattern in a literal backspace byte where the
