@@ -786,15 +786,25 @@ class TestStartupPath(unittest.TestCase):
             re.findall(r"^def _([a-z]\w*)\(", (src_dir / "config.py").read_text(encoding="utf-8"), re.M)
         )
 
+        # An empty set would pass every module trivially.
+        self.assertTrue(private, "found no private names in config.py to check")
+
         for module in ("core.py", "mqtt.py", "parsers.py"):
             text = (src_dir / module).read_text(encoding="utf-8")
             if "from .config import *" not in text:
                 continue
             for name in sorted(private):
+                pattern = r"(?<![\w.])_" + re.escape(name) + r"\b"
                 with self.subTest(module=module, name=name):
+                    # The pattern must be able to fire at all. It shipped ending in a
+                    # literal backspace byte where \b was meant -- a shell heredoc had
+                    # turned the escape into the character -- so it could never match,
+                    # and this guard passed from the day it was written without
+                    # checking anything.
+                    self.assertRegex(f"value = _{name}\n", pattern)
                     self.assertNotRegex(
                         text,
-                        r"(?<![\w.])_" + re.escape(name) + r"",
+                        pattern,
                         f"_{name} is private to config.py and is not exported by the star import",
                     )
 
