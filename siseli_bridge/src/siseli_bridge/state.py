@@ -140,10 +140,12 @@ def host_boot_id() -> Optional[str]:
     return value or None
 
 
-#: Held from the snapshot to the throttle bookkeeping by every thread that publishes the
-#: state topics: the capture thread (parse_payload), the health thread (publish_tick, via
-#: parsers.republish_state) and the paho thread (on_connect's replay). Without it a thread
-#: that took its snapshot first could publish it last, and the broker would keep the older
-#: values retained -- a total_increasing counter stepping backwards. Taken before
-#: STATE_LOCK, never while holding it. Reach it as ``_state.PUBLISH_LOCK``.
+#: Every thread that publishes the state topics takes the snapshot it publishes, publishes
+#: it and does the throttle bookkeeping under this lock: the capture thread
+#: (parse_payload), the health thread (publish_tick, via parsers.republish_state) and the
+#: paho thread (on_connect's replay). Without it a thread that took its snapshot first could
+#: publish it last, and the broker would keep the older values retained -- a
+#: total_increasing counter stepping backwards. parse_payload merges into LAST_STATE before
+#: taking it; that is safe because the capture thread is LAST_STATE's only runtime writer.
+#: Taken before STATE_LOCK, never while holding it. Reach it as ``_state.PUBLISH_LOCK``.
 PUBLISH_LOCK = threading.Lock()

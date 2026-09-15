@@ -731,10 +731,11 @@ def republish_state(now: Optional[float] = None, due=None) -> bool:
     """Republish the retained state without a payload. Returns True if sent.
 
     Runs on the health thread while parse_payload publishes from the capture thread, so
-    both hold PUBLISH_LOCK from the snapshot to the bookkeeping. Without it a flush that
-    took its snapshot before a payload was decoded could publish it after, leaving the
-    older values retained. ``due``, when given, is checked again under the lock, so a
-    publish the capture thread made in the meantime is not repeated.
+    both take the snapshot they publish, publish it and do the bookkeeping under
+    PUBLISH_LOCK. Without it a flush that took its snapshot before a payload was decoded
+    could publish it after, leaving the older values retained. ``due``, when given, is
+    checked again under the lock, so a publish the capture thread made in the meantime
+    is not repeated.
     """
     global LAST_PUBLISH_TS, PENDING_PUBLISH
     with _shared_state.PUBLISH_LOCK:
@@ -2345,10 +2346,17 @@ class SolarParser:
                             publish_sensor_discovery(key)
 
                     global LAST_PUBLISH_TS, PENDING_PUBLISH
-                    # Held to the bookkeeping, as in republish_state: the health
-                    # thread's flush publishes the same topics, and whichever thread
-                    # publishes last is what the broker keeps.
+                    # Held from the snapshot to the bookkeeping, as in republish_state:
+                    # the health thread's flush publishes the same topics, and whichever
+                    # thread publishes last is what the broker keeps. The snapshot is
+                    # retaken inside the lock so that holds even if LAST_STATE ever gains
+                    # a second writer; today this thread is its only one. The merge and
+                    # the change diff stay outside, so a tick landing between them and
+                    # the lock can publish this payload's values first. This payload is
+                    # then logged as throttled and the next tick republishes the same
+                    # values -- a redundant line, never an older value left retained.
                     with _shared_state.PUBLISH_LOCK:
+                        snapshot = _shared_state.snapshot_state()
                         now = time.monotonic()
                         if changed_keys:
                             PENDING_PUBLISH = True
