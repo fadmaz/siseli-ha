@@ -1,9 +1,9 @@
 # The DTU's MQTT transport
 
 What this project knows about how the inverter's Wi-Fi dongle — the DTU — talks to the
-Siseli cloud. The add-on reads this traffic and forwards it unchanged; it never sends on it
-(see [`SECURITY.md`](../SECURITY.md)). This file exists so the traffic it sees can be
-understood.
+Siseli cloud. The add-on reads this traffic and forwards the DTU's cloud connection
+unchanged; it never sends on it (see [`SECURITY.md`](../SECURITY.md)). This file exists so
+the traffic it sees can be understood.
 
 Two kinds of statement are kept apart here:
 
@@ -22,7 +22,8 @@ so scrub it before sharing a log.
 
 ### The payload
 
-Each PUBLISH payload is a single `0x00` byte followed by JSON:
+On Device C — the only device whose raw payload bytes have been logged — each PUBLISH
+payload is a single `0x00` byte followed by JSON:
 
 ```text
 \x00{"c":1,"t":"<8 chars>","s":"<9 chars>","i":101,"e":0,
@@ -42,21 +43,24 @@ Each PUBLISH payload is a single `0x00` byte followed by JSON:
 | `b.tf`, `b.cf`, `b.lf` | `2`; `1` then `2`; `0` then `1` | total fragments, 1-based fragment index, last-fragment flag |
 | `b.ct[]` | `cn` a four-character block name, `co` base64 | one entry per inverter reply |
 
-The patterns hold across every set captured; the meanings are inference. The leading
-`0x00` is consistent with an empty MQTT 5 property block.
+The patterns hold across all three Device C sets captured; the meanings are inference. The
+leading `0x00` is consistent with an empty MQTT 5 property block, but the protocol level
+of the CONNECT has never been logged, so that is a hypothesis.
 
 ### Fragmentation
 
 A response set can be larger than one message. Device C's 24 blocks always arrive as 14
 then 10. Blocks are self-contained, so each fragment decodes on its own. Device A's "two
-payloads with zero overlap" ([capture](../captures/2026-08-21_1341_charging.md)) is
-probably the same thing, but its envelope fields were never recorded. **Record them on the
-next Device A capture** with the `raw_json` debug flag.
+payloads with zero overlap" ([capture](../captures/2026-08-21_1341_charging.md)) look like
+the same thing: that capture's envelope appendix shows the same `ts` on both. It did not
+record `tf`, `cf` or `lf`; the `raw_json` debug flag would show those next time. It
+cannot show `c`, `t`, `s`, `i` or `e`, which the parser discards before logging.
 
 ### What a block is
 
-Each `co` is the base64 of one raw serial reply from the inverter, as the DTU received it.
-Block names are opaque, and no name has yet been seen on two different devices.
+Each `co` is the base64 of one inverter reply. For Devices B and C, whose frames carry a
+checksum that verifies, that reply is demonstrably the raw serial frame. Device A's frames
+have no checksum, so whether the DTU passes them on verbatim is unknown.
 
 | Device | Body | Notes |
 |---|---|---|
@@ -64,19 +68,23 @@ Block names are opaque, and no name has yet been seen on two different devices.
 | B — [#30](https://github.com/fadmaz/siseli-ha/issues/30) | binary Modbus RTU with CRC16/Modbus | [Device B note](../captures/2026-08-22_device-b-modbus.md) |
 | C — [#32](https://github.com/fadmaz/siseli-ha/issues/32) | ASCII Voltronic PI30 replies with CRC16-XMODEM | [Device C note](../captures/2026-09-02_device-c-voltronic-pi30.md) |
 
-### `dev_rpc_reply` carries the same data
+Block names are opaque codes. Device A's recur on a second unit of the same kind (the
+reference unit behind `sensor_mapping.md`), so they are not unique per device, but no name
+is shared between Devices A, B and C.
 
-On Device C a `dev_rpc_reply` set and the next `dev_prop_post` set are byte-identical
-except for the clock block. The reply coincided with the vendor portal's device page being
-open — the page shows an auto-refresh countdown — which suggests the portal triggers it.
-That part is inference.
+### `dev_rpc_reply` carries the same blocks
+
+On Device C, the one `dev_rpc_reply` set captured carries, byte for byte, the same blocks as
+the `dev_prop_post` set that followed it, except for the clock block. The envelopes differ.
+The reply coincided with the vendor portal's device page being open — the page shows an
+auto-refresh countdown — which suggests the portal triggers it. That part is inference.
 
 ## How the add-on uses it
 
-`handle_inverter_tcp_packet` in `core.py` passes every PUBLISH on the inverter's stream to
-`SolarParser.parse_payload`, whatever its topic. The parser re-roots at the `"b":` key, so
-the leading byte and `c`, `t`, `s`, `i` and `e` are discarded, and it never reads `ts`,
-`tf`, `cf` or `lf`. Each fragment is parsed on its own.
+`handle_inverter_tcp_packet` in `core.py` passes every PUBLISH on the inverter-to-cloud
+stream to `SolarParser.parse_payload`, whatever its topic. The parser re-roots at the `"b":`
+key, so the leading byte and `c`, `t`, `s`, `i` and `e` are discarded, and it never reads
+`ts`, `tf`, `cf` or `lf`. Each fragment is parsed on its own.
 
 ## Reported by PR #43 — not verified here
 
@@ -86,13 +94,16 @@ these are reports, not observations. Where something can be checked against a ca
 here, that is said.
 
 - **Asking for a reading.** The cloud publishes `{"c":5,"t":…,"s":…,"i":501,"b":{}}` on
-  `dtu/<id>/sub/service/dev_rpc`, and the DTU answers on `dtu/<id>/pub/service/dev_rpc_reply`
-  with `i` = 502. The author's capture shows the vendor cloud doing this about every 26 s.
-  *Consistent with Device C, whose replies carry `c` = 5, `i` = 502.*
+  `dtu/<id>/sub/service/dev_rpc`, and the DTU answers on
+  `dtu/<id>/pub/service/dev_rpc_reply`. The author's capture shows the vendor cloud doing
+  this about every 26 s. *Observed here: Device C's replies carry `c` = 5 and `i` = 502, one
+  higher than the reported request.*
 - **Acknowledgements.** For a message the DTU originates, the cloud replies on the same
   topic under `sub/` with `_reply` appended, echoing `c` and `t`, with a fresh `s`,
-  `i` + 1 and `e` = 0. Without that acknowledgement the DTU keeps retrying its identity
-  message (`dtu_prop_post`) and never moves on to `dev_prop_post`.
+  `i` + 1 and `e` = 0. When that acknowledgement was missing or malformed, the DTU retried
+  its identity message (`dtu_prop_post`) three times with backoff and never moved on to
+  `dev_prop_post`. The PR saw the same symptom when the HTTP bootstrap below was
+  unreachable.
 - **The leading `0x00`** is on every PUBLISH the firmware sends, and it expects the same on
   every PUBLISH it receives. *Consistent with every Device C payload.*
 - **Replies come from a cache.** `dev_rpc` returns what the DTU last read from the
@@ -103,17 +114,20 @@ here, that is said.
   1. `POST /dtu/checkin`, which returns the time and a collector-protocol configuration;
   2. `POST /dtu/devices/findSingle`;
   3. `GET /dtu/servers/mqtt`, whose `data.main.host` is the broker it then resolves and
-     connects to — `hongkong.broker.mqtt.solar.siseli.com`, port 1883, no TLS.
+     connects to. In the author's capture that was `hongkong.broker.mqtt.solar.siseli.com`,
+     port 1883, no TLS; the region prefix suggests it can differ elsewhere.
 
   The HTTP calls carry the same credentials as the MQTT CONNECT. The DTU sometimes skips
   DNS and dials a cached address, `8.212.16.60`.
-- **Commands.** `dev_rpc` also carries inverter serial commands — the PR used standard PI30
-  setting commands for the buzzer, backlight, output mode and clearing a fault. This add-on
-  never sends on it.
+- **Commands.** The PR replays commands it captured from the vendor cloud, sent on
+  `dev_rpc` with `i` = 503. Two are standard PI30 flag commands (backlight and buzzer,
+  `PEx`/`PDx` and `PEa`/`PDa`). Two are not in the published PI30MAX document: a
+  "dual output" switch and a fault-clear. This add-on never sends on `dev_rpc`.
 
 ## Why the add-on does not use any of this
 
-Asking for a reading, or sending anything else, means terminating the DTU's connection
-instead of forwarding it. At that point the vendor app loses its data and the add-on
-becomes something that talks to the inverter. This project's premise is the opposite:
-observe, forward, never inject. The notes above are here to explain the traffic it sees.
+Asking for a reading, or sending anything else, means modifying or terminating the DTU's
+connection instead of forwarding it, and the add-on would become something that talks to
+the inverter. This project's premise is the opposite: observe, forward, never inject.
+PR #43 goes further still and replaces the cloud, at which point the vendor app loses its
+data. The notes above are here to explain the traffic this add-on sees.

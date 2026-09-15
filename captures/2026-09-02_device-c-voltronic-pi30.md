@@ -1,15 +1,15 @@
 # Device C — Falcon VMIII-4000 — Voltronic PI30
 
-Reported in [issue #32](https://github.com/fadmaz/siseli-ha/issues/32) against add-on 2.6.17
-with every sensor reading `Unknown`, then re-captured on 2.6.20 on 2026-09-02 together with
-four screenshots of the vendor portal. **This device is not supported yet and this file is
-not a decode.** It records what the captures prove, so the decoder is built from evidence
-rather than rediscovered.
+Reported in [issue #32](https://github.com/fadmaz/siseli-ha/issues/32) against add-on 2.6.17,
+which recognised none of its blocks. Re-captured on 2.6.20 on 2026-09-02 together with four
+screenshots of the vendor portal. **This device is not supported yet and this file is not a
+decode.** It records what the captures prove, so the decoder is built from evidence rather
+than rediscovered.
 
 Unlike [Device B](2026-08-22_device-b-modbus.md), this one clears the bar a decode needs:
-the re-capture is byte-faithful, every frame carries its own checksum, and the portal
-screenshots pair with it to the second. Support is planned and tracked in #32; what is
-still missing is listed at the end.
+the re-capture is complete and byte-faithful, every frame's checksum verifies, and — what
+Device B never had — the portal screenshots pair with it to the second. Support is planned
+and tracked in #32; what is still missing is listed at the end.
 
 ## What is shared, and what is not
 
@@ -17,7 +17,7 @@ still missing is listed at the end.
 |---|---|---|
 | MQTT topics | `dtu/<id>/pub/event/dev_prop_post` | **same**, and also `dtu/<id>/pub/service/dev_rpc_reply` carrying the same data |
 | Envelope | JSON, base64 blocks under `b.ct`, `cn`/`co` keys | **same** — see [`../docs/DTU_PROTOCOL.md`](../docs/DTU_PROTOCOL.md) |
-| Block names | `2ONL 2l0E 93VQ COST Mpod V4W3 WdRR Yavb dHrK eo8w noeP` | 24 names, **no overlap** with Device A or B |
+| Block names | `2ONL 2l0E 93VQ COST Mpod SUCV V4W3 WdRR Yavb dHrK eo8w hR6Y noeP uxJp v09K` | 24 names, **no overlap** with Device A or B |
 | Block body | ASCII, `(`-framed, space-separated tokens, no checksum | ASCII, `(`-framed, space-separated tokens, **then a two-byte CRC** before the CR — Voltronic/Axpert **PI30** query replies |
 
 `cCft` answers `(PI30`: the protocol names itself.
@@ -26,8 +26,9 @@ still missing is listed at the end.
 
 CRC16-XMODEM — poly `0x1021`, init `0x0000`, stored big-endian — computed over the frame
 from the leading `(` up to, but not including, the two CRC bytes. **All 48 blocks in the
-four payloads verify**: 25 distinct bodies, since the clock block differs between the two
-sets. No frame is truncated; since 2.6.18 `hex_preview` logs up to 4096 bytes and marks a
+four payloads verify**: 25 distinct name/body pairs, since the clock block differs between
+the two sets, and 22 distinct frames, since the three NAKs are identical and so are `oTLG`
+and `48rR`. No frame is truncated; since 2.6.18 `hex_preview` logs up to 4096 bytes and marks a
 cut. The 22 complete frames of the first report verify too; its `G4WT` and `MrfS` were cut
 at 64 bytes by the old preview limit, which is why this re-capture was needed.
 
@@ -49,7 +50,7 @@ value; **B** is byte-identical to a published mpp-solar test frame.
 | `G5E9` | 1 | QSID | serial number, long form | S |
 | `ahLb` | 1 | QID | serial number | S P |
 | `o2lC` | 1 | QVFW | main CPU firmware `00060.10` | S P |
-| `ag5g` | 1 | QVFW3 (QVFW2 not excluded) | secondary firmware `00025.12` | S P |
+| `ag5g` | 1 | QVFW3 (QVFW2 not excluded) | secondary firmware `00025.12`; the portal's "12" matches only the digits after the dot | S |
 | `MrfS` | 1 | QPIRI | ratings and settings, 25 fields | S P |
 | `sJqt` | 1 | QFLAG | enable/disable flags `EakxyzDbdjuv` | S P |
 | `G4WT` | 1 | QPIGS | live status, 24 fields | S P |
@@ -144,7 +145,7 @@ device states, never a derived value. PI30MAX describes field 12 as a raw NTC re
 
 Field 14 has three digits where the spec shows two; the portal settles the order of 14 and
 15. The portal's "Maximum charging current 120 A" and "Maximum utility charging current
-100 A" are not settings — they are the largest entries in `DB48` and `wb83`.
+100 A" appear not to be settings: they match the largest entries in `DB48` and `wb83`.
 
 These are **live settings, not constants**. Between the two captures the owner changed the
 output priority, input range, re-charge voltage, float voltage and equalisation voltage.
@@ -152,8 +153,8 @@ output priority, input range, re-charge voltage, float voltage and equalisation 
 ## The system, as the wire describes it
 
 A 24 V bank (rating 24.0, cut-off 24.0, bulk 28.8, float 27.6) on a 4000 VA / 4000 W,
-230 V / 50 Hz hybrid, machine type 10. Single unit, single PV input, battery type "User",
-no BMS link, equalisation off. At the capture it was in battery mode, discharging 6 A at
+230 V / 50 Hz hybrid, machine type 10. Single unit, no PV2 data on the wire, battery type
+"User", no BMS link, equalisation off. At the capture it was in battery mode, discharging 6 A at
 85 %, on 151 W of PV, with the grid present (219.4 V) but unused under SBU priority.
 Lifetime PV is 253.8 kWh and lifetime load 114.1 kWh (`00253800` and `00114100` Wh; every
 sample so far ends in `00`, which suggests 100 Wh resolution). The "4200W" in the issue
@@ -170,18 +171,20 @@ title is not on the wire; `EMu5`'s `-4000` is QMN's rated-VA suffix.
 - About 80 wire values have a portal counterpart: roughly 28 from `G4WT`, 25 from `MrfS`,
   10 QFLAG flags and 8 QBEQI fields, plus model, firmware, QMOD, QT, QET and QLT.
 
-Some portal values have **no wire source** and must not be published: "PV2 … 0" (there is
-no QPIGS2 on the wire), and "Battery percentage 0 %", cut-off and C.V. voltages of 0 V,
-which match the QBMS zeros of a BMS reporting itself disconnected.
+Some portal values must not be published. "PV2 … 0" has no wire source at all — there is
+no QPIGS2 reply. "Battery percentage 0 %" and the 0 V cut-off and C.V. voltages do come
+from the wire, from QBMS (`UefO`), but those fields are zero placeholders while the BMS
+reports itself disconnected; they describe no battery.
 
 ## Envelope and fragmentation
 
 One 24-query response set is split across two MQTT messages (`tf=2`): 14 blocks in
 `cf=1`, 10 in `cf=2`, the same split every time. A `dev_rpc_reply` set and the next
-`dev_prop_post` set carry the same data. `ts` is the DTU's clock (+08:00); the inverter's
-own clock runs 134–178 s behind it, and two QT readings 61 s apart arrived in sets whose
-`ts` differ by 17 s. So the DTU polls the inverter on its own cycle and publishes cached
-replies: `ts` is a publish time, not a sample time. The envelope itself is described in
+`dev_prop_post` set carry the same blocks. `ts` is the DTU's clock (+08:00). The QT reading
+trails `ts` by 134–178 s — the inverter's clock offset plus the age of the cached reply —
+and two QT readings 61 s apart arrived in sets whose `ts` differ by 17 s. So the DTU polls
+the inverter on its own cycle and publishes cached replies: `ts` is a publish time, not a
+sample time. The envelope itself is described in
 [`../docs/DTU_PROTOCOL.md`](../docs/DTU_PROTOCOL.md).
 
 ## What a decoder has to get right
@@ -190,9 +193,11 @@ replies: `ts` is a publish time, not a sample time. The envelope itself is descr
    CRC, then map names to queries; do not infer a query from a block's shape.
 2. **Strip the CRC** before splitting tokens.
 3. **Count response sets, not messages.** Two fragments per set, plus replies triggered by
-   an open portal page, would otherwise look like extra readings. The cadence measurement
-   takes the largest recent gap, so this is a correctness point for a decoder rather than
-   a fault today.
+   an open portal page, would otherwise look like extra readings. Nothing on this device
+   decodes today, so no gap is recorded. Once it does, the cadence measurement — the
+   largest of the last eight gaps — would survive the fragment pair, but a portal left open
+   could fill the window with ~30 s gaps and remove the measured floor. A decoder must
+   record one gap per set.
 4. **Use the device's own energy counters.** QET and QLT are Wh totals, so they become
    `total_increasing` sensors directly and nothing needs integrating.
 5. **Treat settings as live.** QPIRI, QFLAG and QBEQI change when the owner changes them.
@@ -205,8 +210,8 @@ replies: `ts` is a publish time, not a sample time. The envelope itself is descr
 2. **Other states,** each paired with the portal: solar charging (battery current above
    0), line mode with AC charging, and after dark.
 3. **Warnings and faults.** QPIWS is not among the queries, and three are NAKs whose query
-   is unknown; the `raw_json` debug flag would log the block order and let them be
-   attributed. No fault entity is possible yet.
+   is unknown; the `raw_json` debug flag logs the block order, which may help attribute
+   them. No fault entity is possible yet.
 4. **Unpaired fields:** `G4WT` 21 (b10, b8) and 22–24, `u51Q`, the QOPPT/QCHPT arrays, and
    the reserved QBEQI fields.
 
@@ -223,7 +228,7 @@ per-fragment and taken from the paired set below.
   [BMBIT-oss/Various-Solar-Protocols-Docs](https://github.com/BMBIT-oss/Various-Solar-Protocols-Docs)
 - mpp-solar's [`pi30.py`, `pi30max.py` and `protocol_helpers.py`](https://github.com/jblance/mpp-solar/tree/master/mppsolar/protocols)
 - The reporter's capture and screenshots, in
-  [this comment on #32](https://github.com/fadmaz/siseli-ha/issues/32)
+  [this comment on #32](https://github.com/fadmaz/siseli-ha/issues/32#issuecomment-5510993696)
 
 ## Appendix — the portal-paired `dev_prop_post` set, verbatim
 
