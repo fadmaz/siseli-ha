@@ -50,6 +50,16 @@ All notable changes to this project will be documented in this file.
   relays nothing. The forwarding caveat now also covers a dongle that re-bootstraps over DNS
   and HTTP (reported in PR #43, not verified), and what `TCP:1883` in the drop counter
   means. Two `[HEALTH]` examples used a format the code no longer prints.
+- **The Test Suite Wrote To `/data` On The Developer's Machine**: every path through
+  `parse_payload` reaches the state-cache writer, and nothing redirected it, so running the
+  tests on Windows kept rewriting `D:\data\state.json` with decoded capture values. Every
+  test now gets a private directory for both the state cache and the discovery marker, and
+  the one-shot flag rule is itself tested: `TestEveryOnceFlagIsIsolated` flips every
+  `*_LOGGED` flag inside `isolated_state` and fails on any that is not restored.
+- **A Reporter's Serial Number Was In A Test Fixture**: the issue #32 fixture carried the
+  reporter's inverter serial in its `ahLb` block. It is replaced by a hand-built stand-in
+  with a recomputed CRC that the diagnostic classifies identically. Git history keeps the
+  old bytes.
 - **The Star-Import Guard Could Never Fail**: the test that stops `core.py`, `mqtt.py`
   and `parsers.py` from referencing a `_private` name from `config.py` — the fault that
   crash-looped 2.6.2 on start — ended its pattern in a literal backspace byte where the

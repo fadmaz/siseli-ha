@@ -1109,5 +1109,45 @@ class TestCellListOverflow(_ParserTestCase):
         self.assertEqual(overflow[0].kwargs.get("level"), "warning")
 
 
+class TestEveryOnceFlagIsIsolated(unittest.TestCase):
+    """A one-shot *_LOGGED flag that isolated_state does not restore leaks between
+    tests: the first test to trip it silences every later one, so a failure depends on
+    run order. The rule was written down; this makes it a test, and it can fail --
+    it first proves the scan finds the flags it is meant to guard."""
+
+    def test_every_once_flag_in_parsers_and_state_is_restored(self):
+        modules = (parser_module, shared_state)
+        flags = [
+            (module, name)
+            for module in modules
+            for name, value in vars(module).items()
+            if name.endswith("_LOGGED") and isinstance(value, bool)
+        ]
+        found = {name for _, name in flags}
+        self.assertTrue(
+            {
+                "ENERGY_DT_CLAMP_LOGGED",
+                "GRID_DIRECTION_CONFLICT_LOGGED",
+                "CELL_LIST_OVERFLOW_LOGGED",
+                "UNSUPPORTED_PROTOCOL_LOGGED",
+            }
+            <= found,
+            "the scan no longer finds the flags it exists to guard",
+        )
+        before = {(module.__name__, name): getattr(module, name) for module, name in flags}
+        for module, name in flags:
+            self.addCleanup(setattr, module, name, before[(module.__name__, name)])
+        with isolated_state():
+            for module, name in flags:
+                setattr(module, name, not getattr(module, name))
+        for module, name in flags:
+            with self.subTest(flag=name):
+                self.assertEqual(
+                    getattr(module, name),
+                    before[(module.__name__, name)],
+                    f"{name} is not restored by isolated_state",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

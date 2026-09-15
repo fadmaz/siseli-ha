@@ -144,6 +144,7 @@ def isolated_state():
     saved_current_rejected = parser_mod.BATTERY_CURRENT_REJECTED_LOGGED
     saved_direction_conflict = parser_mod.GRID_DIRECTION_CONFLICT_LOGGED
     saved_cell_overflow = parser_mod.CELL_LIST_OVERFLOW_LOGGED
+    saved_cache_write_ts = parser_mod.LAST_CACHE_WRITE_TS
     try:
         yield
     finally:
@@ -171,6 +172,7 @@ def isolated_state():
         parser_mod.BATTERY_CURRENT_REJECTED_LOGGED = saved_current_rejected
         parser_mod.GRID_DIRECTION_CONFLICT_LOGGED = saved_direction_conflict
         parser_mod.CELL_LIST_OVERFLOW_LOGGED = saved_cell_overflow
+        parser_mod.LAST_CACHE_WRITE_TS = saved_cache_write_ts
 
 
 # ---------------------------------------------------------------- fake broker
