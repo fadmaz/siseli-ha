@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Frames Carried The Wrong MAC On A Host With Two Interfaces**: every frame the bridge
+  builds — the ARP replies that put it in the path, the forwarded traffic and the corrective
+  replies sent on stop — left its source MAC unset, and scapy fills an unset source from the
+  interface its routing table picks for the destination, not from the interface the frame
+  goes out on. On a host with two interfaces on this network, with `SNIFF_IFACE` pinned, the
+  inverter and router were told the wrong MAC. Every frame now carries the capture
+  interface's MAC explicitly. A startup line, `[ARP] Frames are sent from …`, names it and
+  warns if scapy's own choice would have differed — on a host with one interface the frames
+  are unchanged. An interface scapy reports as `00:00:00:00:00:00` counts as unresolved
+  rather than being stamped into an ARP reply.
+
 ## [2.6.23] - 2026-09-15
 
 ### Changed

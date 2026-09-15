@@ -195,7 +195,27 @@ def resolve_own_mac() -> Optional[str]:
         OWN_MAC = norm_mac(get_if_hwaddr(SNIFF_IFACE or conf.iface))
     except Exception:
         OWN_MAC = None
+    # scapy answers an interface with no address with all zeros rather than raising.
+    # Stamped into an ARP reply that would tell both peers the other lives at
+    # 00:00:00:00:00:00, so it counts as unresolved and is retried next time.
+    if OWN_MAC == "00:00:00:00:00:00":
+        OWN_MAC = None
     return OWN_MAC
+
+
+def route_mac_for(ip: str) -> Optional[str]:
+    """The MAC scapy would stamp on a frame to `ip` if the source were left unset.
+
+    An unset Ether.src or ARP hwsrc is filled from the interface the routing table
+    picks for the destination -- not from the interface the frame is sent on. On a
+    host with two interfaces on this network the two differ, which is the defect
+    stamping the source explicitly fixes. Logged beside our own MAC at startup, so a
+    user's log shows whether the fix changed anything on their host.
+    """
+    try:
+        return norm_mac(get_if_hwaddr(conf.route.route(ip)[0]))
+    except Exception:
+        return None
 
 
 KNOWN_INVERTER_MACS = set()
@@ -223,17 +243,54 @@ class ArpSpoofer:
             log(f"[ARP] Inverter MAC: {INV_MAC}", level="info")
             log(f"[ARP] Router MAC:   {RTR_MAC}", level="info")
 
+    def report_source_mac(self) -> None:
+        """Say once which MAC the bridge's frames carry, and whether scapy's own choice
+        would have differed. The only on-host evidence that the source fix matters."""
+        own_mac = resolve_own_mac()
+        iface = SNIFF_IFACE or conf.iface
+        if not own_mac:
+            log(
+                f"[ARP] Could not read this host's MAC on {iface}; scapy will choose the "
+                f"source from the routing table, which is wrong on a host with two "
+                f"interfaces on this network -- pin SNIFF_IFACE",
+                level="warning",
+            )
+            return
+        route_mac = route_mac_for(INVERTER_IP)
+        if route_mac and route_mac != own_mac:
+            log(
+                f"[ARP] Frames are sent from {own_mac} on {iface}; scapy's route to "
+                f"{INVERTER_IP} would have stamped {route_mac} -- before 2.6.24 that was "
+                f"the MAC your inverter and router were told",
+                level="warning",
+            )
+        else:
+            log(f"[ARP] Frames are sent from {own_mac} on {iface}", level="info")
+
     def run(self) -> None:
         self.resolve_macs()
         if not _state.RUNNING:
             return
 
         log(f"[ARP] Interception ACTIVE: {INVERTER_IP} <-> {ROUTER_IP}", level="info")
+        self.report_source_mac()
 
         while _state.RUNNING:
+            # Stamped explicitly: left unset, scapy fills both fields from the route to
+            # the destination, which on a host with two interfaces on this network is
+            # the wrong interface's MAC. None (unresolvable) sends today's frames.
+            own_mac = resolve_own_mac()
             try:
-                send_layer2(Ether(dst=INV_MAC) / ARP(op=2, pdst=INVERTER_IP, psrc=ROUTER_IP, hwdst=INV_MAC), SNIFF_IFACE)
-                send_layer2(Ether(dst=RTR_MAC) / ARP(op=2, pdst=ROUTER_IP, psrc=INVERTER_IP, hwdst=RTR_MAC), SNIFF_IFACE)
+                send_layer2(
+                    Ether(src=own_mac, dst=INV_MAC)
+                    / ARP(op=2, hwsrc=own_mac, pdst=INVERTER_IP, psrc=ROUTER_IP, hwdst=INV_MAC),
+                    SNIFF_IFACE,
+                )
+                send_layer2(
+                    Ether(src=own_mac, dst=RTR_MAC)
+                    / ARP(op=2, hwsrc=own_mac, pdst=ROUTER_IP, psrc=INVERTER_IP, hwdst=RTR_MAC),
+                    SNIFF_IFACE,
+                )
             except Exception as exc:
                 log(f"[ARP ERROR] {exc}", level="error")
 
@@ -352,7 +409,7 @@ def packet_callback(pkt) -> None:
 
             if AUTO_INTERCEPT and RTR_MAC:
                 try:
-                    fwd_pkt = Ether(dst=RTR_MAC) / pkt[IP]
+                    fwd_pkt = Ether(src=own_mac, dst=RTR_MAC) / pkt[IP]
                     send_layer2(fwd_pkt, SNIFF_IFACE)
                 except Exception as exc:
                     log(f"[FWD ERROR] inverter->router {exc}", level="error")
@@ -372,7 +429,7 @@ def packet_callback(pkt) -> None:
             # re-emitted, duplicating what the real router already received.
             if own_mac and norm_mac(pkt[Ether].dst) == own_mac:
                 try:
-                    send_layer2(Ether(dst=RTR_MAC) / pkt[IP], SNIFF_IFACE)
+                    send_layer2(Ether(src=own_mac, dst=RTR_MAC) / pkt[IP], SNIFF_IFACE)
                     DROPPED_NON_TARGET[bucket] -= 1
                 except Exception as exc:
                     log(f"[FWD ERROR] inverter->router (non-broker) {exc}", level="error")
@@ -387,7 +444,7 @@ def packet_callback(pkt) -> None:
 
         if AUTO_INTERCEPT and INV_MAC:
             try:
-                fwd_pkt = Ether(dst=INV_MAC) / pkt[IP]
+                fwd_pkt = Ether(src=own_mac, dst=INV_MAC) / pkt[IP]
                 send_layer2(fwd_pkt, SNIFF_IFACE)
             except Exception as exc:
                 log(f"[FWD ERROR] router->inverter {exc}", level="error")
@@ -664,9 +721,9 @@ def restore_arp() -> None:
 
     The spoofer only ever emits poisoning replies, so stopping the add-on used to
     leave both caches wrong until they aged out -- minutes during which the inverter
-    could not reach the cloud at all. Note hwsrc is set explicitly here: the poisoning
-    replies omit it precisely so scapy fills in our own MAC, and the corrective ones
-    must not.
+    could not reach the cloud at all. hwsrc carries each peer's real MAC -- that is the
+    correction -- while the Ethernet source is ours, as on every frame we send. It
+    reads the cached OWN_MAC rather than resolving: this runs in a signal handler.
 
     Runs inside a signal handler, so it is hard-bounded at about a second and every
     failure is swallowed -- it must never block the MQTT teardown that follows.
@@ -676,12 +733,12 @@ def restore_arp() -> None:
     try:
         for _ in range(5):
             send_layer2(
-                Ether(dst=INV_MAC)
+                Ether(src=OWN_MAC, dst=INV_MAC)
                 / ARP(op=2, psrc=ROUTER_IP, hwsrc=RTR_MAC, pdst=INVERTER_IP, hwdst=INV_MAC),
                 SNIFF_IFACE,
             )
             send_layer2(
-                Ether(dst=RTR_MAC)
+                Ether(src=OWN_MAC, dst=RTR_MAC)
                 / ARP(op=2, psrc=INVERTER_IP, hwsrc=INV_MAC, pdst=ROUTER_IP, hwdst=RTR_MAC),
                 SNIFF_IFACE,
             )

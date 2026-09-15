@@ -25,8 +25,8 @@ address. The add-on inserts itself into that path so it can read the telemetry t
 already flowing.
 
 1. **ARP interception.** It sends unsolicited ARP replies (`op=2`) to exactly two hosts:
-   the inverter, telling it that the router's IP is at the Home Assistant host's MAC; and
-   the router, telling it the same about the inverter's IP. Both addresses are configured
+   the inverter, telling it that the router's IP is at the MAC of the interface the add-on
+   captures on; and the router, telling it the same about the inverter's IP. Both addresses are configured
    by you, in `INVERTER_IP` and `ROUTER_IP`. **It never scans, sweeps or discovers** — if
    you put the wrong IP in, it poisons the wrong host, and nothing in the add-on will
    notice. While `INVERTER_MAC` or `ROUTER_MAC` is blank it also sends ordinary ARP

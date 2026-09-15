@@ -495,8 +495,8 @@ class TestShutdown(_CoreTestCase):
         self.assertEqual(len(self.sent), 10, "five corrective pairs")
         for frame in self.sent:
             self.assertEqual(int(frame["ARP"].op), 2)
-        # hwsrc must name the true peer. The poisoning replies omit it so scapy fills
-        # in our own MAC; the corrective ones must not.
+        # hwsrc must name the true peer. The poisoning replies stamp our own MAC there;
+        # the corrective ones must not.
         hwsrcs = {frame["ARP"].hwsrc for frame in self.sent}
         self.assertEqual(hwsrcs, {INV_MAC, RTR_MAC})
 
@@ -1109,6 +1109,121 @@ class TestNoTestTouchesData(unittest.TestCase):
         ):
             with self.subTest(path=name):
                 self.assertNotEqual(os.path.dirname(path), real, f"{name} points at /data")
+
+
+class TestFramesCarryTheCaptureInterfaceMac(_CoreTestCase):
+    """Every frame the bridge builds used to leave Ether.src (and the poisoning replies'
+    ARP hwsrc) unset. scapy fills an unset source from the interface its routing table
+    picks for the *destination*, not from the interface the frame is sent on -- so on a
+    host with two interfaces on this network, and a pinned SNIFF_IFACE, the inverter and
+    router were told the wrong MAC. Assertions read the explicitly set fields, so they do
+    not depend on this machine's routing table."""
+
+    OWN = "0a:0b:0c:0d:0e:0f"
+
+    def setUp(self):
+        super().setUp()
+        self._saved_own = core.OWN_MAC
+        self.addCleanup(setattr, core, "OWN_MAC", self._saved_own)
+
+    @staticmethod
+    def _src(frame):
+        from scapy.all import Ether
+
+        return frame[Ether].fields.get("src")
+
+    def _run_spoofer_once(self):
+        def stop(_seconds):
+            shared_state.RUNNING = False
+
+        with mock.patch("src.siseli_bridge.core.time.sleep", side_effect=stop), \
+             mock.patch("src.siseli_bridge.core.route_mac_for", return_value=self.OWN), \
+             mock.patch("src.siseli_bridge.core.log"):
+            core.arp_spoofer.run()
+
+    def test_poisoning_replies_carry_our_mac_in_both_headers(self):
+        from scapy.all import ARP
+
+        with mock.patch("src.siseli_bridge.core.resolve_own_mac", return_value=self.OWN):
+            self._run_spoofer_once()
+        self.assertEqual(len(self.sent), 2)
+        for frame in self.sent:
+            with self.subTest(to=frame[ARP].pdst):
+                self.assertEqual(self._src(frame), self.OWN)
+                self.assertEqual(frame[ARP].fields.get("hwsrc"), self.OWN)
+
+    def test_forwarded_broker_traffic_carries_our_mac(self):
+        pkt = inverter_packet(publish_packet("dtu/x/pub", b"{}"), src=INV_IP, dst=CLOUD_IP, src_mac=INV_MAC)
+        with mock.patch("src.siseli_bridge.core.resolve_own_mac", return_value=self.OWN), \
+             mock.patch("src.siseli_bridge.core.SolarParser.parse_payload", return_value=True):
+            core.packet_callback(pkt)
+        self.assertEqual(len(self.sent), 1)
+        self.assertEqual(self._src(self.sent[0]), self.OWN)
+
+    def test_forwarded_router_traffic_carries_our_mac(self):
+        pkt = inverter_packet(b"", src=CLOUD_IP, dst=INV_IP, src_mac=RTR_MAC)
+        with mock.patch("src.siseli_bridge.core.resolve_own_mac", return_value=self.OWN):
+            core.packet_callback(pkt)
+        self.assertEqual(len(self.sent), 1)
+        self.assertEqual(self._src(self.sent[0]), self.OWN)
+
+    def test_opt_in_forwarding_carries_our_mac(self):
+        from scapy.all import IP, UDP, Ether
+
+        dns = Ether(src=INV_MAC, dst=self.OWN) / IP(src=INV_IP, dst=RTR_IP) / UDP(dport=53)
+        with mock.patch.multiple(core, FORWARD_ALL_INVERTER_TRAFFIC=True), \
+             mock.patch("src.siseli_bridge.core.resolve_own_mac", return_value=self.OWN):
+            core.packet_callback(dns)
+        self.assertEqual(len(self.sent), 1)
+        self.assertEqual(self._src(self.sent[0]), self.OWN)
+
+    def test_corrective_replies_carry_our_mac_but_the_peers_arp_addresses(self):
+        """The correction is the peers' real MACs in hwsrc; the Ethernet source is ours.
+        Stamping our MAC into hwsrc here would re-poison both caches on the way out."""
+        from scapy.all import ARP
+
+        core.OWN_MAC = self.OWN
+        with mock.patch("src.siseli_bridge.core.time.sleep"), mock.patch("src.siseli_bridge.core.log"):
+            core.restore_arp()
+        self.assertEqual(len(self.sent), 10)
+        self.assertEqual({self._src(frame) for frame in self.sent}, {self.OWN})
+        self.assertEqual({frame[ARP].hwsrc for frame in self.sent}, {INV_MAC, RTR_MAC})
+
+    def test_an_unreadable_mac_sends_todays_frames_and_says_so(self):
+        from scapy.all import ARP
+
+        lines = []
+        with mock.patch("src.siseli_bridge.core.resolve_own_mac", return_value=None), \
+             mock.patch("src.siseli_bridge.core.time.sleep", side_effect=lambda _s: setattr(shared_state, "RUNNING", False)), \
+             mock.patch("src.siseli_bridge.core.log", side_effect=lambda m, **k: lines.append((m, k.get("level")))):
+            core.arp_spoofer.run()
+        self.assertEqual(len(self.sent), 2)
+        for frame in self.sent:
+            self.assertIsNone(self._src(frame))
+            self.assertIsNone(frame[ARP].fields.get("hwsrc"))
+        self.assertTrue(any("pin SNIFF_IFACE" in m and level == "warning" for m, level in lines))
+
+    def test_a_different_route_mac_is_reported(self):
+        """The one line in a user's log that shows whether this fix changed anything on
+        their host: scapy's route-based choice differs from the capture interface."""
+        lines = []
+        with mock.patch("src.siseli_bridge.core.resolve_own_mac", return_value=self.OWN), \
+             mock.patch("src.siseli_bridge.core.route_mac_for", return_value="aa:aa:aa:aa:aa:aa"), \
+             mock.patch("src.siseli_bridge.core.log", side_effect=lambda m, **k: lines.append((m, k.get("level")))):
+            core.arp_spoofer.report_source_mac()
+        self.assertEqual(len(lines), 1)
+        message, level = lines[0]
+        self.assertEqual(level, "warning")
+        self.assertIn(self.OWN, message)
+        self.assertIn("aa:aa:aa:aa:aa:aa", message)
+
+    def test_an_all_zero_mac_counts_as_unresolved(self):
+        """scapy answers an interface without an address with all zeros. Stamped into an
+        ARP reply that would tell both peers the other lives at 00:00:00:00:00:00."""
+        core.OWN_MAC = None
+        with mock.patch("src.siseli_bridge.core.get_if_hwaddr", return_value="00:00:00:00:00:00"):
+            self.assertIsNone(core.resolve_own_mac())
+        self.assertIsNone(core.OWN_MAC, "retried next time rather than cached")
 
 
 if __name__ == "__main__":

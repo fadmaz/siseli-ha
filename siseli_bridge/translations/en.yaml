@@ -70,7 +70,7 @@ configuration:
     description: 'Leave blank to derive it from the Device ID. Every sensor watches this one topic, so it is also the bridge last-will topic.'
   SNIFF_IFACE:
     name: 'Network Sniffer Interface'
-    description: "Advanced: Specific network interface to intercept traffic on (e.g., 'eth0'). Leave blank for auto-detection."
+    description: "Advanced: Specific network interface to intercept traffic on (e.g., 'eth0'). Every frame the add-on sends carries this interface's MAC. Leave blank for auto-detection."
   LOG_VERBOSE:
     name: 'Legacy Verbose Logging (deprecated)'
     description: 'Ignored since 2.6.1. Use Debug Flags with xray and/or packets instead.'

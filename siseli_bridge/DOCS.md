@@ -98,7 +98,7 @@ in step 3 above.
 | `ROUTER_IP` | `192.168.1.1` | **Must be set to your gateway** |
 | `INVERTER_MAC` / `ROUTER_MAC` | *(blank)* | Optional. Pin these if auto-detection picks the wrong device |
 | `AUTO_INTERCEPT` | `true` | ARP interception. Turn off only if you route the traffic yourself |
-| `SNIFF_IFACE` | *(blank)* | Advanced. Pin the capture interface if auto-detection fails |
+| `SNIFF_IFACE` | *(blank)* | Advanced. Pin the capture interface if auto-detection fails. Every frame the add-on sends carries this interface's MAC; the startup log line `[ARP] Frames are sent from …` shows which |
 | `FORWARD_ALL_INVERTER_TRAFFIC` | `false` | See [the caveat below](#a-caveat-on-forwarding) |
 
 ### Identity and scaling
