@@ -247,14 +247,16 @@ def validate_config() -> None:
     else:
         # Checked on the exact string, because that is what the capture compares with
         # each packet's destination: a hostname, an IPv6 address or a stray space can
-        # never match, and every broker packet would be dropped with no other symptom.
+        # never match, so nothing is ever decoded -- the only trace was TCP:1883 in the
+        # health line's drop counter, and none at all with FORWARD_ALL on.
         try:
             ipaddress.IPv4Address(TARGET_HOST)
         except ValueError:
             errors.append(
                 f"TARGET_HOST must be an IPv4 address, got {TARGET_HOST!r}: it is compared "
-                f"with each packet's destination, so anything else never matches and the "
-                f"inverter's cloud traffic would be dropped"
+                f"with each packet's destination, so anything else never matches and nothing "
+                f"would be decoded (with interception on and FORWARD_ALL_INVERTER_TRAFFIC off, "
+                f"the inverter's cloud connection would not be relayed either)"
             )
 
     if DEVICE_ID != "siseli_inverter_1":

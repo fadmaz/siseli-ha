@@ -80,8 +80,8 @@ class TestValidateConfig(unittest.TestCase):
     @mock.patch("src.siseli_bridge.config.os.makedirs")
     def test_a_target_host_that_can_never_match_fails(self, _mock_makedirs):
         """TARGET_HOST is compared as a string with each packet's IPv4 destination. A
-        hostname, an IPv6 address or stray spaces never match, so every broker packet
-        was silently dropped. Refusing to start is strictly better."""
+        hostname, an IPv6 address or stray spaces never match, so nothing was ever
+        decoded. Refusing to start is strictly better, in every forwarding mode."""
         for value in ("broker.mqtt.solar.siseli.com", "2001:db8::1", " 8.212.18.157"):
             with self.subTest(value=value):
                 cfg = self._reload_config({"TARGET_HOST": value})

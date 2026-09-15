@@ -12,8 +12,9 @@ All notable changes to this project will be documented in this file.
   said removing a stored option blocks the upgrade; Supervisor's source says a stored key
   the schema no longer lists is only warned about and skipped. So removal is expected to be
   safe, and will happen once that is confirmed on a real installation.
-- **The Startup Log Shows The Forwarding Mode**: the `[Config] AUTO_INTERCEPT=` line now
-  also prints `FORWARD_ALL_INVERTER_TRAFFIC`. The two decide together what is relayed, and
+- **The Startup Log Shows The Forwarding Mode**: both `[Config] AUTO_INTERCEPT=` lines —
+  the one `run.sh` prints and the add-on's own — now also print
+  `FORWARD_ALL_INVERTER_TRAFFIC`. The two decide together what is relayed, and
   no log — the reference captures included — recorded which mode was running.
 - **`BMS Cell Count` Is Renamed `Cell Voltages Decoded`**: it counts the per-cell voltages
   the payload carried — at most 16 of a 32-cell pack on the reference install, and 2 when
@@ -41,8 +42,10 @@ All notable changes to this project will be documented in this file.
   Crediting is deliberately unchanged until a real on-grid report settles it.
 - **A `TARGET_HOST` That Could Never Match Is Now Refused At Startup**: it is compared as
   a string with each packet's IPv4 destination, so a hostname, an IPv6 address or a stray
-  space matched nothing and every broker packet was silently dropped — no sensors, and with
-  interception on, no cloud either. The add-on now refuses to start and says why. The
+  space matched nothing: no sensor was ever decoded, and with interception on and
+  `FORWARD_ALL_INVERTER_TRAFFIC` off the broker connection was not relayed either — visible
+  only as `TCP:1883` in the health line's drop counter. The add-on now refuses to start
+  and says why. The
   schema is deliberately unchanged, so an install that stored such a value can still
   upgrade and correct it.
 - **The Docs Overstated What Is Forwarded**: `SECURITY.md`, the README and the architecture
@@ -51,13 +54,17 @@ All notable changes to this project will be documented in this file.
   other traffic are dropped unless `FORWARD_ALL_INVERTER_TRAFFIC` is on, and passive mode
   relays nothing. The forwarding caveat now also covers a dongle that re-bootstraps over DNS
   and HTTP (reported in PR #43, not verified), and what `TCP:1883` in the drop counter
-  means. Two `[HEALTH]` examples used a format the code no longer prints.
+  means — to be checked before enabling the option, which relays but never decodes. Two
+  `[HEALTH]` examples used a format the code no longer prints, and DOCS.md and the
+  `RESET_ENERGY_COUNTERS` description now count five kWh totals, not three. `SECURITY.md`
+  now also lists the ARP requests sent while a MAC is not configured.
 - **The Test Suite Wrote To `/data` On The Developer's Machine**: every path through
-  `parse_payload` reaches the state-cache writer, and nothing redirected it, so running the
+  successful decode reaches the state-cache writer, and nothing redirected it, so running the
   tests on Windows kept rewriting `D:\data\state.json` with decoded capture values. Every
   test now gets a private directory for both the state cache and the discovery marker, and
   the one-shot flag rule is itself tested: `TestEveryOnceFlagIsIsolated` flips every
-  `*_LOGGED` flag inside `isolated_state` and fails on any that is not restored.
+  `*_LOGGED` flag in `parsers.py` and `state.py` inside `isolated_state` and fails on any
+  that is not restored.
 - **A Reporter's Serial Number Was In A Test Fixture**: the issue #32 fixture carried the
   reporter's inverter serial in its `ahLb` block. It is replaced by a hand-built stand-in
   with a recomputed CRC that the diagnostic classifies identically. Git history keeps the

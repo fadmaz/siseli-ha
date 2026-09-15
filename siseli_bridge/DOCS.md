@@ -274,11 +274,18 @@ else the inverter sends — DNS lookups (often addressed to the router itself), 
 DHCP renewals, MQTT to any other address — is **dropped**, because the add-on is now the
 inverter's gateway but is not a router.
 
-The reference install keeps its broker session this way, but that is not a guarantee for
-yours. [PR #43](https://github.com/fadmaz/siseli-ha/pull/43) reported, and this project has
-not verified, that the dongle looks its broker up over DNS and HTTP when it reconnects
-from scratch — after a power cut, say — and in the default mode those lookups are dropped.
-If your inverter fails to reconnect, or the health line reports dropped packets:
+Check the health line first. `TCP:1883` in its drop counter means the inverter is talking
+MQTT to an address other than `TARGET_HOST`, so its cloud connection is neither decoded
+nor relayed. Turn the `xray` debug flag on briefly to see the address in the `[X-RAY]`
+lines, and set `TARGET_HOST` to it. Enabling `FORWARD_ALL_INVERTER_TRAFFIC` instead would
+relay that session but never decode it, and it would vanish from the counter.
+
+An established broker session is not affected by the drop. But
+[PR #43](https://github.com/fadmaz/siseli-ha/pull/43) reported, and this project has not
+verified, that the dongle looks its broker up over DNS and HTTP when it reconnects from
+scratch — after a power cut, say — and in the default mode those lookups are dropped. If
+your inverter fails to reconnect and the health line reports dropped unicast packets such
+as `UDP:53` or `TCP:80`:
 
 ```
 [HEALTH] broker=up; avail=online; Last packet seen 12s ago; inverter_macs=[...]; router_macs=[...]; dropped_non_broker={'UDP:53': 40}
@@ -287,11 +294,6 @@ If your inverter fails to reconnect, or the health line reports dropped packets:
 set `FORWARD_ALL_INVERTER_TRAFFIC: true`. It relays the inverter's other unicast traffic
 that is addressed to the Home Assistant host. Broadcast and multicast are counted too, but
 they were never lost: they reach the router directly.
-
-`TCP:1883` in that counter means the inverter is talking MQTT to an address other than
-`TARGET_HOST`, so its cloud connection is neither decoded nor relayed. Turn the `xray`
-debug flag on briefly to see the address in the `[X-RAY]` lines, and set `TARGET_HOST` to
-it.
 
 With `AUTO_INTERCEPT: false` nothing is relayed at all.
 

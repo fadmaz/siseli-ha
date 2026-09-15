@@ -828,5 +828,18 @@ class TestCiTokenIsReadOnly(unittest.TestCase):
                 self.assertNotIn("permissions", job, f"job {name} declares its own permissions")
 
 
+class TestRunShPrintsTheForwardingMode(unittest.TestCase):
+    """run.sh echoes its own [Config] lines before Python starts. They are the only
+    configuration printed when startup is refused -- validate_config runs before the
+    add-on's own startup banner -- so its AUTO_INTERCEPT line must carry the forwarding
+    mode too, or a refused start hides the one setting that decides what is relayed."""
+
+    def test_the_auto_intercept_echo_names_forward_all(self):
+        run_sh = (ADDON / "run.sh").read_text(encoding="utf-8")
+        echoes = [line for line in run_sh.splitlines() if line.startswith('echo "[Config] AUTO_INTERCEPT=')]
+        self.assertEqual(len(echoes), 1)
+        self.assertIn("FORWARD_ALL_INVERTER_TRAFFIC=${FORWARD_ALL_INVERTER_TRAFFIC}", echoes[0])
+
+
 if __name__ == "__main__":
     unittest.main()

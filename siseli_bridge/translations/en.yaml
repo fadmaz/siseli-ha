@@ -97,7 +97,7 @@ configuration:
     description: 'How long without a decoded reading before every sensor is marked unavailable. The bridge automatically raises this if it measures your inverter reporting less often than this, so entities cannot flap (Default: 1800).'
   FORWARD_ALL_INVERTER_TRAFFIC:
     name: 'Forward All Inverter Traffic'
-    description: 'Advanced. With ARP interception on, the add-on becomes the inverter gateway but only relays broker traffic, so DNS and NTP are dropped. Enable this if the health log reports dropped packets and your inverter fails to reconnect. Off by default.'
+    description: 'Advanced. With ARP interception on, the add-on becomes the inverter gateway but only relays its broker connection, so its DNS, NTP and other traffic are dropped. Enable this if your inverter fails to reconnect and the health log reports dropped unicast packets such as UDP:53 or TCP:80. Check first for TCP:1883, which means TARGET_HOST is wrong. Off by default.'
   MQTT_RETAIN:
     name: 'MQTT Retain Flag'
     description: 'If enabled, Home Assistant will remember your real-time sensor states across reboots.'
