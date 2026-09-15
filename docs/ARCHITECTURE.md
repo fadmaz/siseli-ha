@@ -1,6 +1,6 @@
 # Architecture
 
-Anchors: a bare `core.py:N` means `siseli_bridge/src/siseli_bridge/core.py`; `tests/x.py:N` means `siseli_bridge/tests/x.py`. Symbol anchors — the ones the test below checks — track HEAD. The rest were written against 2.6.19 (commit `2851d8e`) and are refreshed only where their passage is rewritten; at 2.6.23 that was the module table, the forwarding description, risks #5 and #10, the test-and-evidence notes and the load-bearing conventions.
+Anchors: a bare `core.py:N` means `siseli_bridge/src/siseli_bridge/core.py`; `tests/x.py:N` means `siseli_bridge/tests/x.py`. Symbol anchors — the ones the test below checks — track HEAD. The rest were written against 2.6.19 (commit `2851d8e`) and are refreshed only where their passage is rewritten; at 2.6.23 that was the module table, the forwarding description, risks #5 and #10, the test-and-evidence notes and the load-bearing conventions, and 2.6.24 refreshed the first two and the conventions again. Risk entries marked fixed keep their original anchors, as the record of the defect as found.
 
 `TestArchitectureDocAnchors` in `siseli_bridge/tests/test_packaging.py` checks these: every cited file must exist, every line must be inside it, and wherever the prose names a backticked symbol before a citation, that symbol must be defined on the cited line. What it cannot check is a citation pointing at a statement rather than a definition — roughly half of them — so treat those as approximate and re-read before relying on one. Half the anchors here had drifted within a day of first being written, which is why the test exists.
 
@@ -9,7 +9,7 @@ Anchors: a bare `core.py:N` means `siseli_bridge/src/siseli_bridge/core.py`; `te
 A Home Assistant add-on that ARP-spoofs a Siseli-platform solar inverter and its router so both send their frames through the bridge (`core.py:172-207`).
 It passively reassembles the inverter's TCP stream to the vendor MQTT cloud (`parsers.py:505`), extracts the MQTT PUBLISH packets (`parsers.py:363`), and decodes the base64 "blocks" inside each one into sensor values (`parsers.py:1274`).
 Values merge into one shared dict (`state.py:12`) and are republished to the local broker under HA MQTT auto-discovery (`mqtt.py:124`, `mqtt.py:278`).
-The inverter's connection to the cloud broker is relayed (`core.py:347-359`), and so is everything the router sends to the inverter (`core.py:381-393`), so the vendor app keeps its session. The inverter's other traffic — DNS, NTP, other endpoints — is dropped unless `FORWARD_ALL_INVERTER_TRAFFIC` is set (`core.py:361-379`), and with `AUTO_INTERCEPT` off nothing is relayed at all.
+The inverter's connection to the cloud broker is relayed (`core.py:427-439`), and so is everything the router sends to the inverter (`core.py:461-473`), so the vendor app keeps its session. The inverter's other traffic — DNS, NTP, other endpoints — is dropped unless `FORWARD_ALL_INVERTER_TRAFFIC` is set (`core.py:441-459`), and with `AUTO_INTERCEPT` off nothing is relayed at all.
 The bridge observes; it never terminates or answers a connection. Only the inverter-to-cloud direction is parsed; router-to-inverter frames are relayed untouched and unparsed.
 Block positions were reverse-engineered from one device with no schema, so the governing rule of the parser is: publish a value only when this payload contains evidence for it.
 
@@ -40,11 +40,11 @@ Block positions were reverse-engineered from one device with no schema, so the g
 
 | Module | Lines | Owns |
 |---|---|---|
-| `core.py` | 803 | Capture, ARP spoofing, L2 forwarding, lifecycle, availability watchdog, cache restore. The `__main__` block (`:762-803`) is the only place threads and the sniffer start |
-| `parsers.py` | 2278 | TCP reassembly (`:65`, `:549`), MQTT framing (`:193`, `:407`, `:452`), `SolarParser` (`:688`) with `parse_payload` (`:2070`) and the positional decoder `_try_ascii_schema` (`:1457`), energy integrators (`:870`), heartbeat (`:631`, `:646`) |
+| `core.py` | 892 | Capture, ARP spoofing, L2 forwarding, lifecycle, availability watchdog, cache restore. The `__main__` block (`:851-892`) is the only place threads and the sniffer start |
+| `parsers.py` | 2401 | TCP reassembly (`:65`, `:561`), MQTT framing (`:205`, `:419`, `:464`), `SolarParser` (`:778`) with `parse_payload` (`:2192`) and the positional decoder `_try_ascii_schema` (`:1579`), energy integrators (`:990`), heartbeat and deferred-publish flush (`:696`, `:711`, `:726`), energy-clock persistence (`:643`, `:651`) |
 | `mqtt.py` | 401 | paho client (constructed at import, `:121`), discovery payloads (`:124`), topic derivation (`:45`, `:53`), grouped state publish (`:278`), stale-discovery sweep (`:226`), `on_connect` (`:323`) |
 | `sensors.py` | 394 | `SENSORS` registry (`:9`), `UNDECODED_SENSOR_KEYS` (`:244`), `get_sensor_group` (`:356`). Imports nothing; everything imports it |
-| `state.py` | 114 | `LAST_STATE` (`:12`), `STATE_LOCK` (`:21`), every cross-thread flag (`:26`, `:35`, `:42`, `:52`, `:62`), cadence measurement (`:65-82`), `atomic_write_json` (`:98`) |
+| `state.py` | 140 | `LAST_STATE` (`:12`), `STATE_LOCK` (`:21`), every cross-thread flag (`:26`, `:35`, `:42`, `:52`, `:62`), cadence measurement (`:65-82`), `atomic_write_json` (`:98`) |
 | `config.py` | 340 | Every option via `os.getenv` at import (`:9-119`), internal tuning constants (`:5-7`, `:74-116`, `:186-197`), `validate_config` (`:200`) |
 | `loggers.py` | 91 | `print`-based logger; level bound at import (`:24`); `log` (`:31`), `log_kv` (`:48`), `log_error_always` (`:36`), `hex_preview` (`:70`) |
 | `version.py` | 7 | `__version__` (`:7`), the single source for the version string |
@@ -85,11 +85,11 @@ core.packet_callback (:277)        stamp LAST_PACKET_TS, drop own re-emitted fra
    |      '-- publish_grouped_state (mqtt.py:278) if a change is pending AND UPDATE_INTERVAL_SEC elapsed (parsers.py:1993-2007)
    |             one retained JSON object per HA device group -> siseli/<id>/<group>/state (mqtt.py:45-50)
    |
-   '-- broker frames: re-emit pkt[IP] to the router MAC if AUTO_INTERCEPT and RTR_MAC are set (core.py:353-358);
-       router->inverter frames re-emitted to INV_MAC (:388-393)
+   '-- broker frames: re-emit pkt[IP] to the router MAC if AUTO_INTERCEPT and RTR_MAC are set (core.py:433-438);
+       router->inverter frames re-emitted to INV_MAC (:468-473)
 ```
 
-Non-broker inverter traffic (`core.py:361-379`) is counted in `DROPPED_NON_TARGET` (`core.py:204`). It is forwarded only when `FORWARD_ALL_INVERTER_TRAFFIC` and `AUTO_INTERCEPT` are both set, the router's MAC and our own are known, and the frame was L2-addressed to us. Broadcast and multicast are never re-emitted; they reach the router directly.
+Non-broker inverter traffic (`core.py:441-459`) is counted in `DROPPED_NON_TARGET` (`core.py:204`). It is forwarded only when `FORWARD_ALL_INVERTER_TRAFFIC` and `AUTO_INTERCEPT` are both set, the router's MAC and our own are known, and the frame was L2-addressed to us. Broadcast and multicast are never re-emitted; they reach the router directly.
 
 ### Threads and the lock
 
@@ -258,6 +258,6 @@ Fix: rename the entity to what it measures or derive the count from uxJp's posit
 - **A bound that fires during normal operation logs, once, and its once-flag is registered for isolation.** `[ENERGY GAP CLAMPED]` (`parsers.py:749`), `[GRID VALUE REJECTED]` (`:1598`), `[UNSUPPORTED PROTOCOL]` (`:2274`), `[GRID DIRECTION CONFLICT]` and `[CELLS]` likewise; each flag is saved and restored by `tests/helpers.py:121-178`. Add a flag to `parsers.py` or `state.py` without registering it and `TestEveryOnceFlagIsIsolated` fails; before that test existed, later tests silently inherited the fired state.
 - **Shared flags live in `state.py` and are reached through the module alias.** `state.py:23-26` and `:44-52` record the two bugs that came from private copies (`RUNNING`, `AVAILABILITY_ONLINE`). Access is `_state.NAME` (`core.py:27`, `mqtt.py:6`) or `_shared_state.NAME` (`parsers.py:8`), never `from .state import NAME`. Regression pinned at `tests/test_core.py:421-485`.
 - **Patch constants on the consuming module; never reference `_private` config names across a star import.** `core.py:24` and `mqtt.py:7` hold bound copies; `tests/helpers.py:98` `patch_consts` is the tool; `tests/test_core.py:577-600` greps for underscore names because `pyproject.toml:64-66` exempts `F405`.
-- **Anything that must be verified lives in a module-level function called from `__main__`.** `log_startup_configuration` (`core.py:721`), `load_cached_state` (`:105`), `install_signal_handlers` (`:754`); the `__main__` body (`:762-803`) is executed by no test.
+- **Anything that must be verified lives in a module-level function called from `__main__`.** `log_startup_configuration` (`core.py:810`), `load_cached_state` (`:107`), `install_signal_handlers` (`:843`), `publish_tick`; the `__main__` body (`:851-892`) is executed by no test.
 - **A removed sensor goes into `UNDECODED_SENSOR_KEYS`, never just deleted.** `/data/state.json` outlives the code and is merged wholesale at `core.py:590`; `:101-109` purges the listed keys. `tests/test_sensors.py:147-190` greps `parsers.py` to prove no listed key is written and every written key is registered, which is what makes the "not in SENSORS" purge at `core.py:121-129` safe.
 - **The registry derives everything on the wire.** Group from `get_sensor_group` (`sensors.py:356`) fixes the discovery topic and `unique_id` (`mqtt.py:131`) and the state topic (`:45-50`); the value template is `{{ value_json.<key> }}` (`:136`). Regrouping a sensor orphans its HA entity (`tests/test_mqtt.py:298-303`), and a stale-discovery sweep exists for exactly that (`mqtt.py:184-268`).
