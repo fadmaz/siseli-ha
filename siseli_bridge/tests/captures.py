@@ -238,7 +238,11 @@ DEVC_BLOCK_CCFT_PROTOCOL = bytes.fromhex("28504933309a0b0d")          # (PI30
 DEVC_BLOCK_EMU5_MODEL = bytes.fromhex("28564d4949492d34303030de930d")  # (VMIII-4000
 DEVC_BLOCK_AG5G_FIRMWARE = bytes.fromhex("2856455246573a30303032352e3132ab390d")
 DEVC_BLOCK_O2LC_FIRMWARE2 = bytes.fromhex("2856455246573a30303036302e3130be380d")
-DEVC_BLOCK_AHLB_SERIAL = bytes.fromhex("283936333232343036363132373039444e0d")
+#: Hand-built stand-in for the reporter's QID reply, which carried their inverter's
+#: serial number. Same length and shape; the CRC is recomputed (binascii.crc_hqx over
+#: "(" + body is CRC16-XMODEM) and was chosen to stay printable, as the real one was, so
+#: the diagnostic classifies this block exactly as it classified the original.
+SYNTH_DEVC_AHLB_SERIAL_STANDIN = bytes.fromhex("283030303030303030303030303038422a0d")
 DEVC_BLOCK_EZGH_NAK = bytes.fromhex("284e414b73730d")                  # (NAK
 DEVC_BLOCK_ZZ3K_SHORT = bytes.fromhex("284c06070d")                    # (L
 DEVC_BLOCK_U51Q_FLAG = bytes.fromhex("2831a93d0d")                     # (1
@@ -266,7 +270,7 @@ CAPTURE_DEVICE_C_VOLTRONIC = {
     "Ezgh": DEVC_BLOCK_EZGH_NAK,
     "UefO": DEVC_BLOCK_UEFO_FLAGS,
     "ag5g": DEVC_BLOCK_AG5G_FIRMWARE,
-    "ahLb": DEVC_BLOCK_AHLB_SERIAL,
+    "ahLb": SYNTH_DEVC_AHLB_SERIAL_STANDIN,
     "cCft": DEVC_BLOCK_CCFT_PROTOCOL,
     "cT7S": DEVC_BLOCK_CT7S_COUNTER,
     "lCMp": DEVC_BLOCK_LCMP_CLOCK,
@@ -300,3 +304,7 @@ SYNTH_WDRR_ABSURD_POWER = b"(232.7 49.9 280 170 65 40 +999999999 0 11000 11+0000
 # a single-inverter non-parallel install, and a second output capacity set to a single
 # digit (see the dHrK[16] note in parsers.py).
 # ---------------------------------------------------------------------------
+
+#: Hand-built. Seventeen in-range cell voltages, one more than the 16 cell
+#: entities, to exercise the overflow path no real capture reaches.
+SYNTH_V09K_CELLS_17 = b"(3301 3302 3303 3304 3305 3306 3307 3308 3309 3310 3311 3312 3313 3314 3315 3316 3317 00000000)"

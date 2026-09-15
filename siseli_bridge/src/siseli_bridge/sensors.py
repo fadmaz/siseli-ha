@@ -40,7 +40,10 @@ SENSORS: Dict[str, Dict[str, object]] = {
     "bms_max_cell_pos": sensor("BMS Status - Max Voltage Cell Position", state_class="measurement", icon="mdi:numeric"),
     "bms_min_cell_mv": sensor("BMS Status - Min Voltage", unit="mV", device_class="voltage", state_class="measurement", icon="mdi:battery-low"),
     "bms_min_cell_pos": sensor("BMS Status - Min Voltage Cell Position", state_class="measurement", icon="mdi:numeric"),
-    "bms_cell_count": sensor("BMS Status - BMS Cell Count", state_class="measurement", icon="mdi:battery-sync"),
+    # Counts the voltages v09K carried, not the cells in the pack: the block holds at
+    # most 16 of a 32-cell bank, and the list stops at the first out-of-range reading.
+    # No token states the pack size. Friendly name only -- the key keeps the entity.
+    "bms_cell_count": sensor("BMS Status - Cell Voltages Decoded", state_class="measurement", icon="mdi:battery-sync"),
     "bms_cell_delta_mv": sensor("BMS Status - BMS Cell Delta", unit="mV", device_class="voltage", state_class="measurement", icon="mdi:battery-sync"),
     "cell_1_mv": sensor("BMS Status - Battery Voltage 1", unit="mV", device_class="voltage", state_class="measurement", icon="mdi:car-battery"),
     "cell_2_mv": sensor("BMS Status - Battery Voltage 2", unit="mV", device_class="voltage", state_class="measurement", icon="mdi:car-battery"),

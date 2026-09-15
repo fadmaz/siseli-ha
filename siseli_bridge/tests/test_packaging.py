@@ -9,6 +9,7 @@ another.
 import pathlib
 import re
 import unittest
+from unittest import mock
 
 import yaml
 
@@ -111,6 +112,11 @@ class TestSchemaValidatorParity(unittest.TestCase):
     Before this test, UPDATE_INTERVAL_SEC was declared int(0,) while the validator
     rejected anything below 1 -- so a UI-legal 0 put the add-on in a restart loop
     with the options page still showing the value as valid.
+
+    One deliberate exception: TARGET_HOST is a plain `str` in the schema but must be an
+    IPv4 address at startup. A hostname there never matched anything, so it silently
+    dropped all broker traffic; refusing to start is strictly better. Tightening the
+    schema instead would block the upgrade for anyone who stored a hostname.
     """
 
     def setUp(self):
@@ -133,10 +139,12 @@ class TestSchemaValidatorParity(unittest.TestCase):
         self.assertIn("UPDATE_INTERVAL_SEC", minima, "expected at least one bounded int option")
 
         cfg = reload_config(**minima)
-        try:
-            cfg.validate_config()
-        except SystemExit as exc:  # pragma: no cover - only on regression
-            self.fail(f"schema minima {minima} rejected by validate_config: {exc}")
+        # validate_config creates the state directory; keep it off the developer's disk.
+        with mock.patch("src.siseli_bridge.config.os.makedirs"):
+            try:
+                cfg.validate_config()
+            except SystemExit as exc:  # pragma: no cover - only on regression
+                self.fail(f"schema minima {minima} rejected by validate_config: {exc}")
 
 
 class TestPackagingMetadata(unittest.TestCase):
@@ -600,10 +608,12 @@ class TestDeprecatedOptions(unittest.TestCase):
     add-on listens on. Nothing ever bound a socket -- its only consumer was a startup
     log line.
 
-    It is nevertheless kept in the schema. Supervisor validates the *stored* options
-    before installing an update, so deleting a key that existing installations still
-    have on disk blocks the upgrade for all of them. It is removed in 2.7.0, by which
-    point stored copies have been rewritten.
+    It is still in the schema. This note used to say that deleting a key existing
+    installations have stored blocks their upgrade. Supervisor's source says otherwise:
+    AppOptions.__call__ (supervisor/apps/options.py) logs "does not exist in the schema"
+    for such a key and skips it, and the pre-update check uses the same function. What
+    blocks an update is a *stored value* failing a tightened type or pattern. Removal
+    is expected to be safe; confirm it on a real installation before doing it.
     """
 
     def setUp(self):
@@ -712,6 +722,14 @@ class TestShippedDefaultsSatisfyTheSchema(unittest.TestCase):
                     f"the shipped default {value!r} does not satisfy {declaration!r}",
                 )
 
+    def test_a_stored_hostname_target_still_installs(self):
+        """TARGET_HOST stays a plain `str` on purpose. The runtime refuses a hostname at
+        start (validate_config), but a schema that rejected it would fail the stored
+        value before the update -- blocking the very release that explains the problem."""
+        self.assertTrue(
+            _validates("broker.mqtt.solar.siseli.com", self.cfg["schema"]["TARGET_HOST"])
+        )
+
     def test_an_optional_pattern_still_accepts_an_empty_string(self):
         """`?` marks the option optional; it does not exempt an empty string from the
         pattern. Any pattern on an option that can be left blank has to allow it."""
@@ -801,11 +819,13 @@ class TestTestEnvironmentMatchesShippedDefaults(unittest.TestCase):
 
 
 class TestCiTokenIsReadOnly(unittest.TestCase):
-    """The repository's default workflow token can write, and actions/checkout stores it
-    in .git/config for the rest of the job, so any step -- a third-party action included
-    -- could have pushed to main. Nothing in CI writes, so the workflow asks only to read.
-    A job-level block would quietly widen it again for that one job, so that is refused
-    too: a job that genuinely needs more should have to change this test to get it."""
+    """The repository's default workflow token was write-scoped until 2026-09-15, and
+    actions/checkout stores the token in .git/config for the rest of the job, so any step
+    -- a third-party action included -- could have pushed to main. The repository default
+    is read-only now, but a default is not a ceiling, and it lives in settings no checkout
+    can see, so the workflow keeps asking only to read. A job-level block would quietly
+    widen it again for that one job, so that is refused too: a job that genuinely needs
+    more should have to change this test to get it."""
 
     def setUp(self):
         self.workflow = _load_yaml(ROOT / ".github" / "workflows" / "ci.yml")
@@ -817,6 +837,19 @@ class TestCiTokenIsReadOnly(unittest.TestCase):
         for name, job in self.workflow["jobs"].items():
             with self.subTest(job=name):
                 self.assertNotIn("permissions", job, f"job {name} declares its own permissions")
+
+
+class TestRunShPrintsTheForwardingMode(unittest.TestCase):
+    """run.sh echoes its own [Config] lines before Python starts. They are the only
+    configuration printed when startup is refused -- validate_config runs before the
+    add-on's own startup banner -- so its AUTO_INTERCEPT line must carry the forwarding
+    mode too, or a refused start hides the one setting that decides what is relayed."""
+
+    def test_the_auto_intercept_echo_names_forward_all(self):
+        run_sh = (ADDON / "run.sh").read_text(encoding="utf-8")
+        echoes = [line for line in run_sh.splitlines() if line.startswith('echo "[Config] AUTO_INTERCEPT=')]
+        self.assertEqual(len(echoes), 1)
+        self.assertIn("FORWARD_ALL_INVERTER_TRAFFIC=${FORWARD_ALL_INVERTER_TRAFFIC}", echoes[0])
 
 
 if __name__ == "__main__":

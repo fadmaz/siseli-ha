@@ -1,6 +1,6 @@
 # ☀️ Siseli Inverter Bridge for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-2.6.22-blue.svg)](siseli_bridge/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.6.23-blue.svg)](siseli_bridge/CHANGELOG.md)
 [![CI](https://github.com/fadmaz/siseli-ha/actions/workflows/ci.yml/badge.svg)](https://github.com/fadmaz/siseli-ha/actions/workflows/ci.yml)
 [![HA Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-green.svg)](https://www.home-assistant.io/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
@@ -12,7 +12,9 @@ decoding the telemetry it already sends to the vendor cloud — and publishes it
 Assistant through MQTT auto-discovery.
 
 Your inverter keeps talking to the cloud, so the official mobile app carries on working.
-The bridge only listens in.
+The bridge sits in the path and relays that connection unchanged; it reads the telemetry
+on the way through and never injects anything into it. The only frames it originates
+toward the inverter are the ARP replies that put it in the path.
 
 **207 sensors across 7 devices**, 143 enabled on a fresh install. No cloud API, no
 polling, no credentials for anything but your own broker.
@@ -49,7 +51,11 @@ Your inverter's WiFi dongle publishes telemetry over MQTT to the Siseli cloud at
 3. **Decodes the payload** — base64 blocks keyed by four-character names (`2ONL`, `WdRR`,
    `Yavb`, …), each a list of space-separated values read by position.
 4. **Publishes to your broker** with MQTT auto-discovery, so entities appear on their own.
-5. **Forwards the traffic onward** to the cloud, unchanged.
+5. **Forwards the cloud connection onward**, unchanged, along with everything the router
+   sends back. Of the inverter's own traffic, that connection is all it relays by default:
+   the rest (DNS, NTP, …) is dropped unless you enable
+   `FORWARD_ALL_INVERTER_TRAFFIC` — see
+   [A caveat on forwarding](siseli_bridge/DOCS.md#a-caveat-on-forwarding).
 
 It never terminates a connection and never opens a listening socket. It observes, decodes,
 and relays.

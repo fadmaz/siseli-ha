@@ -92,7 +92,7 @@ in step 3 above.
 | `MQTT_HOST` | `core-mosquitto` | Use the default with the official Mosquitto add-on |
 | `MQTT_PORT` | `1883` | |
 | `MQTT_USER` / `MQTT_PASSWORD` | *(blank)* | Leave blank only if your broker allows anonymous access |
-| `TARGET_HOST` | `8.212.18.157` | The Siseli cloud. Do not change unless the cloud IP changes |
+| `TARGET_HOST` | `8.212.18.157` | The Siseli cloud. Must be an IPv4 address — it is compared with each packet's destination, so a hostname never matches and the add-on refuses to start. Do not change unless the cloud IP changes |
 | `TARGET_PORT` | `1883` | |
 | `INVERTER_IP` | `192.168.1.139` | **Must be set to your inverter's real IP** |
 | `ROUTER_IP` | `192.168.1.1` | **Must be set to your gateway** |
@@ -149,10 +149,9 @@ your inverter reporting less often than the configured value, so entities cannot
 
 ### Deprecated
 
-`LISTEN_PORT` and `LOG_VERBOSE` are **ignored**. They remain in the schema only so
-Supervisor does not reject the stored options on existing installations, and both are
-removed in 2.7.0. `LISTEN_PORT` in particular never did anything — the bridge has never
-opened a socket. You can ignore the `[CONFIG WARNING]` about it.
+`LISTEN_PORT` and `LOG_VERBOSE` are **ignored** and do nothing. `LISTEN_PORT` in
+particular never did anything — the bridge has never opened a socket. You can ignore the
+`[CONFIG WARNING]` about either.
 
 ---
 
@@ -174,10 +173,15 @@ disabled by default and can be switched on individually in Home Assistant.
 The Battery, BMS, Grid, Load, PV and Diagnostics devices are nested under Main in Home
 Assistant, so they appear together on one page.
 
+**Cell Voltages Decoded** counts the per-cell voltages the payload carried, not the cells
+in your pack. On the reference install the block holds 16 cells of a 32-cell bank, and the
+list stops at the first out-of-range reading, so a failed cell 3 makes it read 2. No field
+on the wire states the pack size.
+
 **Calculated sensors** are prefixed `c_` and are derived rather than read from the wire —
-battery charge/discharge power and energy, grid import power and energy, generation power,
-load power, and the configured bank capacity. The three `kWh` counters are
-`total_increasing`, so they feed the Home Assistant Energy Dashboard directly.
+battery charge/discharge power and energy, grid import power and energy, generation power
+and energy, load power and energy, and the configured bank capacity. The five `kWh`
+counters are `total_increasing`, so they feed the Home Assistant Energy Dashboard directly.
 
 ### Which sensors are per-inverter and which are system totals
 
@@ -251,8 +255,9 @@ echo**, not a measurement — your BMS reports its own figure separately.
 ### Method A — ARP interception (default, recommended)
 
 With `AUTO_INTERCEPT: true` the add-on tells the inverter that Home Assistant is the
-gateway, and tells the router that Home Assistant is the inverter. Traffic then passes
-through the Home Assistant host, where it is decoded and forwarded on.
+gateway, and tells the router that Home Assistant is the inverter. The inverter's frames
+then pass through the Home Assistant host, where its cloud connection is decoded and
+forwarded on. The caveat below says what else is, and is not, relayed.
 
 Nothing else is required. On shutdown the add-on restores both ARP caches so the inverter
 goes straight back to the real gateway.
@@ -263,19 +268,34 @@ goes straight back to the real gateway.
 
 #### A caveat on forwarding
 
-By default the bridge relays only the inverter's **broker traffic** to
-`TARGET_HOST:TARGET_PORT`. Everything else it sends — DNS, NTP, anything to a secondary
-endpoint — is dropped, because the add-on is now the inverter's gateway but is not a
-router.
+By default the bridge relays two things: the inverter's connection to the cloud broker at
+`TARGET_HOST:TARGET_PORT`, and everything the router sends to the inverter. Everything
+else the inverter sends — DNS lookups (often addressed to the router itself), NTP, HTTP,
+DHCP renewals, MQTT to any other address — is **dropped**, because the add-on is now the
+inverter's gateway but is not a router.
 
-For most inverters this is fine. If yours fails to reconnect, or the health line reports
-dropped packets:
+Check the health line first. `TCP:1883` in its drop counter means the inverter is talking
+MQTT to an address other than `TARGET_HOST`, so its cloud connection is neither decoded
+nor relayed. Turn the `xray` debug flag on briefly to see the address in the `[X-RAY]`
+lines, and set `TARGET_HOST` to it. Enabling `FORWARD_ALL_INVERTER_TRAFFIC` instead would
+relay that session but never decode it, and it would vanish from the counter.
+
+An established broker session is not affected by the drop. But
+[PR #43](https://github.com/fadmaz/siseli-ha/pull/43) reported, and this project has not
+verified, that the dongle looks its broker up over DNS and HTTP when it reconnects from
+scratch — after a power cut, say — and in the default mode those lookups are dropped. If
+your inverter fails to reconnect and the health line reports dropped unicast packets such
+as `UDP:53` or `TCP:80`:
 
 ```
-[HEALTH] Last packet seen 12s ago; ... dropped_non_broker={'udp/53': 40}
+[HEALTH] broker=up; avail=online; Last packet seen 12s ago; inverter_macs=[...]; router_macs=[...]; dropped_non_broker={'UDP:53': 40}
 ```
 
-set `FORWARD_ALL_INVERTER_TRAFFIC: true`.
+set `FORWARD_ALL_INVERTER_TRAFFIC: true`. It relays the inverter's other unicast traffic
+that is addressed to the Home Assistant host. Broadcast and multicast are counted too, but
+they were never lost: they reach the router directly.
+
+With `AUTO_INTERCEPT: false` nothing is relayed at all.
 
 ### Method B — router-side redirect (advanced, unsupported)
 
@@ -407,7 +427,7 @@ work, but it starts with a capture.
 - Check for `[ARP] Interception ACTIVE`. If it never appears, the MAC addresses could not
   be resolved — set `INVERTER_MAC` and `ROUTER_MAC` manually.
 - The health line every 30 seconds reports the broker and which MACs the bridge is
-  seeing: `[HEALTH] broker=up; Last packet seen 12s ago; inverter_macs=[...]`.
+  seeing: `[HEALTH] broker=up; avail=online; Last packet seen 12s ago; inverter_macs=[...]`.
   `broker=DOWN` means nothing is reaching Home Assistant however healthy the rest looks. If `inverter_macs` is empty,
   no inverter traffic is reaching the capture — check `INVERTER_IP`, or pin `SNIFF_IFACE`.
 
@@ -420,6 +440,17 @@ Configuration page. Values stored by an older release are not updated by an upgr
 
 If the totals are inflated or were accumulated by a version before 2.6.7, set
 `RESET_ENERGY_COUNTERS` to `true`, restart the add-on once, then set it back to `false`.
+
+### The log says [GRID DIRECTION CONFLICT]
+
+The inverter reported grid power with one sign while its flow-direction code said the
+opposite, or said idle. The two come from different fields, and no capture has yet recorded
+the grid path while power was actually flowing, so the add-on cannot tell which one is
+right. Nothing changes because of it: grid import is still credited from the power sign, as
+before. The line is logged once per start.
+
+That line is the evidence that settles the question. Please open an issue with it and, if
+you can, a screenshot of the vendor app's grid page taken in the same minute.
 
 ### PV1 reads zero on a single-string system
 

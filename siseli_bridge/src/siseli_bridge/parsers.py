@@ -137,6 +137,12 @@ PUBLISH_OUTCOMES = {
 #: One-shot guard so a rejected current is reported once, not per payload.
 BATTERY_CURRENT_REJECTED_LOGGED = False
 GRID_VALUE_REJECTED_LOGGED = False
+#: One-shot guard for a WdRR sign that contradicts the published flow direction. The
+#: disagreement is reported, not resolved: nobody has captured the grid path
+#: non-zero, so which token is right is unknown.
+GRID_DIRECTION_CONFLICT_LOGGED = False
+#: One-shot guard for a cell list longer than the 16 cell entities.
+CELL_LIST_OVERFLOW_LOGGED = False
 
 #: Every block name _try_ascii_schema knows how to decode.
 #:
@@ -842,6 +848,42 @@ class SolarParser:
             state["battery_status"] = "Idle"
 
     @staticmethod
+    def _grid_direction_conflicts(signed_w: Optional[float], direction: object) -> bool:
+        """Whether WdRR[6]'s sign contradicts a flow direction.
+
+        The caller passes what WdRR[7]'s code states (see _flow_code_direction), or
+        the published label when there is no usable code. The import integrator reads
+        WdRR[6]'s sign alone, so a positive sign can credit import while the code says
+        "Inverter To Mains". Every capture ever taken is +00000 with code 0, so neither
+        the sign convention nor codes 1 and 2 are verified, and the counter it would
+        change can never go down. Detect and report; do not guess which token is right.
+        """
+        if signed_w is None or direction is None or signed_w == 0:
+            return False
+        if direction == "Idle":
+            return True
+        if signed_w > 0:
+            return direction == "Inverter To Mains"
+        return direction == "Mains To Inverter"
+
+    @staticmethod
+    def _flow_code_direction(code: object) -> Optional[str]:
+        """What WdRR[7]'s code states, whether it is sent as one digit or two.
+
+        The published label honours only "0", "1" and "2" while a sign is present, so
+        a two-digit "01" is labelled from the sign and could never disagree with it.
+        The conflict check has to read the code itself.
+        """
+        if code is None:
+            return None
+        text = str(code).strip()
+        if not text.isdigit():
+            return None
+        return {"0": "Mains To Inverter", "1": "Inverter To Mains", "2": "Idle"}.get(
+            text.lstrip("0") or "0"
+        )
+
+    @staticmethod
     def _apply_energy_dashboard_calculations(state: Dict[str, object], now_ts: Optional[float] = None) -> None:
         """Derive the calculated power and energy sensors.
 
@@ -905,6 +947,28 @@ class SolarParser:
                 grid_import_power_w = mains_signed_w * factor
 
             state["c_grid_import_power_w"] = int(round(grid_import_power_w))
+
+            # Crediting above is deliberately unchanged: which of the two tokens is
+            # right is unknown, and a wrong fix is irreversible on a total_increasing
+            # counter. The first real conflict on an on-grid install is the evidence.
+            direction = state.get("mains_current_flow_direction")
+            code_direction = SolarParser._flow_code_direction(state.get("mains_flow_code"))
+            if SolarParser._grid_direction_conflicts(mains_signed_w, code_direction or direction):
+                global GRID_DIRECTION_CONFLICT_LOGGED
+                if not GRID_DIRECTION_CONFLICT_LOGGED:
+                    GRID_DIRECTION_CONFLICT_LOGGED = True
+                    log_kv(
+                        "[GRID DIRECTION CONFLICT]",
+                        level="warning",
+                        token=str(state.get("mains_wdrr_token", ""))[:32],
+                        flow_code=str(state.get("mains_flow_code", ""))[:8],
+                        code_says=code_direction,
+                        direction=direction,
+                        note=(
+                            "the grid power sign and the flow direction disagree; import is "
+                            "still credited from the sign, as before -- please report this line"
+                        ),
+                    )
 
             dt_seconds = SolarParser._energy_dt_seconds("grid", now)
             SolarParser._accumulate_kwh(
@@ -1387,7 +1451,11 @@ class SolarParser:
             return state
 
         state["bms_cell_count"] = len(cell_values)
-        if len(cell_values) > 16:
+        global CELL_LIST_OVERFLOW_LOGGED
+        if len(cell_values) > 16 and not CELL_LIST_OVERFLOW_LOGGED:
+            # Once per process: this fired on every payload of a device that sends
+            # more than 16 cells, which is a fact about the device, not an event.
+            CELL_LIST_OVERFLOW_LOGGED = True
             log(
                 f"[CELLS] {len(cell_values)} cells reported but only 16 entities exist; "
                 f"cells 17-{len(cell_values)} are not published",

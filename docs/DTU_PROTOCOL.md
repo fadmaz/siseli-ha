@@ -119,6 +119,14 @@ here, that is said.
 
   The HTTP calls carry the same credentials as the MQTT CONNECT. The DTU sometimes skips
   DNS and dials a cached address, `8.212.16.60`.
+
+  *What this means for this add-on:* of the dongle's own traffic it relays only the broker
+  connection to `TARGET_HOST:TARGET_PORT` by default, so neither the DNS lookup, the HTTP
+  bootstrap, nor a session to `8.212.16.60` is relayed. A dongle that re-bootstraps while
+  intercepted may therefore need `FORWARD_ALL_INVERTER_TRAFFIC` to reconnect (see
+  [A caveat on forwarding](https://github.com/fadmaz/siseli-ha/blob/main/siseli_bridge/DOCS.md#a-caveat-on-forwarding)).
+  That option relays such traffic but never decodes it: a broker session at another
+  address is decoded only once `TARGET_HOST` is set to that address.
 - **Commands.** The PR replays commands it captured from the vendor cloud, sent on
   `dev_rpc` with `i` = 503. Two are standard PI30 flag commands (backlight and buzzer,
   `PEx`/`PDx` and `PEa`/`PDa`). Two are not in the published PI30MAX document: a

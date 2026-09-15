@@ -2,18 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.6.23] - 2026-09-15
 
 ### Changed
 
+- **The Startup Log Shows The Forwarding Mode**: both `[Config] AUTO_INTERCEPT=` lines —
+  the one `run.sh` prints and the add-on's own — now also print
+  `FORWARD_ALL_INVERTER_TRAFFIC`. The two decide together what is relayed, and
+  no log — the reference captures included — recorded which mode was running.
+- **No More Removal Date For `LISTEN_PORT` And `LOG_VERBOSE`**: the docs, the option
+  descriptions and both `[CONFIG WARNING]` lines promised to remove them in 2.7.0. Both
+  remain ignored, and nothing now promises a date. The note that kept them in the schema
+  said removing a stored option blocks the upgrade; Supervisor's source says a stored key
+  the schema no longer lists is only warned about and skipped. So removal is expected to be
+  safe, and will happen once that is confirmed on a real installation.
+- **`BMS Cell Count` Is Renamed `Cell Voltages Decoded`**: it counts the per-cell voltages
+  the payload carried — at most 16 of a 32-cell pack on the reference install, and 2 when
+  cell 3 collapses — not the cells in the pack, which no field states. Friendly name only:
+  the key is unchanged, so entity IDs and history are unaffected. The `[CELLS]` overflow
+  warning is now logged once per start instead of on every payload.
 - **CI Runs With A Read-Only Token**: `ci.yml` now declares `permissions: contents: read`.
-  The repository's default workflow token can write, and `actions/checkout` stores it in
-  the checkout for the rest of the job, so any step — a third-party action included —
-  could have pushed to `main`. Nothing in CI writes, so it no longer holds the right to.
-  A test pins the block and refuses a job-level override. Nothing that ships changes.
+  The repository's default workflow token was write-scoped, and `actions/checkout` stores
+  it in the checkout for the rest of the job, so any step — a third-party action included
+  — could have pushed to `main`. Nothing in CI writes, so it no longer holds the right to.
+  The repository default is now read-only too, and GitHub Actions can no longer create or
+  approve pull requests; the workflow keeps its own block because a repository default is
+  not a ceiling and cannot be seen from a checkout. A test pins the block and refuses a
+  job-level override. Nothing that ships changes.
 
 ### Fixed
 
+- **A `TARGET_HOST` That Could Never Match Is Now Refused At Startup**: it is compared as
+  a string with each packet's IPv4 destination, so a hostname, an IPv6 address or a stray
+  space matched nothing: no sensor was ever decoded, and with interception on and
+  `FORWARD_ALL_INVERTER_TRAFFIC` off the broker connection was not relayed either — visible
+  only as `TCP:1883` in the health line's drop counter. The add-on now refuses to start
+  and says why. The schema is deliberately unchanged, so an install that stored such a
+  value can still upgrade and correct it.
+- **A Grid Direction That Contradicts The Grid Power Is Now Reported**: the grid-import
+  counter reads the sign of the grid power, while the flow-direction label reads a separate
+  code, so nothing forced them to agree — `+01500` with code `1` labelled the flow
+  "Inverter To Mains" while crediting 1500 W of import. Every capture ever taken is off
+  grid, so which of the two is right is unknown, and `c_grid_import_energy_kwh` can never go
+  down. The disagreement is now logged once as `[GRID DIRECTION CONFLICT]` with both raw
+  tokens, reading the code itself so a two-digit code such as `01` is checked too.
+  Crediting is deliberately unchanged until a real on-grid report settles it.
+- **The Docs Overstated What Is Forwarded**: `SECURITY.md`, the README and the architecture
+  map said every captured packet is relayed. By default only the inverter's broker
+  connection and everything the router sends to the inverter are relayed; its DNS, NTP and
+  other traffic are dropped unless `FORWARD_ALL_INVERTER_TRAFFIC` is on, and passive mode
+  relays nothing. The forwarding caveat now also covers a dongle that re-bootstraps over DNS
+  and HTTP (reported in PR #43, not verified), and what `TCP:1883` in the drop counter
+  means — to be checked before enabling the option, which relays but never decodes. Two
+  `[HEALTH]` examples used a format the code no longer prints, and DOCS.md and the
+  `RESET_ENERGY_COUNTERS` description now count five kWh totals, not three. `SECURITY.md`
+  now also lists the ARP requests sent while a MAC is not configured.
+- **The Test Suite Wrote To `/data` On The Developer's Machine**: every successful decode
+  reaches the state-cache writer, and nothing redirected it, so running the tests on
+  Windows kept rewriting `D:\data\state.json` with decoded capture values. Every
+  test now gets a private directory for both the state cache and the discovery marker, and
+  the one-shot flag rule is itself tested: `TestEveryOnceFlagIsIsolated` flips every
+  `*_LOGGED` flag in `parsers.py` and `state.py` inside `isolated_state` and fails on any
+  that is not restored.
+- **A Reporter's Serial Number Was In A Test Fixture**: the issue #32 fixture carried the
+  reporter's inverter serial in its `ahLb` block. It is replaced by a hand-built stand-in
+  with a recomputed CRC that the diagnostic classifies identically. Git history keeps the
+  old bytes.
 - **The Star-Import Guard Could Never Fail**: the test that stops `core.py`, `mqtt.py`
   and `parsers.py` from referencing a `_private` name from `config.py` — the fault that
   crash-looped 2.6.2 on start — ended its pattern in a literal backspace byte where the

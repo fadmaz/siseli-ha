@@ -893,6 +893,10 @@ class TestForeignProtocolIsDiagnosed(_ParserTestCase):
         self.assertNotEqual(described["body"], "binary")
         self.assertEqual(described["looks_like"], "voltronic_pi30")
         self.assertEqual(described["recognised"], 0)
+        # Pinned exactly: the ahLb block is a hand-built stand-in for the reporter's
+        # serial, chosen so every frame still verifies and classifies as the original did.
+        self.assertEqual(described["voltronic_crc_ok"], "14/14")
+        self.assertEqual(described["body_shapes"], "ascii=3,ascii+binary_tail=11")
 
     def test_the_modbus_device_does_not_regress_to_voltronic(self):
         """Issue #30's payload contains exactly one valid Voltronic frame -- its DTU
@@ -1006,6 +1010,220 @@ class TestBatteryStatusMatchesReportedPower(_ParserTestCase):
                 SolarParser._apply_energy_dashboard_calculations(state, now_ts=1.0)
         tags = [call.args[0] for call in logged.call_args_list if call.args]
         self.assertNotIn("[ENERGY SOURCE DISAGREEMENT]", tags)
+
+
+class TestGridDirectionConflictIsReported(_ParserTestCase):
+    """WdRR[6]'s sign drives the grid-import counter; WdRR[7]'s flow code drives the
+    label. Nothing forced them to agree: +01500 with code 1 labelled the flow
+    "Inverter To Mains" while crediting 1500 W of import. Every capture is +00000 with
+    code 0, so which token is right is unknown -- and the counter can never go down.
+    2.6.23 reports the disagreement and deliberately leaves crediting alone."""
+
+    CONFLICT = "[GRID DIRECTION CONFLICT]"
+
+    def _decode(self, token, code, now=1000.0):
+        block = captures.BLOCK_WDRR_NO_GRID_FLOW.replace(
+            b"+00000 0 ", token.encode("ascii") + b" " + code.encode("ascii") + b" ", 1
+        )
+        with mock.patch("src.siseli_bridge.parsers.time.monotonic", return_value=now):
+            return SolarParser._try_ascii_schema({"WdRR": block})
+
+    def _conflicts(self, logged):
+        return [c for c in logged.call_args_list if c.args and c.args[0] == self.CONFLICT]
+
+    def test_every_sign_and_direction_combination(self):
+        cases = [
+            (1500, "Mains To Inverter", False),
+            (1500, "Inverter To Mains", True),
+            (1500, "Idle", True),
+            (-1500, "Mains To Inverter", True),
+            (-1500, "Inverter To Mains", False),
+            (-1500, "Idle", True),
+            (0, "Inverter To Mains", False),
+            (None, "Idle", False),
+            (1500, None, False),
+        ]
+        for signed, direction, expected in cases:
+            with self.subTest(signed=signed, direction=direction):
+                self.assertEqual(
+                    SolarParser._grid_direction_conflicts(signed, direction), expected
+                )
+
+    def test_the_reproduced_contradiction_is_reported_once_with_its_raw_tokens(self):
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            for i in range(3):
+                state = self._decode("+01500", "1", now=1000.0 + 300 * i)
+        self.assertEqual(state["mains_current_flow_direction"], "Inverter To Mains")
+        conflicts = self._conflicts(logged)
+        self.assertEqual(len(conflicts), 1, "one report per process, not per payload")
+        self.assertEqual(conflicts[0].kwargs["level"], "warning")
+        self.assertEqual(conflicts[0].kwargs["token"], "+01500")
+        self.assertEqual(conflicts[0].kwargs["flow_code"], "1")
+        self.assertEqual(conflicts[0].kwargs["direction"], "Inverter To Mains")
+
+    def test_a_negative_sign_under_code_zero_is_reported(self):
+        """The case the architecture map names: the code wins the label, so -01500
+        with code 0 reads "Mains To Inverter" while the counter credits nothing."""
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            state = self._decode("-01500", "0")
+        self.assertEqual(state["mains_current_flow_direction"], "Mains To Inverter")
+        self.assertEqual(len(self._conflicts(logged)), 1)
+        self.assertEqual(state["c_grid_import_power_w"], 0)
+        shared_state.LAST_STATE.update(state)
+        later = self._decode("-01500", "0", now=1300.0)
+        self.assertEqual(
+            later.get("c_grid_import_energy_kwh", 0), state.get("c_grid_import_energy_kwh", 0),
+            "a negative sign still credits nothing, as before",
+        )
+
+    def test_an_idle_code_still_credits_the_sign(self):
+        """The third conflict shape. Pinned like the others: detection must not
+        quietly become a change to what is credited."""
+        factor = max(1.0, float(parser_module.INVERTER_COUNT))
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            first = self._decode("+01500", "2", now=1000.0)
+        self.assertEqual(len(self._conflicts(logged)), 1)
+        self.assertEqual(first["c_grid_import_power_w"], int(round(1500 * factor)))
+        shared_state.LAST_STATE.update(first)
+        second = self._decode("+01500", "2", now=1300.0)
+        self.assertGreater(second["c_grid_import_energy_kwh"], first.get("c_grid_import_energy_kwh", 0))
+
+    def test_a_two_digit_code_is_read_directly(self):
+        """The label honours only "0"/"1"/"2" while a sign is present, so "01" is
+        labelled from the sign and the label could never disagree with it. The check
+        reads the code itself."""
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            state = self._decode("+01500", "01")
+        self.assertEqual(state["mains_current_flow_direction"], "Mains To Inverter")
+        conflicts = self._conflicts(logged)
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].kwargs["code_says"], "Inverter To Mains")
+
+    def test_two_digit_codes_map_like_one_digit_codes(self):
+        cases = {
+            "0": "Mains To Inverter", "00": "Mains To Inverter",
+            "1": "Inverter To Mains", "01": "Inverter To Mains",
+            "2": "Idle", "02": "Idle",
+            "7": None, "A": None, "": None, None: None,
+        }
+        for code, expected in cases.items():
+            with self.subTest(code=code):
+                self.assertEqual(SolarParser._flow_code_direction(code), expected)
+
+    def test_crediting_is_unchanged(self):
+        """Pinned on purpose. Changing which token credits import is a decision for
+        evidence, not for this release -- a wrong change is permanent on the counter."""
+        factor = max(1.0, float(parser_module.INVERTER_COUNT))
+        first = self._decode("+01500", "1", now=1000.0)
+        self.assertEqual(first["c_grid_import_power_w"], int(round(1500 * factor)))
+        shared_state.LAST_STATE.update(first)
+        second = self._decode("+01500", "1", now=1300.0)
+        self.assertGreater(second["c_grid_import_energy_kwh"], first.get("c_grid_import_energy_kwh", 0))
+
+    def test_agreeing_tokens_raise_nothing(self):
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            self._decode("+01500", "0")
+            self._decode("-01500", "1")
+        self.assertEqual(self._conflicts(logged), [])
+
+    def test_the_off_grid_capture_raises_nothing(self):
+        """Every real payload ever captured. A false alarm here would fire on every
+        install at every start."""
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            SolarParser._try_ascii_schema(captures.CAPTURE_TELEMETRY)
+        self.assertEqual(self._conflicts(logged), [])
+
+
+class TestCellListOverflow(_ParserTestCase):
+    """v09K carries at most 16 cells on the reference pack; a longer list is counted in
+    full but only 16 cell entities exist. The warning used to fire on every payload."""
+
+    def test_seventeen_cells_are_counted_but_only_sixteen_published(self):
+        with mock.patch("src.siseli_bridge.parsers.log"):
+            state = SolarParser._try_ascii_schema({"v09K": captures.SYNTH_V09K_CELLS_17})
+        self.assertEqual(state["bms_cell_count"], 17)
+        self.assertEqual(state["cell_16_mv"], 3316)
+        self.assertNotIn("cell_17_mv", state)
+
+    def test_sixteen_cells_raise_no_warning(self):
+        """The reference pack sends exactly 16. An off-by-one here would warn on every
+        start of every real install."""
+        with mock.patch("src.siseli_bridge.parsers.log") as logged:
+            state = SolarParser._try_ascii_schema(captures.CAPTURE_IDENTITY)
+        self.assertEqual(state["bms_cell_count"], 16)
+        self.assertFalse(any("[CELLS]" in str(c.args[0]) for c in logged.call_args_list if c.args))
+        self.assertFalse(parser_module.CELL_LIST_OVERFLOW_LOGGED)
+
+    def test_the_overflow_is_reported_once_not_per_payload(self):
+        with mock.patch("src.siseli_bridge.parsers.log") as logged:
+            for _ in range(3):
+                SolarParser._try_ascii_schema({"v09K": captures.SYNTH_V09K_CELLS_17})
+        overflow = [c for c in logged.call_args_list if c.args and "[CELLS]" in str(c.args[0])]
+        self.assertEqual(len(overflow), 1)
+        self.assertEqual(overflow[0].kwargs.get("level"), "warning")
+
+
+class TestAFailingCacheWriteDoesNotStopDecoding(unittest.TestCase):
+    """Before the test suite was kept out of /data, every Linux CI run failed to write
+    /data/state.json and so exercised this path by accident. It is the one that keeps a
+    full disk or a read-only /data from taking the sensors down with it."""
+
+    def setUp(self):
+        ctx = isolated_state()
+        ctx.__enter__()
+        self.addCleanup(lambda: ctx.__exit__(None, None, None))
+        parser_module.LAST_CACHE_WRITE_TS = 0.0
+
+    def test_decoding_and_publishing_survive_a_failed_write(self):
+        lines = []
+        with mock.patch(
+            "src.siseli_bridge.state.atomic_write_json", side_effect=OSError("read-only file system")
+        ), mock.patch("src.siseli_bridge.parsers.log", side_effect=lambda m, **k: lines.append(m)):
+            ok = SolarParser.parse_payload(envelope(captures.CAPTURE_TELEMETRY))
+        self.assertTrue(ok, "a failed cache write must not fail the decode")
+        self.assertEqual(shared_state.LAST_STATE.get("bat_v"), 53.4)
+        self.assertEqual(sum("[CACHE WRITE ERROR]" in str(line) for line in lines), 1)
+        self.assertEqual(parser_module.LAST_CACHE_WRITE_TS, 0.0, "a failed write is retried, not throttled")
+
+
+class TestEveryOnceFlagIsIsolated(unittest.TestCase):
+    """A one-shot *_LOGGED flag that isolated_state does not restore leaks between
+    tests: the first test to trip it silences every later one, so a failure depends on
+    run order. The rule was written down; this makes it a test, and it can fail --
+    it first proves the scan finds the flags it is meant to guard."""
+
+    def test_every_once_flag_in_parsers_and_state_is_restored(self):
+        modules = (parser_module, shared_state)
+        flags = [
+            (module, name)
+            for module in modules
+            for name, value in vars(module).items()
+            if name.endswith("_LOGGED") and isinstance(value, bool)
+        ]
+        found = {name for _, name in flags}
+        self.assertTrue(
+            {
+                "ENERGY_DT_CLAMP_LOGGED",
+                "GRID_DIRECTION_CONFLICT_LOGGED",
+                "CELL_LIST_OVERFLOW_LOGGED",
+                "UNSUPPORTED_PROTOCOL_LOGGED",
+            }
+            <= found,
+            "the scan no longer finds the flags it exists to guard",
+        )
+        before = {(module.__name__, name): getattr(module, name) for module, name in flags}
+        for module, name in flags:
+            self.addCleanup(setattr, module, name, before[(module.__name__, name)])
+        with isolated_state():
+            for module, name in flags:
+                setattr(module, name, not getattr(module, name))
+        for module, name in flags:
+            with self.subTest(flag=name):
+                self.assertEqual(
+                    getattr(module, name),
+                    before[(module.__name__, name)],
+                    f"{name} is not restored by isolated_state",
+                )
 
 
 if __name__ == "__main__":
