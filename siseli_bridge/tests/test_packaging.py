@@ -607,8 +607,9 @@ class TestDeprecatedOptions(unittest.TestCase):
 
     It is nevertheless kept in the schema. Supervisor validates the *stored* options
     before installing an update, so deleting a key that existing installations still
-    have on disk blocks the upgrade for all of them. It is removed in 2.7.0, by which
-    point stored copies have been rewritten.
+    have on disk blocks the upgrade for all of them -- so it stays for good. An earlier
+    note promised removal in 2.7.0; stored options are never rewritten on their own, so
+    that promise could not have been kept.
     """
 
     def setUp(self):

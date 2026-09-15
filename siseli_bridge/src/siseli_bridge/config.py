@@ -12,8 +12,8 @@ ROUTER_IP = os.getenv("ROUTER_IP", "192.168.1.1")
 TARGET_HOST = os.getenv("TARGET_HOST", "8.212.18.157")
 TARGET_PORT = int(os.getenv("TARGET_PORT", "1883"))
 
-#: Deprecated and unused: nothing ever opened a socket. Kept so Supervisor does not
-#: reject the stored option on existing installations. Removed in 2.7.0.
+#: Deprecated and unused: nothing ever opened a socket. Kept for good, because
+#: Supervisor validates stored options before an update and a removed key blocks it.
 LISTEN_PORT_DEPRECATED = os.getenv("LISTEN_PORT", "").strip()
 
 AUTO_INTERCEPT = os.getenv("AUTO_INTERCEPT", "true").strip().lower() in {"1", "true", "yes", "on"}
@@ -173,7 +173,7 @@ ACTIVE_DEBUG_FLAGS = tuple(name for name in DEBUG_FLAG_NAMES if _debug(name))
 
 #: Deprecated. Kept in the schema so Supervisor does not reject stored options, but
 #: deliberately ignored -- honouring it would preserve the per-packet output it was
-#: meant to remove. Removed entirely in 2.7.0.
+#: meant to remove. Kept in the schema for good, for the same reason as LISTEN_PORT.
 LOG_VERBOSE_DEPRECATED = os.getenv("LOG_VERBOSE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
@@ -314,15 +314,16 @@ def validate_config() -> None:
 
     if LISTEN_PORT_DEPRECATED:
         print(
-            "[CONFIG WARNING] LISTEN_PORT is unused and will be removed in 2.7.0; the "
-            "bridge observes traffic rather than listening on a socket.",
+            "[CONFIG WARNING] LISTEN_PORT is unused and ignored; the bridge observes "
+            "traffic rather than listening on a socket. It stays in the options only so "
+            "existing configurations keep validating.",
             flush=True,
         )
 
     if LOG_VERBOSE_DEPRECATED:
         print(
-            "[CONFIG WARNING] LOG_VERBOSE is deprecated and ignored; it will be removed "
-            "in 2.7.0. Use DEBUG_FLAGS with 'xray' and/or 'packets' instead.",
+            "[CONFIG WARNING] LOG_VERBOSE is deprecated and ignored. Use DEBUG_FLAGS "
+            "with 'xray' and/or 'packets' instead.",
             flush=True,
         )
 
