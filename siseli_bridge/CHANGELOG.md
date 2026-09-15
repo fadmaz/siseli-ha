@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **CI Runs With A Read-Only Token**: `ci.yml` now declares `permissions: contents: read`.
+  The repository's default workflow token can write, and `actions/checkout` stores it in
+  the checkout for the rest of the job, so any step — a third-party action included —
+  could have pushed to `main`. Nothing in CI writes, so it no longer holds the right to.
+  A test pins the block and refuses a job-level override. Nothing that ships changes.
+
 ## [2.6.22] - 2026-09-02
 
 ### Fixed

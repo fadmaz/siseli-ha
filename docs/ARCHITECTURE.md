@@ -128,7 +128,7 @@ Consequences:
 
 **Isolation helper**: `helpers.isolated_state` (`tests/helpers.py:121-167`) saves and restores 17 module globals across `parsers.py` and `state.py`, including every once-logged flag. It does **not** cover `core.py` globals (`INV_MAC`, `KNOWN_*_MACS`, `LAST_PACKET_TS`, `DROPPED_NON_TARGET`), `state.RUNNING` or `state.DISCOVERY_CLEANED`; `test_core._CoreTestCase` (`tests/test_core.py:44-93`) restores those by hand. `BASE_ENV` (`:22-57`) is pinned to `config.yaml` by `tests/test_packaging.py:645-676` because `reload_config` (`:73`) reloads `config.py` in place and never restores it; `tests/test_packaging.py:645-649` records the order-dependent false pass that caused. `FakeMqttClient` (`:176`) records publishes, retained topics and the will.
 
-**Coverage**: 323 tests + 1132 subtests, ~7 s. Measured 84 % overall and 74 % for `mqtt.py`+`core.py` against floors of 78 and 65 (`.github/workflows/ci.yml:46-47`); the "~2 points under" comment at `:43-44` is stale. `core.py` alone sits at 65 %, carried by `mqtt.py` at 94 %; nothing gates `core.py` individually.
+**Coverage**: 323 tests + 1132 subtests, ~7 s. Measured 84 % overall and 74 % for `mqtt.py`+`core.py` against floors of 78 and 65 (`.github/workflows/ci.yml:53-54`); the "~2 points under" comment at `:50-51` is stale. `core.py` alone sits at 65 %, carried by `mqtt.py` at 94 %; nothing gates `core.py` individually.
 
 **What only the smoke test proves**: the `__main__` body (`core.py:580-622`), `start_mqtt` (`mqtt.py:393-325`), and that the image starts at all. **What nothing proves**: the ARP send path (`core.py:172-207`, `:50-54`, always mocked at `tests/test_core.py:63-68`, disabled in smoke at `scripts/smoke-test.sh:39`); `SIGTERM -> shutdown` (`core.py:572-577` is only asserted callable at `tests/test_core.py:373-374`, and smoke tears down with `docker rm -f`, `scripts/smoke-test.sh:25`); the `health_logger` loop body (`core.py:601`); `run.sh` itself (entrypoint overridden at `scripts/smoke-test.sh:46`; only grepped by `tests/test_packaging.py:97-100`). One test is vacuous: `tests/test_core.py:309-314` patches `core.client` but `shutdown` publishes through `mqtt.py`'s own client (`core.py:694` -> `mqtt.py:179-181`), so the `except` at `core.py:536` never runs.
 
@@ -148,12 +148,14 @@ Consequences:
 
 | Job | Runner | Produces |
 |---|---|---|
-| `test` (`:10`) | `ubuntu-latest` x Python 3.9/3.11/3.12 (`:13-14`) | `test (3.9)`, `test (3.11)`, `test (3.12)`; coverage floors at `:46-47` |
-| `lint` (`:58`) | `ubuntu-latest` | `lint` (`ruff check .`) |
-| `addon-lint` (`:75`) | `ubuntu-latest` | `addon-lint` via `frenck/action-app-linter@v2` (`:85`; renamed from action-addon-linter, warnings do not fail) |
-| `smoke` (`:92`) | `ubuntu-24.04` / `ubuntu-24.04-arm` (`:104-110`), `fail-fast: false` | `smoke (amd64, ubuntu-24.04)`, `smoke (aarch64, ubuntu-24.04-arm)`; runs `scripts/smoke-test.sh` (`:119`) |
+| `test` (`:17`) | `ubuntu-latest` x Python 3.9/3.11/3.12 (`:20-21`) | `test (3.9)`, `test (3.11)`, `test (3.12)`; coverage floors at `:53-54` |
+| `lint` (`:65`) | `ubuntu-latest` | `lint` (`ruff check .`) |
+| `addon-lint` (`:82`) | `ubuntu-latest` | `addon-lint` via `frenck/action-app-linter@v2` (`:92`; renamed from action-addon-linter, warnings do not fail) |
+| `smoke` (`:99`) | `ubuntu-24.04` / `ubuntu-24.04-arm` (`:111-117`), `fail-fast: false` | `smoke (amd64, ubuntu-24.04)`, `smoke (aarch64, ubuntu-24.04-arm)`; runs `scripts/smoke-test.sh` (`:126`) |
 
-There is no separate docker build job; smoke builds first (`:98`). **Branch protection on `main` requires exactly those seven check names**, derived by GitHub from job id plus every matrix value, so bumping `runner: ubuntu-24.04` alone renames a check and blocks every PR with no error naming the cause. `tests/test_packaging.py:263-305` pins the derived set; the protection rule must be edited in the same change.
+Every job runs with a read-only token (`permissions: contents: read`, `:13-14`), pinned by `TestCiTokenIsReadOnly` (`tests/test_packaging.py:803`).
+
+There is no separate docker build job; smoke builds first (`:105`). **Branch protection on `main` requires exactly those seven check names**, derived by GitHub from job id plus every matrix value, so bumping `runner: ubuntu-24.04` alone renames a check and blocks every PR with no error naming the cause. `tests/test_packaging.py:263-305` pins the derived set; the protection rule must be edited in the same change.
 
 **Pins are written twice**: `pyproject.toml:17-20` (what CI installs) and `siseli_bridge/requirements.txt` (what the image installs) must agree, and `Dockerfile:1` must equal `scripts/smoke-test.sh:18` (`tests/test_packaging.py:436-471`). Dependabot is registered for both pip roots and for docker (`.github/dependabot.yml:8-26`), so each single-file bot PR fails CI until a human lands the pair; this is the documented intent.
 
