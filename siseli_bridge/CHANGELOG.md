@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Each Restart Lost One Interval Of Energy Per Domain**: the energy integrator's clocks
+  lived only in memory, so the first payload after any restart — an update, a config
+  change, the watchdog — set a new baseline and credited nothing: about 0.4–0.9 kWh per
+  domain at the reference install's cadence. The clocks are now saved in the same
+  `/data/state.json` record as the counters, tagged with the host's boot id, and resumed
+  only in that same boot, since a monotonic reading means nothing after a reboot. A
+  resumed interval longer than the integration limit starts a new baseline instead of
+  being clamped. The startup log says, per domain, whether it resumed. A reboot still
+  starts from a new baseline, as before; an older version reading the new file simply
+  drops the extra key.
 - **Frames Carried The Wrong MAC On A Host With Two Interfaces**: every frame the bridge
   builds — the ARP replies that put it in the path, the forwarded traffic and the corrective
   replies sent on stop — left its source MAC unset, and scapy fills an unset source from the

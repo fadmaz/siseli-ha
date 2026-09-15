@@ -112,3 +112,29 @@ def atomic_write_json(path: str, payload: object) -> None:
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(tmp_path, path)
+
+
+#: Key under which the energy integrator's clocks travel inside state.json, beside the
+#: counters they gate. They are saved together because a clock and its total must never
+#: disagree: a clock older than its counter would credit the gap between them twice.
+#: The underscore is in the key string only, so no registry key can collide with it.
+ENERGY_CLOCKS_CACHE_KEY = "_energy_clocks"
+
+#: The host kernel's per-boot identifier. Readable inside the add-on container.
+BOOT_ID_PATH = "/proc/sys/kernel/random/boot_id"
+
+
+def host_boot_id() -> Optional[str]:
+    """The current host boot's id, or None when it cannot be read.
+
+    time.monotonic() is CLOCK_MONOTONIC: continuous across an add-on restart, reset by
+    a host reboot. A saved monotonic reading therefore means something only in the boot
+    that wrote it, and this is how that is checked. None never matches anything.
+    Reach it as ``_state.host_boot_id()`` so tests can stand in for it.
+    """
+    try:
+        with open(BOOT_ID_PATH, "r", encoding="ascii") as handle:
+            value = handle.read().strip()
+    except (OSError, UnicodeDecodeError):
+        return None
+    return value or None

@@ -3,7 +3,7 @@ import json
 import re
 import time
 from datetime import datetime
-from typing import Dict, FrozenSet, List, Optional, Tuple
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from . import state as _shared_state
 from .loggers import log, log_kv, json_log, log_payload_preview, log_error_always, hex_preview
@@ -171,11 +171,23 @@ _CHECKSUM_TAIL_BYTES = 2
 
 #: One-shot guard so a foreign device is diagnosed once, not on every payload.
 UNSUPPORTED_PROTOCOL_LOGGED = False
-#: Integration clock per energy domain, holding time.monotonic() readings -- which are
-#: meaningless across a process boundary and must never be persisted. A dict rather than one global per domain, so
+#: Integration clock per energy domain, holding time.monotonic() readings. They mean
+#: something only within one host boot, so they are persisted together with the boot id
+#: and resumed only in that boot (restore_energy_clocks). A dict rather than one global per domain, so
 #: adding a calculated energy counter does not need a new module-level name -- and so
 #: the test isolation helper has one thing to save instead of a growing list.
 LAST_ENERGY_TS: Dict[str, float] = {}
+#: Domains whose clock was resumed from the cache and not used since. Their first
+#: interval spans the bridge's own downtime, so it is checked against the integration
+#: limit before it is credited: past the limit it starts a new baseline, unclamped.
+RESTORED_ENERGY_DOMAINS: Set[str] = set()
+#: The counters each domain's clock gates. A clock resumes only if these were restored.
+ENERGY_DOMAIN_COUNTERS: Dict[str, Tuple[str, ...]] = {
+    "battery": ("c_battery_charge_energy_kwh", "c_battery_discharge_energy_kwh"),
+    "grid": ("c_grid_import_energy_kwh",),
+    "generation": ("c_generation_energy_kwh",),
+    "load": ("c_load_energy_kwh",),
+}
 _FLOW_EVICT_COUNTER: int = 0
 _FLOW_EVICT_INTERVAL: int = 200  # Prune stale TCP flows every N state lookups.
 
@@ -628,6 +640,59 @@ def _get_mqtt_publish():
     return mqtt.publish_sensor_discovery, mqtt.publish_grouped_state
 
 
+def energy_clocks_record() -> Optional[Dict[str, object]]:
+    """The integrator's clocks tagged with the host boot they were read in, or None."""
+    boot_id = _shared_state.host_boot_id()
+    if not boot_id or not LAST_ENERGY_TS:
+        return None
+    return {"boot_id": boot_id, "clocks": dict(LAST_ENERGY_TS)}
+
+
+def restore_energy_clocks(
+    saved: object, restored_keys, reset: bool = False, now: Optional[float] = None
+) -> Dict[str, str]:
+    """Resume the energy clocks an earlier process saved in this same host boot.
+
+    Returns {domain: outcome} for the startup log. A domain resumes only when the record
+    is well formed, both boot ids are known and equal, its reading is a finite number no
+    later than now, and every counter the domain gates was restored as well. Anything
+    else leaves the domain to start a new baseline, which is what every restart did
+    before 2.6.24 -- one interval per domain, uncredited.
+    """
+    now = now if now is not None else time.monotonic()
+    if saved is None:
+        return {}
+    every = list(ENERGY_DOMAIN_COUNTERS)
+    if reset:
+        return {domain: "new baseline (counters reset)" for domain in every}
+    if not isinstance(saved, dict) or not isinstance(saved.get("clocks"), dict):
+        return {domain: "new baseline (malformed record)" for domain in every}
+    saved_boot = saved.get("boot_id")
+    current_boot = _shared_state.host_boot_id()
+    if not isinstance(saved_boot, str) or not saved_boot or current_boot is None:
+        return {domain: "new baseline (no boot id)" for domain in every}
+    if saved_boot != current_boot:
+        return {domain: "new baseline (host rebooted)" for domain in every}
+
+    outcomes: Dict[str, str] = {}
+    for domain, counters in ENERGY_DOMAIN_COUNTERS.items():
+        value = saved["clocks"].get(domain)
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value \
+                or value in (float("inf"), float("-inf")):
+            outcomes[domain] = "new baseline (malformed reading)"
+        elif value > now:
+            outcomes[domain] = "new baseline (reading in the future)"
+        elif not all(key in restored_keys for key in counters):
+            outcomes[domain] = "new baseline (counters not restored)"
+        else:
+            LAST_ENERGY_TS[domain] = float(value)
+            RESTORED_ENERGY_DOMAINS.add(domain)
+            outcomes[domain] = f"resumed ({int(now - value)}s old)"
+    return outcomes
+
+
 def heartbeat_due(now: Optional[float] = None) -> bool:
     """Whether the retained state is old enough to be worth republishing.
 
@@ -671,8 +736,18 @@ def _write_state_cache(snapshot: Dict[str, object], now: Optional[float] = None)
     now = now if now is not None else time.monotonic()
     if LAST_CACHE_WRITE_TS and (now - LAST_CACHE_WRITE_TS) < STATE_CACHE_INTERVAL_SEC:
         return False
+    # A copy: the caller publishes `snapshot` to MQTT right after this, and the clocks
+    # must never reach the broker. Read after the snapshot, on this same thread -- the
+    # only writer of both -- so the pair on disk always comes from one payload.
+    record = dict(snapshot)
     try:
-        _shared_state.atomic_write_json(STATE_CACHE_FILE, snapshot)
+        clocks = energy_clocks_record()
+    except Exception:
+        clocks = None
+    if clocks:
+        record[_shared_state.ENERGY_CLOCKS_CACHE_KEY] = clocks
+    try:
+        _shared_state.atomic_write_json(STATE_CACHE_FILE, record)
         LAST_CACHE_WRITE_TS = now
         return True
     except Exception as exc:
@@ -736,6 +811,19 @@ class SolarParser:
         dt_seconds = max(0.0, now_ts - previous)
 
         max_dt_seconds = SolarParser._energy_max_dt()
+        if domain in RESTORED_ENERGY_DOMAINS:
+            # The first interval after a restart spans the bridge's own downtime. Within
+            # the limit it is credited like any other; past it, it is not an interval this
+            # process observed, so it starts a new baseline instead of being clamped --
+            # which keeps the clamp warning for a genuine stall.
+            RESTORED_ENERGY_DOMAINS.discard(domain)
+            if dt_seconds > max_dt_seconds:
+                log(
+                    f"[CACHE] {domain}: {int(dt_seconds)}s since the saved energy clock, over "
+                    f"the {int(max_dt_seconds)}s limit; starting a new baseline",
+                    level="info",
+                )
+                return 0.0
         if dt_seconds <= max_dt_seconds:
             return dt_seconds
 

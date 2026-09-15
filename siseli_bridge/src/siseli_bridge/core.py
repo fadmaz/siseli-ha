@@ -37,6 +37,7 @@ from .parsers import (
     mqtt_type_name,
     republish_state,
     reset_flow,
+    restore_energy_clocks,
 )
 from .version import __version__ as VERSION
 
@@ -113,6 +114,10 @@ def load_cached_state(path: str = STATE_CACHE_FILE) -> None:
                 log(f"[CACHE] Ignoring {path}: expected an object, got {type(cached).__name__}", level="error")
                 return
 
+            # The integrator's clocks travel in the same record as the counters they
+            # gate. Taken out first, so the filters below never see the key.
+            clocks_record = cached.pop(_state.ENERGY_CLOCKS_CACHE_KEY, None)
+
             # The energy counters are state_class: total_increasing, so a corrupt or
             # negative value can never correct itself downward. Drop those rather
             # than restoring them.
@@ -171,6 +176,23 @@ def load_cached_state(path: str = STATE_CACHE_FILE) -> None:
                 )
 
             _state.LAST_STATE.update(cached)
+
+            # Its own try, after the counters are in: nothing about the clocks may cost
+            # the totals they gate.
+            try:
+                outcomes = restore_energy_clocks(
+                    clocks_record, restored_keys=set(cached), reset=RESET_ENERGY_COUNTERS
+                )
+                if outcomes:
+                    log(
+                        "[CACHE] Energy clocks: "
+                        + ", ".join(f"{domain} {outcome}" for domain, outcome in sorted(outcomes.items())),
+                        level="info",
+                    )
+                elif clocks_record is None:
+                    log("[CACHE] Energy clocks: none saved; each domain starts a new baseline", level="info")
+            except Exception as exc:
+                log(f"[CACHE] Could not restore energy clocks: {exc}", level="error")
     except Exception as e:
         log(f"[CACHE] Error loading state: {e}", level="error")
 

@@ -95,7 +95,7 @@ is no telemetry, no analytics, no crash reporting, no update check.
 
 | File | Contents |
 |---|---|
-| `/data/state.json` | The last decoded value of every sensor, so entities survive a restart. |
+| `/data/state.json` | The last decoded value of every sensor, so entities survive a restart, plus the energy integrator's clock readings and this host's boot id, so a restart does not lose an interval of energy. |
 | `/data/discovery_state.json` | Which discovery topics have been published, so stale ones can be swept. |
 
 Neither contains credentials. Your MQTT password lives in the add-on's Supervisor

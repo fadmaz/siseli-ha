@@ -1226,5 +1226,173 @@ class TestFramesCarryTheCaptureInterfaceMac(_CoreTestCase):
         self.assertIsNone(core.OWN_MAC, "retried next time rather than cached")
 
 
+class TestEnergyClocksSurviveARestart(unittest.TestCase):
+    """Each restart used to drop one integration interval per energy domain: the clocks
+    lived only in memory, so the first payload after a restart set a baseline and
+    credited nothing -- 0.4-0.9 kWh per domain at the reference install's cadence. The
+    clocks now travel in state.json beside the counters they gate, tagged with the host
+    boot id, because a monotonic reading means nothing after a reboot."""
+
+    BOOT = "0b7c9d6e-boot-a"
+    BATTERY = {"bat_v": 50.0, "bms_charging_current_a": 10.0, "bms_discharge_current_a": 0.0}
+
+    def setUp(self):
+        ctx = isolated_state()
+        ctx.__enter__()
+        self.addCleanup(lambda: ctx.__exit__(None, None, None))
+        shared_state.LAST_STATE.clear()
+        parser_module.LAST_ENERGY_TS.clear()
+        parser_module.RESTORED_ENERGY_DOMAINS.clear()
+        parser_module.LAST_CACHE_WRITE_TS = 0.0
+        self.path = parser_module.STATE_CACHE_FILE  # a private temp path, via conftest
+        self.boot = mock.patch.object(shared_state, "host_boot_id", return_value=self.BOOT)
+        self.boot.start()
+        self.addCleanup(self.boot.stop)
+
+    def _integrate(self, now):
+        state = dict(self.BATTERY)
+        with mock.patch("src.siseli_bridge.parsers.INVERTER_COUNT", 1):
+            parser_module.SolarParser._apply_energy_dashboard_calculations(state, now_ts=now)
+        shared_state.LAST_STATE.update(state)
+        return state
+
+    def _write(self, now):
+        return parser_module._write_state_cache(shared_state.snapshot_state(), now=now)
+
+    def _restart(self, now, boot=None):
+        shared_state.LAST_STATE.clear()
+        parser_module.LAST_ENERGY_TS.clear()
+        parser_module.RESTORED_ENERGY_DOMAINS.clear()
+        lines = []
+        boot_id = boot if boot is not None else self.BOOT
+        with mock.patch.object(shared_state, "host_boot_id", return_value=boot_id), \
+             mock.patch("src.siseli_bridge.parsers.time.monotonic", return_value=now), \
+             mock.patch("src.siseli_bridge.core.log", side_effect=lambda m, **k: lines.append(m)):
+            core.load_cached_state(self.path)
+        return lines
+
+    def _record(self):
+        with open(self.path) as handle:
+            return json.load(handle)
+
+    def test_the_clocks_are_written_in_the_same_record_as_the_counters(self):
+        self._integrate(1000.0)
+        self._write(1000.0)
+        record = self._record()
+        self.assertIn("c_battery_charge_energy_kwh", record)
+        self.assertEqual(
+            record[shared_state.ENERGY_CLOCKS_CACHE_KEY],
+            {"boot_id": self.BOOT, "clocks": {"battery": 1000.0}},
+        )
+
+    def test_the_snapshot_the_caller_publishes_never_carries_the_clocks(self):
+        self._integrate(1000.0)
+        snapshot = shared_state.snapshot_state()
+        parser_module._write_state_cache(snapshot, now=1000.0)
+        self.assertNotIn(shared_state.ENERGY_CLOCKS_CACHE_KEY, snapshot)
+
+    def test_a_restart_in_the_same_boot_resumes_the_interval(self):
+        self._integrate(1000.0)
+        self._integrate(1300.0)
+        self._write(1300.0)
+        before = shared_state.LAST_STATE["c_battery_charge_energy_kwh"]
+        lines = self._restart(now=1400.0)
+        self.assertTrue(any("battery resumed" in line for line in lines))
+        after = self._integrate(1600.0)
+        # 500 W for the 300 s since the saved clock. Before this, nothing was credited.
+        self.assertAlmostEqual(after["c_battery_charge_energy_kwh"] - before, 500 * 300 / 3.6e6, places=5)  # counters keep 6 decimals
+
+    def test_a_throttled_write_is_re_credited_not_double_counted(self):
+        """The file holds the last written pair; memory had moved on. After a restart
+        the next payload credits from the saved clock -- replacing the lost interval,
+        never adding it twice."""
+        self._integrate(1000.0)
+        self._integrate(1300.0)
+        self._write(1300.0)
+        saved = shared_state.LAST_STATE["c_battery_charge_energy_kwh"]
+        self._integrate(1310.0)
+        self.assertFalse(self._write(1310.0), "within the throttle window")
+        self._restart(now=1400.0)
+        final = self._integrate(1600.0)["c_battery_charge_energy_kwh"]
+        self.assertAlmostEqual(final, saved + 500 * 300 / 3.6e6, places=5)  # a double count would be off by 1.4e-3
+
+    def test_a_reboot_starts_a_new_baseline(self):
+        self._integrate(1000.0)
+        self._integrate(1300.0)
+        self._write(1300.0)
+        lines = self._restart(now=50.0, boot="another-boot")
+        self.assertTrue(any("host rebooted" in line for line in lines))
+        self.assertEqual(parser_module.LAST_ENERGY_TS, {})
+
+    def test_an_unreadable_boot_id_neither_writes_nor_restores(self):
+        self.boot.stop()
+        with mock.patch.object(shared_state, "host_boot_id", return_value=None):
+            self._integrate(1000.0)
+            self._write(1000.0)
+        self.boot.start()
+        self.assertNotIn(shared_state.ENERGY_CLOCKS_CACHE_KEY, self._record())
+        outcomes = parser_module.restore_energy_clocks(
+            {"boot_id": self.BOOT, "clocks": {"battery": 900.0}}, {"c_battery_charge_energy_kwh"}, now=1000.0
+        )
+        self.assertIn("counters not restored", outcomes["battery"])
+        with mock.patch.object(shared_state, "host_boot_id", return_value=None):
+            outcomes = parser_module.restore_energy_clocks(
+                {"boot_id": self.BOOT, "clocks": {"battery": 900.0}}, set(), now=1000.0
+            )
+        self.assertIn("no boot id", outcomes["battery"])
+
+    def test_a_gap_past_the_limit_starts_a_new_baseline_without_the_clamp_warning(self):
+        """A stop of an hour must not be bridged at the new payload's power."""
+        self._integrate(1000.0)
+        self._integrate(1300.0)
+        self._write(1300.0)
+        before = shared_state.LAST_STATE["c_battery_charge_energy_kwh"]
+        self._restart(now=1400.0)
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged, \
+             mock.patch("src.siseli_bridge.parsers.log"):
+            after = self._integrate(1300.0 + 5000.0)
+        self.assertEqual(after["c_battery_charge_energy_kwh"], before)
+        tags = [c.args[0] for c in logged.call_args_list if c.args]
+        self.assertNotIn("[ENERGY GAP CLAMPED]", tags)
+
+    def test_a_malformed_record_still_restores_every_counter(self):
+        for bad in ([], "x", None, {"boot_id": 5, "clocks": {}}, {"boot_id": self.BOOT, "clocks": "x"},
+                    {"boot_id": self.BOOT, "clocks": {"battery": "x"}},
+                    {"boot_id": self.BOOT, "clocks": {"battery": float("nan")}},
+                    {"boot_id": self.BOOT, "clocks": {"battery": True}},
+                    {"boot_id": self.BOOT, "clocks": {"battery": 10.0 ** 12}}):
+            with self.subTest(record=repr(bad)[:60]):
+                with open(self.path, "w") as handle:
+                    payload = {"c_battery_charge_energy_kwh": 7.5, "c_battery_discharge_energy_kwh": 1.0}
+                    payload[shared_state.ENERGY_CLOCKS_CACHE_KEY] = bad
+                    handle.write(json.dumps(payload))
+                self._restart(now=1400.0)
+                self.assertEqual(shared_state.LAST_STATE.get("c_battery_charge_energy_kwh"), 7.5)
+                self.assertEqual(parser_module.LAST_ENERGY_TS, {})
+
+    def test_a_reset_discards_the_clocks(self):
+        self._integrate(1000.0)
+        self._integrate(1300.0)
+        self._write(1300.0)
+        with mock.patch.object(core, "RESET_ENERGY_COUNTERS", True):
+            lines = self._restart(now=1400.0)
+        self.assertTrue(any("counters reset" in line for line in lines))
+        self.assertEqual(parser_module.LAST_ENERGY_TS, {})
+
+    def test_the_reserved_key_never_reaches_last_state_or_the_removed_warning(self):
+        self._integrate(1000.0)
+        self._write(1000.0)
+        lines = self._restart(now=1100.0)
+        self.assertNotIn(shared_state.ENERGY_CLOCKS_CACHE_KEY, shared_state.LAST_STATE)
+        self.assertFalse(any("no longer defines" in line for line in lines))
+
+    def test_the_reserved_key_is_not_a_sensor(self):
+        """Why an older build reading this file simply drops the key: its SENSORS
+        filter removes anything it does not define, with one [CACHE] line."""
+        from src.siseli_bridge.sensors import SENSORS
+
+        self.assertNotIn(shared_state.ENERGY_CLOCKS_CACHE_KEY, SENSORS)
+
+
 if __name__ == "__main__":
     unittest.main()
