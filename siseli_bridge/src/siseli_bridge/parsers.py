@@ -849,14 +849,14 @@ class SolarParser:
 
     @staticmethod
     def _grid_direction_conflicts(signed_w: Optional[float], direction: object) -> bool:
-        """Whether WdRR[6]'s sign contradicts the flow direction this payload published.
+        """Whether WdRR[6]'s sign contradicts a flow direction.
 
-        The two come from different tokens: the label from WdRR[7]'s flow code (sign
-        only as a fallback), the import integrator from WdRR[6]'s sign alone. So a
-        positive sign can credit import while the label reads "Inverter To Mains".
-        Every capture ever taken is +00000 with code 0, so neither the sign convention
-        nor codes 1 and 2 are verified, and the counter it would change can never go
-        down. Detect and report; do not guess which token is right.
+        The caller passes what WdRR[7]'s code states (see _flow_code_direction), or
+        the published label when there is no usable code. The import integrator reads
+        WdRR[6]'s sign alone, so a positive sign can credit import while the code says
+        "Inverter To Mains". Every capture ever taken is +00000 with code 0, so neither
+        the sign convention nor codes 1 and 2 are verified, and the counter it would
+        change can never go down. Detect and report; do not guess which token is right.
         """
         if signed_w is None or direction is None or signed_w == 0:
             return False
@@ -865,6 +865,23 @@ class SolarParser:
         if signed_w > 0:
             return direction == "Inverter To Mains"
         return direction == "Mains To Inverter"
+
+    @staticmethod
+    def _flow_code_direction(code: object) -> Optional[str]:
+        """What WdRR[7]'s code states, whether it is sent as one digit or two.
+
+        The published label honours only "0", "1" and "2" while a sign is present, so
+        a two-digit "01" is labelled from the sign and could never disagree with it.
+        The conflict check has to read the code itself.
+        """
+        if code is None:
+            return None
+        text = str(code).strip()
+        if not text.isdigit():
+            return None
+        return {"0": "Mains To Inverter", "1": "Inverter To Mains", "2": "Idle"}.get(
+            text.lstrip("0") or "0"
+        )
 
     @staticmethod
     def _apply_energy_dashboard_calculations(state: Dict[str, object], now_ts: Optional[float] = None) -> None:
@@ -935,7 +952,8 @@ class SolarParser:
             # right is unknown, and a wrong fix is irreversible on a total_increasing
             # counter. The first real conflict on an on-grid install is the evidence.
             direction = state.get("mains_current_flow_direction")
-            if SolarParser._grid_direction_conflicts(mains_signed_w, direction):
+            code_direction = SolarParser._flow_code_direction(state.get("mains_flow_code"))
+            if SolarParser._grid_direction_conflicts(mains_signed_w, code_direction or direction):
                 global GRID_DIRECTION_CONFLICT_LOGGED
                 if not GRID_DIRECTION_CONFLICT_LOGGED:
                     GRID_DIRECTION_CONFLICT_LOGGED = True
@@ -944,6 +962,7 @@ class SolarParser:
                         level="warning",
                         token=str(state.get("mains_wdrr_token", ""))[:32],
                         flow_code=str(state.get("mains_flow_code", ""))[:8],
+                        code_says=code_direction,
                         direction=direction,
                         note=(
                             "the grid power sign and the flow direction disagree; import is "

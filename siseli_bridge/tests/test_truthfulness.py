@@ -1064,6 +1064,47 @@ class TestGridDirectionConflictIsReported(_ParserTestCase):
             state = self._decode("-01500", "0")
         self.assertEqual(state["mains_current_flow_direction"], "Mains To Inverter")
         self.assertEqual(len(self._conflicts(logged)), 1)
+        self.assertEqual(state["c_grid_import_power_w"], 0)
+        shared_state.LAST_STATE.update(state)
+        later = self._decode("-01500", "0", now=1300.0)
+        self.assertEqual(
+            later.get("c_grid_import_energy_kwh", 0), state.get("c_grid_import_energy_kwh", 0),
+            "a negative sign still credits nothing, as before",
+        )
+
+    def test_an_idle_code_still_credits_the_sign(self):
+        """The third conflict shape. Pinned like the others: detection must not
+        quietly become a change to what is credited."""
+        factor = max(1.0, float(parser_module.INVERTER_COUNT))
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            first = self._decode("+01500", "2", now=1000.0)
+        self.assertEqual(len(self._conflicts(logged)), 1)
+        self.assertEqual(first["c_grid_import_power_w"], int(round(1500 * factor)))
+        shared_state.LAST_STATE.update(first)
+        second = self._decode("+01500", "2", now=1300.0)
+        self.assertGreater(second["c_grid_import_energy_kwh"], first.get("c_grid_import_energy_kwh", 0))
+
+    def test_a_two_digit_code_is_read_directly(self):
+        """The label honours only "0"/"1"/"2" while a sign is present, so "01" is
+        labelled from the sign and the label could never disagree with it. The check
+        reads the code itself."""
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            state = self._decode("+01500", "01")
+        self.assertEqual(state["mains_current_flow_direction"], "Mains To Inverter")
+        conflicts = self._conflicts(logged)
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].kwargs["code_says"], "Inverter To Mains")
+
+    def test_two_digit_codes_map_like_one_digit_codes(self):
+        cases = {
+            "0": "Mains To Inverter", "00": "Mains To Inverter",
+            "1": "Inverter To Mains", "01": "Inverter To Mains",
+            "2": "Idle", "02": "Idle",
+            "7": None, "A": None, "": None, None: None,
+        }
+        for code, expected in cases.items():
+            with self.subTest(code=code):
+                self.assertEqual(SolarParser._flow_code_direction(code), expected)
 
     def test_crediting_is_unchanged(self):
         """Pinned on purpose. Changing which token credits import is a decision for

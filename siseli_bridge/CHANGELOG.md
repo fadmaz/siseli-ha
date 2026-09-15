@@ -37,7 +37,8 @@ All notable changes to this project will be documented in this file.
   "Inverter To Mains" while crediting 1500 W of import. Every capture ever taken is off
   grid, so which of the two is right is unknown, and `c_grid_import_energy_kwh` can never go
   down. The disagreement is now logged once as `[GRID DIRECTION CONFLICT]` with both raw
-  tokens. Crediting is deliberately unchanged until a real on-grid report settles it.
+  tokens, reading the code itself so a two-digit code such as `01` is checked too.
+  Crediting is deliberately unchanged until a real on-grid report settles it.
 - **A `TARGET_HOST` That Could Never Match Is Now Refused At Startup**: it is compared as
   a string with each packet's IPv4 destination, so a hostname, an IPv6 address or a stray
   space matched nothing and every broker packet was silently dropped — no sensors, and with
