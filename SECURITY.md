@@ -25,9 +25,9 @@ address. The add-on inserts itself into that path so it can read the telemetry t
 already flowing.
 
 1. **ARP interception.** It sends unsolicited ARP replies (`op=2`) to exactly two hosts:
-   the inverter, telling it that the router's IP is at the MAC of the interface the add-on
-   captures on; and the router, telling it the same about the inverter's IP. Both addresses are configured
-   by you, in `INVERTER_IP` and `ROUTER_IP`. **It never scans, sweeps or discovers** — if
+   the inverter, telling it that the router's IP is at the MAC of the interface the
+   add-on captures on; and the router, telling it the same about the inverter's IP. Both
+   addresses are configured by you, in `INVERTER_IP` and `ROUTER_IP`. **It never scans, sweeps or discovers** — if
    you put the wrong IP in, it poisons the wrong host, and nothing in the add-on will
    notice. While `INVERTER_MAC` or `ROUTER_MAC` is blank it also sends ordinary ARP
    requests (`who-has`) for those two IPs to learn their MACs; setting both suppresses
@@ -39,9 +39,9 @@ already flowing.
    captured; only the Ethernet header is rebuilt. The broker connection is never
    terminated, never proxied, never modified. **Everything else the inverter sends —
    DNS, NTP, HTTP, any other endpoint — is dropped**, unless you enable
-   `FORWARD_ALL_INVERTER_TRAFFIC`. On a
-   clean stop the add-on sends corrective ARP replies, so both peers go back to talking
-   directly at once; only after a crash do they wait for their ARP caches to expire.
+   `FORWARD_ALL_INVERTER_TRAFFIC`. On a clean stop the add-on sends corrective ARP
+   replies, so both peers go back to talking directly at once; only after a crash do
+   they wait for their ARP caches to expire.
 4. **Publishing.** Decoded values go to your own MQTT broker.
 
 `AUTO_INTERCEPT: false` turns off steps 1 and 3, for people who have arranged the

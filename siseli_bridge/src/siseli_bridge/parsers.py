@@ -708,6 +708,21 @@ def heartbeat_due(now: Optional[float] = None) -> bool:
     return (now - LAST_PUBLISH_TS) >= interval
 
 
+def pending_publish_due(now: Optional[float] = None) -> bool:
+    """Whether a change the publish throttle deferred is now due.
+
+    parse_payload holds a change made inside the UPDATE_INTERVAL_SEC window and, until
+    now, published it only with the next payload -- or the 600 s heartbeat. Nothing
+    flushed it when the window ended, although the comment at the throttle said it
+    would. A payload landing inside the previous one's window (Device A's second
+    payload does, every time) reached Home Assistant a whole cadence late.
+    """
+    if not PENDING_PUBLISH:
+        return False
+    now = now if now is not None else time.monotonic()
+    return (now - LAST_PUBLISH_TS) >= UPDATE_INTERVAL_SEC
+
+
 def republish_state(now: Optional[float] = None) -> bool:
     """Republish the retained state so it does not age out. Returns True if sent."""
     global LAST_PUBLISH_TS, PENDING_PUBLISH
@@ -2317,7 +2332,8 @@ class SolarParser:
                     # A change is deferred to the end of the throttle window, never
                     # dropped -- the previous `or` meant any change published
                     # immediately, so UPDATE_INTERVAL_SEC could never throttle
-                    # anything and the option did nothing at all.
+                    # anything and the option did nothing at all. core.publish_tick
+                    # flushes it when the window ends if no payload does first.
                     due = PENDING_PUBLISH and elapsed >= UPDATE_INTERVAL_SEC
 
                     if due:

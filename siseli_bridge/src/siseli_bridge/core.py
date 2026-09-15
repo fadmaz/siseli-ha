@@ -35,6 +35,7 @@ from .parsers import (
     extract_publish_payload,
     heartbeat_due,
     mqtt_type_name,
+    pending_publish_due,
     republish_state,
     reset_flow,
     restore_energy_clocks,
@@ -677,6 +678,22 @@ def check_capture_thread() -> bool:
     return True
 
 
+def publish_tick() -> bool:
+    """One timer-driven publish check, called from health_logger every 10 s.
+
+    Two reasons to publish without a payload arriving: the heartbeat, which keeps the
+    retained state inside Home Assistant's expire_after window while the inverter is
+    quiet, and a change the throttle deferred whose window has now ended. Returns
+    whether it published. Module-level so a test can run it; health_logger cannot be.
+    """
+    try:
+        if heartbeat_due() or pending_publish_due():
+            return republish_state()
+    except Exception as exc:
+        log(f"[HEARTBEAT ERROR] {exc}", level="error")
+    return False
+
+
 def health_logger() -> None:
     ticks = 0
     while _state.RUNNING:
@@ -697,14 +714,7 @@ def health_logger() -> None:
         except Exception as exc:
             log(f"[HEALTH ERROR] {exc}", level="error")
 
-        try:
-            # Timer-driven, so the retained state stays fresh while the inverter is
-            # quiet. Doing this from parse_payload meant it could only fire when a
-            # payload arrived, which is exactly when it was not needed.
-            if heartbeat_due():
-                republish_state()
-        except Exception as exc:
-            log(f"[HEARTBEAT ERROR] {exc}", level="error")
+        publish_tick()
 
         ticks += 1
         if ticks % 3:

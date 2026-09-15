@@ -1394,5 +1394,37 @@ class TestEnergyClocksSurviveARestart(unittest.TestCase):
         self.assertNotIn(shared_state.ENERGY_CLOCKS_CACHE_KEY, SENSORS)
 
 
+class TestPublishTick(unittest.TestCase):
+    """health_logger's publish check, extracted so it can run: the loop cannot."""
+
+    def test_a_due_deferred_change_is_published(self):
+        with mock.patch("src.siseli_bridge.core.heartbeat_due", return_value=False), \
+             mock.patch("src.siseli_bridge.core.pending_publish_due", return_value=True), \
+             mock.patch("src.siseli_bridge.core.republish_state", return_value=True) as republished:
+            self.assertTrue(core.publish_tick())
+        republished.assert_called_once()
+
+    def test_the_heartbeat_still_publishes(self):
+        with mock.patch("src.siseli_bridge.core.heartbeat_due", return_value=True), \
+             mock.patch("src.siseli_bridge.core.pending_publish_due", return_value=False), \
+             mock.patch("src.siseli_bridge.core.republish_state", return_value=True) as republished:
+            self.assertTrue(core.publish_tick())
+        republished.assert_called_once()
+
+    def test_nothing_due_publishes_nothing(self):
+        with mock.patch("src.siseli_bridge.core.heartbeat_due", return_value=False), \
+             mock.patch("src.siseli_bridge.core.pending_publish_due", return_value=False), \
+             mock.patch("src.siseli_bridge.core.republish_state") as republished:
+            self.assertFalse(core.publish_tick())
+        republished.assert_not_called()
+
+    def test_a_failure_is_logged_not_raised(self):
+        """It runs on the health thread, whose other duties must survive it."""
+        with mock.patch("src.siseli_bridge.core.heartbeat_due", side_effect=RuntimeError("boom")), \
+             mock.patch("src.siseli_bridge.core.log") as logged:
+            self.assertFalse(core.publish_tick())
+        self.assertTrue(any("[HEARTBEAT ERROR]" in str(c.args[0]) for c in logged.call_args_list))
+
+
 if __name__ == "__main__":
     unittest.main()

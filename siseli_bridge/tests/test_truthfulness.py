@@ -1226,5 +1226,53 @@ class TestEveryOnceFlagIsIsolated(unittest.TestCase):
                 )
 
 
+class TestADeferredChangeIsFlushed(unittest.TestCase):
+    """parse_payload defers a change made inside the UPDATE_INTERVAL_SEC window. Nothing
+    flushed it when the window ended, although the throttle's comment said it would, so
+    it waited for the next payload or the 600 s heartbeat. Device A's second payload
+    lands inside the first one's window every time and reached Home Assistant a whole
+    cadence late."""
+
+    def setUp(self):
+        ctx = isolated_state()
+        ctx.__enter__()
+        self.addCleanup(lambda: ctx.__exit__(None, None, None))
+        shared_state.LAST_STATE.clear()
+        shared_state.DISCOVERY_PUBLISHED = True
+        parser_module.PENDING_PUBLISH = False
+        self.publish_state = mock.Mock(return_value=True)
+        p = mock.patch.object(
+            parser_module, "_get_mqtt_publish", return_value=(mock.Mock(), self.publish_state)
+        )
+        p.start()
+        self.addCleanup(p.stop)
+        w = mock.patch.object(parser_module, "UPDATE_INTERVAL_SEC", 10)
+        w.start()
+        self.addCleanup(w.stop)
+
+    def _defer_a_change(self):
+        parser_module.LAST_PUBLISH_TS = 1000.0
+        with mock.patch.object(parser_module.time, "monotonic", return_value=1002.0):
+            SolarParser.parse_payload(envelope(captures.CAPTURE_TELEMETRY))
+        self.publish_state.assert_not_called()
+        self.assertTrue(parser_module.PENDING_PUBLISH)
+
+    def test_it_is_not_due_inside_the_window(self):
+        self._defer_a_change()
+        self.assertFalse(parser_module.pending_publish_due(now=1009.0))
+
+    def test_it_is_due_when_the_window_ends_and_the_flush_clears_it(self):
+        self._defer_a_change()
+        self.assertTrue(parser_module.pending_publish_due(now=1010.0))
+        self.assertTrue(parser_module.republish_state(now=1010.0))
+        self.publish_state.assert_called_once()
+        self.assertFalse(parser_module.PENDING_PUBLISH)
+        self.assertFalse(parser_module.pending_publish_due(now=1020.0))
+
+    def test_nothing_pending_means_nothing_due(self):
+        parser_module.LAST_PUBLISH_TS = 0.0
+        self.assertFalse(parser_module.pending_publish_due(now=10**6))
+
+
 if __name__ == "__main__":
     unittest.main()

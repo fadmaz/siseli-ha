@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A Throttled Change Waited For The Next Payload**: a change made inside the
+  `UPDATE_INTERVAL_SEC` window was held back and published only with the next payload
+  or the 600 s heartbeat, although the throttle's own comment said it was deferred to
+  the end of the window. Every second payload from the reference inverter lands inside
+  the first one's window, so its values reached Home Assistant a whole reporting
+  interval late. The ten-second health tick now flushes a deferred change once its window
+  has passed.
 - **Each Restart Lost One Interval Of Energy Per Domain**: the energy integrator's clocks
   lived only in memory, so the first payload after any restart — an update, a config
   change, the watchdog — set a new baseline and credited nothing: about 0.4–0.9 kWh per
