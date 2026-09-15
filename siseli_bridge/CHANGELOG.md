@@ -2,20 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.6.23] - 2026-09-15
 
 ### Changed
 
+- **The Startup Log Shows The Forwarding Mode**: both `[Config] AUTO_INTERCEPT=` lines —
+  the one `run.sh` prints and the add-on's own — now also print
+  `FORWARD_ALL_INVERTER_TRAFFIC`. The two decide together what is relayed, and
+  no log — the reference captures included — recorded which mode was running.
 - **No More Removal Date For `LISTEN_PORT` And `LOG_VERBOSE`**: the docs, the option
   descriptions and both `[CONFIG WARNING]` lines promised to remove them in 2.7.0. Both
   remain ignored, and nothing now promises a date. The note that kept them in the schema
   said removing a stored option blocks the upgrade; Supervisor's source says a stored key
   the schema no longer lists is only warned about and skipped. So removal is expected to be
   safe, and will happen once that is confirmed on a real installation.
-- **The Startup Log Shows The Forwarding Mode**: both `[Config] AUTO_INTERCEPT=` lines —
-  the one `run.sh` prints and the add-on's own — now also print
-  `FORWARD_ALL_INVERTER_TRAFFIC`. The two decide together what is relayed, and
-  no log — the reference captures included — recorded which mode was running.
 - **`BMS Cell Count` Is Renamed `Cell Voltages Decoded`**: it counts the per-cell voltages
   the payload carried — at most 16 of a 32-cell pack on the reference install, and 2 when
   cell 3 collapses — not the cells in the pack, which no field states. Friendly name only:
@@ -32,6 +32,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A `TARGET_HOST` That Could Never Match Is Now Refused At Startup**: it is compared as
+  a string with each packet's IPv4 destination, so a hostname, an IPv6 address or a stray
+  space matched nothing: no sensor was ever decoded, and with interception on and
+  `FORWARD_ALL_INVERTER_TRAFFIC` off the broker connection was not relayed either — visible
+  only as `TCP:1883` in the health line's drop counter. The add-on now refuses to start
+  and says why. The schema is deliberately unchanged, so an install that stored such a
+  value can still upgrade and correct it.
 - **A Grid Direction That Contradicts The Grid Power Is Now Reported**: the grid-import
   counter reads the sign of the grid power, while the flow-direction label reads a separate
   code, so nothing forced them to agree — `+01500` with code `1` labelled the flow
@@ -40,14 +47,6 @@ All notable changes to this project will be documented in this file.
   down. The disagreement is now logged once as `[GRID DIRECTION CONFLICT]` with both raw
   tokens, reading the code itself so a two-digit code such as `01` is checked too.
   Crediting is deliberately unchanged until a real on-grid report settles it.
-- **A `TARGET_HOST` That Could Never Match Is Now Refused At Startup**: it is compared as
-  a string with each packet's IPv4 destination, so a hostname, an IPv6 address or a stray
-  space matched nothing: no sensor was ever decoded, and with interception on and
-  `FORWARD_ALL_INVERTER_TRAFFIC` off the broker connection was not relayed either — visible
-  only as `TCP:1883` in the health line's drop counter. The add-on now refuses to start
-  and says why. The
-  schema is deliberately unchanged, so an install that stored such a value can still
-  upgrade and correct it.
 - **The Docs Overstated What Is Forwarded**: `SECURITY.md`, the README and the architecture
   map said every captured packet is relayed. By default only the inverter's broker
   connection and everything the router sends to the inverter are relayed; its DNS, NTP and
@@ -58,9 +57,9 @@ All notable changes to this project will be documented in this file.
   `[HEALTH]` examples used a format the code no longer prints, and DOCS.md and the
   `RESET_ENERGY_COUNTERS` description now count five kWh totals, not three. `SECURITY.md`
   now also lists the ARP requests sent while a MAC is not configured.
-- **The Test Suite Wrote To `/data` On The Developer's Machine**: every path through
-  successful decode reaches the state-cache writer, and nothing redirected it, so running the
-  tests on Windows kept rewriting `D:\data\state.json` with decoded capture values. Every
+- **The Test Suite Wrote To `/data` On The Developer's Machine**: every successful decode
+  reaches the state-cache writer, and nothing redirected it, so running the tests on
+  Windows kept rewriting `D:\data\state.json` with decoded capture values. Every
   test now gets a private directory for both the state cache and the discovery marker, and
   the one-shot flag rule is itself tested: `TestEveryOnceFlagIsIsolated` flips every
   `*_LOGGED` flag in `parsers.py` and `state.py` inside `isolated_state` and fails on any

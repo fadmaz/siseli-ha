@@ -1,6 +1,6 @@
 # ☀️ Siseli Inverter Bridge for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-2.6.22-blue.svg)](siseli_bridge/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.6.23-blue.svg)](siseli_bridge/CHANGELOG.md)
 [![CI](https://github.com/fadmaz/siseli-ha/actions/workflows/ci.yml/badge.svg)](https://github.com/fadmaz/siseli-ha/actions/workflows/ci.yml)
 [![HA Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-green.svg)](https://www.home-assistant.io/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
