@@ -7,10 +7,13 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **CI Runs With A Read-Only Token**: `ci.yml` now declares `permissions: contents: read`.
-  The repository's default workflow token can write, and `actions/checkout` stores it in
-  the checkout for the rest of the job, so any step — a third-party action included —
-  could have pushed to `main`. Nothing in CI writes, so it no longer holds the right to.
-  A test pins the block and refuses a job-level override. Nothing that ships changes.
+  The repository's default workflow token was write-scoped, and `actions/checkout` stores
+  it in the checkout for the rest of the job, so any step — a third-party action included
+  — could have pushed to `main`. Nothing in CI writes, so it no longer holds the right to.
+  The repository default is now read-only too, and GitHub Actions can no longer create or
+  approve pull requests; the workflow keeps its own block because a repository default is
+  not a ceiling and cannot be seen from a checkout. A test pins the block and refuses a
+  job-level override. Nothing that ships changes.
 
 ### Fixed
 

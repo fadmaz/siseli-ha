@@ -6,10 +6,10 @@ on:
   pull_request:
     branches: [main]
 
-# Read-only token. The repository's default workflow token can write, and
-# actions/checkout stores it in .git/config for the rest of the job, so any step --
-# a third-party action included -- could have pushed to main. Nothing here writes.
-# TestCiTokenIsReadOnly pins this; a job that ever needs more must ask for it.
+# Read-only token. The repository default was write-scoped until 2026-09-15, and
+# actions/checkout stores the token in .git/config, so any step could have pushed to
+# main. The default is read-only now, but a default is not a ceiling and is invisible
+# from a checkout, so this block stays. TestCiTokenIsReadOnly pins it.
 permissions:
   contents: read
 

@@ -801,11 +801,13 @@ class TestTestEnvironmentMatchesShippedDefaults(unittest.TestCase):
 
 
 class TestCiTokenIsReadOnly(unittest.TestCase):
-    """The repository's default workflow token can write, and actions/checkout stores it
-    in .git/config for the rest of the job, so any step -- a third-party action included
-    -- could have pushed to main. Nothing in CI writes, so the workflow asks only to read.
-    A job-level block would quietly widen it again for that one job, so that is refused
-    too: a job that genuinely needs more should have to change this test to get it."""
+    """The repository's default workflow token was write-scoped until 2026-09-15, and
+    actions/checkout stores the token in .git/config for the rest of the job, so any step
+    -- a third-party action included -- could have pushed to main. The repository default
+    is read-only now, but a default is not a ceiling, and it lives in settings no checkout
+    can see, so the workflow keeps asking only to read. A job-level block would quietly
+    widen it again for that one job, so that is refused too: a job that genuinely needs
+    more should have to change this test to get it."""
 
     def setUp(self):
         self.workflow = _load_yaml(ROOT / ".github" / "workflows" / "ci.yml")
