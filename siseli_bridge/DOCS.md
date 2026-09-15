@@ -149,11 +149,9 @@ your inverter reporting less often than the configured value, so entities cannot
 
 ### Deprecated
 
-`LISTEN_PORT` and `LOG_VERBOSE` are **ignored**. They stay in the schema for good:
-Supervisor validates the options an installation has stored before it installs an
-update, so removing a key that installations still have on disk would block every
-upgrade. `LISTEN_PORT` in particular never did anything — the bridge has never opened a
-socket. You can ignore the `[CONFIG WARNING]` about it.
+`LISTEN_PORT` and `LOG_VERBOSE` are **ignored** and do nothing. `LISTEN_PORT` in
+particular never did anything — the bridge has never opened a socket. You can ignore the
+`[CONFIG WARNING]` about either.
 
 ---
 

@@ -13,7 +13,7 @@ configuration:
     description: 'The password for your MQTT broker.'
   LISTEN_PORT:
     name: 'Listen Port (deprecated)'
-    description: 'Unused and ignored. The bridge observes traffic rather than listening on a socket. Kept only so existing configurations keep validating.'
+    description: 'Unused and ignored. The bridge observes traffic rather than listening on a socket.'
   INVERTER_IP:
     name: 'Inverter IP Address'
     description: 'The local IPv4 address of your Siseli-compatible inverter (e.g. 192.168.1.139).'
@@ -73,7 +73,7 @@ configuration:
     description: "Advanced: Specific network interface to intercept traffic on (e.g., 'eth0'). Leave blank for auto-detection."
   LOG_VERBOSE:
     name: 'Legacy Verbose Logging (deprecated)'
-    description: 'Ignored since 2.6.1. Use Debug Flags with xray and/or packets instead. Kept only so existing configurations keep validating.'
+    description: 'Ignored since 2.6.1. Use Debug Flags with xray and/or packets instead.'
   DEBUG_FLAGS:
     name: 'Debug Flags'
     description: 'Extra diagnostic output, off unless listed. xray = every captured frame; packets = reassembled MQTT packets; blocks = decoded inverter blocks; unparsed_publish = payloads that could not be decoded (start here if your inverter is unsupported); state_diff, state_snapshot, clean_state = published values; raw_json, mqtt_topics, mqtt_payload_preview = raw cloud traffic; stream_events = TCP reassembly; null_targets = sensors still undecoded. Requires Log Level of info or debug.'

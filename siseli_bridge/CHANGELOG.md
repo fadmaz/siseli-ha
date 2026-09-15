@@ -6,11 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- **`LISTEN_PORT` And `LOG_VERBOSE` Stay For Good**: the docs, the option descriptions and
-  both `[CONFIG WARNING]` lines promised to remove them in 2.7.0. That promise could not be
-  kept: Supervisor validates the options an installation has stored before it installs an
-  update, so removing a stored key would block the upgrade for everyone who has it. Both
-  remain ignored, and the wording now says so without a date.
+- **No More Removal Date For `LISTEN_PORT` And `LOG_VERBOSE`**: the docs, the option
+  descriptions and both `[CONFIG WARNING]` lines promised to remove them in 2.7.0. Both
+  remain ignored, and nothing now promises a date. The note that kept them in the schema
+  said removing a stored option blocks the upgrade; Supervisor's source says a stored key
+  the schema no longer lists is only warned about and skipped. So removal is expected to be
+  safe, and will happen once that is confirmed on a real installation.
 - **The Startup Log Shows The Forwarding Mode**: the `[Config] AUTO_INTERCEPT=` line now
   also prints `FORWARD_ALL_INVERTER_TRAFFIC`. The two decide together what is relayed, and
   no log — the reference captures included — recorded which mode was running.

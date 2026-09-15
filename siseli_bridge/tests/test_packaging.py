@@ -605,11 +605,12 @@ class TestDeprecatedOptions(unittest.TestCase):
     add-on listens on. Nothing ever bound a socket -- its only consumer was a startup
     log line.
 
-    It is nevertheless kept in the schema. Supervisor validates the *stored* options
-    before installing an update, so deleting a key that existing installations still
-    have on disk blocks the upgrade for all of them -- so it stays for good. An earlier
-    note promised removal in 2.7.0; stored options are never rewritten on their own, so
-    that promise could not have been kept.
+    It is still in the schema. This note used to say that deleting a key existing
+    installations have stored blocks their upgrade. Supervisor's source says otherwise:
+    AppOptions.__call__ (supervisor/apps/options.py) logs "does not exist in the schema"
+    for such a key and skips it, and the pre-update check uses the same function. What
+    blocks an update is a *stored value* failing a tightened type or pattern. Removal
+    is expected to be safe; confirm it on a real installation before doing it.
     """
 
     def setUp(self):
