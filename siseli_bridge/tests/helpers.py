@@ -143,6 +143,7 @@ def isolated_state():
     saved_unsupported = parser_mod.UNSUPPORTED_PROTOCOL_LOGGED
     saved_current_rejected = parser_mod.BATTERY_CURRENT_REJECTED_LOGGED
     saved_direction_conflict = parser_mod.GRID_DIRECTION_CONFLICT_LOGGED
+    saved_cell_overflow = parser_mod.CELL_LIST_OVERFLOW_LOGGED
     try:
         yield
     finally:
@@ -169,6 +170,7 @@ def isolated_state():
         parser_mod.UNSUPPORTED_PROTOCOL_LOGGED = saved_unsupported
         parser_mod.BATTERY_CURRENT_REJECTED_LOGGED = saved_current_rejected
         parser_mod.GRID_DIRECTION_CONFLICT_LOGGED = saved_direction_conflict
+        parser_mod.CELL_LIST_OVERFLOW_LOGGED = saved_cell_overflow
 
 
 # ---------------------------------------------------------------- fake broker

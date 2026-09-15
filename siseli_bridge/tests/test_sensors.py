@@ -198,5 +198,20 @@ class TestUndecodableSensors(unittest.TestCase):
         )
 
 
+class TestCellCountIsNamedForWhatItCounts(unittest.TestCase):
+    """bms_cell_count is the number of voltages v09K carried -- 16 of a 32-cell pack on
+    the reference install, 2 when cell 3 collapses -- not the pack size. The friendly
+    name said "BMS Cell Count". Only the name moves: the key and its "BMS Status - "
+    prefix fix the unique_id, so the entity and its history are unchanged."""
+
+    def test_the_name_says_what_it_counts(self):
+        self.assertEqual(
+            SENSORS["bms_cell_count"]["name"], "BMS Status - Cell Voltages Decoded"
+        )
+
+    def test_it_stays_on_the_bms_device(self):
+        self.assertEqual(get_sensor_group("bms_cell_count"), "bms")
+
+
 if __name__ == '__main__':
     unittest.main()

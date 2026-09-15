@@ -300,3 +300,7 @@ SYNTH_WDRR_ABSURD_POWER = b"(232.7 49.9 280 170 65 40 +999999999 0 11000 11+0000
 # a single-inverter non-parallel install, and a second output capacity set to a single
 # digit (see the dHrK[16] note in parsers.py).
 # ---------------------------------------------------------------------------
+
+#: Hand-built. Seventeen in-range cell voltages, one more than the 16 cell
+#: entities, to exercise the overflow path no real capture reaches.
+SYNTH_V09K_CELLS_17 = b"(3301 3302 3303 3304 3305 3306 3307 3308 3309 3310 3311 3312 3313 3314 3315 3316 3317 00000000)"

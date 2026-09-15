@@ -174,6 +174,11 @@ disabled by default and can be switched on individually in Home Assistant.
 The Battery, BMS, Grid, Load, PV and Diagnostics devices are nested under Main in Home
 Assistant, so they appear together on one page.
 
+**Cell Voltages Decoded** counts the per-cell voltages the payload carried, not the cells
+in your pack. On the reference install the block holds 16 cells of a 32-cell bank, and the
+list stops at the first out-of-range reading, so a failed cell 3 makes it read 2. No field
+on the wire states the pack size.
+
 **Calculated sensors** are prefixed `c_` and are derived rather than read from the wire —
 battery charge/discharge power and energy, grid import power and energy, generation power,
 load power, and the configured bank capacity. The three `kWh` counters are

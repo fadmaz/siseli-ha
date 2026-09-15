@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **`BMS Cell Count` Is Renamed `Cell Voltages Decoded`**: it counts the per-cell voltages
+  the payload carried — at most 16 of a 32-cell pack on the reference install, and 2 when
+  cell 3 collapses — not the cells in the pack, which no field states. Friendly name only:
+  the key is unchanged, so entity IDs and history are unaffected. The `[CELLS]` overflow
+  warning is now logged once per start instead of on every payload.
 - **CI Runs With A Read-Only Token**: `ci.yml` now declares `permissions: contents: read`.
   The repository's default workflow token was write-scoped, and `actions/checkout` stores
   it in the checkout for the rest of the job, so any step — a third-party action included

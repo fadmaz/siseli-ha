@@ -1089,5 +1089,25 @@ class TestGridDirectionConflictIsReported(_ParserTestCase):
         self.assertEqual(self._conflicts(logged), [])
 
 
+class TestCellListOverflow(_ParserTestCase):
+    """v09K carries at most 16 cells on the reference pack; a longer list is counted in
+    full but only 16 cell entities exist. The warning used to fire on every payload."""
+
+    def test_seventeen_cells_are_counted_but_only_sixteen_published(self):
+        with mock.patch("src.siseli_bridge.parsers.log"):
+            state = SolarParser._try_ascii_schema({"v09K": captures.SYNTH_V09K_CELLS_17})
+        self.assertEqual(state["bms_cell_count"], 17)
+        self.assertEqual(state["cell_16_mv"], 3316)
+        self.assertNotIn("cell_17_mv", state)
+
+    def test_the_overflow_is_reported_once_not_per_payload(self):
+        with mock.patch("src.siseli_bridge.parsers.log") as logged:
+            for _ in range(3):
+                SolarParser._try_ascii_schema({"v09K": captures.SYNTH_V09K_CELLS_17})
+        overflow = [c for c in logged.call_args_list if c.args and "[CELLS]" in str(c.args[0])]
+        self.assertEqual(len(overflow), 1)
+        self.assertEqual(overflow[0].kwargs.get("level"), "warning")
+
+
 if __name__ == "__main__":
     unittest.main()

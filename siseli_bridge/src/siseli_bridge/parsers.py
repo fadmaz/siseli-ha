@@ -141,6 +141,8 @@ GRID_VALUE_REJECTED_LOGGED = False
 #: disagreement is reported, not resolved: nobody has captured the grid path
 #: non-zero, so which token is right is unknown.
 GRID_DIRECTION_CONFLICT_LOGGED = False
+#: One-shot guard for a cell list longer than the 16 cell entities.
+CELL_LIST_OVERFLOW_LOGGED = False
 
 #: Every block name _try_ascii_schema knows how to decode.
 #:
@@ -1430,7 +1432,11 @@ class SolarParser:
             return state
 
         state["bms_cell_count"] = len(cell_values)
-        if len(cell_values) > 16:
+        global CELL_LIST_OVERFLOW_LOGGED
+        if len(cell_values) > 16 and not CELL_LIST_OVERFLOW_LOGGED:
+            # Once per process: this fired on every payload of a device that sends
+            # more than 16 cells, which is a fact about the device, not an event.
+            CELL_LIST_OVERFLOW_LOGGED = True
             log(
                 f"[CELLS] {len(cell_values)} cells reported but only 16 entities exist; "
                 f"cells 17-{len(cell_values)} are not published",
