@@ -126,12 +126,16 @@ BATTERY_CURRENT_MAX_A = 1000
 #: saying "throttled" there would swap a crash for a new false statement. "Published to
 #: HA" is verbatim on purpose: captures/README.md correlates it against the vendor
 #: portal's UpdateTime, and tests/captures.py records EXPECTED_TELEMETRY's provenance
-#: from it.
+#: from it. The two "flush" states are the later line for a throttled change, worded so
+#: they never contain that verbatim string: a second copy seconds after the first would
+#: blur the correlation.
 PUBLISH_OUTCOMES = {
     "sent": "Published to HA",
     "throttled": "Decoded, publish throttled",
     "broker-unreachable": "Decoded but NOT published -- broker unreachable",
     "no-broker-yet": "Decoded but NOT published -- no broker connection yet",
+    "flushed": "Deferred change published to HA",
+    "flush-unreachable": "Deferred change NOT published -- broker unreachable",
 }
 
 #: One-shot guard so a rejected current is reported once, not per payload.
@@ -723,20 +727,37 @@ def pending_publish_due(now: Optional[float] = None) -> bool:
     return (now - LAST_PUBLISH_TS) >= UPDATE_INTERVAL_SEC
 
 
-def republish_state(now: Optional[float] = None) -> bool:
-    """Republish the retained state so it does not age out. Returns True if sent."""
+def republish_state(now: Optional[float] = None, due=None) -> bool:
+    """Republish the retained state without a payload. Returns True if sent.
+
+    Runs on the health thread while parse_payload publishes from the capture thread, so
+    both hold PUBLISH_LOCK from the snapshot to the bookkeeping. Without it a flush that
+    took its snapshot before a payload was decoded could publish it after, leaving the
+    older values retained. ``due``, when given, is checked again under the lock, so a
+    publish the capture thread made in the meantime is not repeated.
+    """
     global LAST_PUBLISH_TS, PENDING_PUBLISH
-    if not _shared_state.DISCOVERY_PUBLISHED:
-        return False
-    snapshot = _shared_state.snapshot_state()
-    if not snapshot:
-        return False
-    _, publish_grouped_state = _get_mqtt_publish()
-    delivered = publish_grouped_state(snapshot)
-    # Bookkeeping advances either way, for the same reason as the payload path: a
-    # CONNACK republishes everything, so a dropped heartbeat self-heals.
-    LAST_PUBLISH_TS = now if now is not None else time.monotonic()
-    PENDING_PUBLISH = False
+    with _shared_state.PUBLISH_LOCK:
+        if due is not None and not due():
+            return False
+        if not _shared_state.DISCOVERY_PUBLISHED:
+            return False
+        snapshot = _shared_state.snapshot_state()
+        if not snapshot:
+            return False
+        flushing = PENDING_PUBLISH
+        _, publish_grouped_state = _get_mqtt_publish()
+        delivered = publish_grouped_state(snapshot)
+        # Bookkeeping advances either way, for the same reason as the payload path: a
+        # CONNACK republishes everything, so a dropped heartbeat self-heals.
+        LAST_PUBLISH_TS = now if now is not None else time.monotonic()
+        PENDING_PUBLISH = False
+    if flushing:
+        # The payload that carried this change was logged as throttled. Without this
+        # line nothing records when -- or whether -- its values reached Home Assistant.
+        # The heartbeat stays silent: it republishes nothing new.
+        outcome = PUBLISH_OUTCOMES["flushed" if delivered else "flush-unreachable"]
+        log_kv(f"[{datetime.now().strftime('%H:%M:%S')}] {outcome}", level="info")
     return delivered
 
 
@@ -2324,30 +2345,34 @@ class SolarParser:
                             publish_sensor_discovery(key)
 
                     global LAST_PUBLISH_TS, PENDING_PUBLISH
-                    now = time.monotonic()
-                    if changed_keys:
-                        PENDING_PUBLISH = True
+                    # Held to the bookkeeping, as in republish_state: the health
+                    # thread's flush publishes the same topics, and whichever thread
+                    # publishes last is what the broker keeps.
+                    with _shared_state.PUBLISH_LOCK:
+                        now = time.monotonic()
+                        if changed_keys:
+                            PENDING_PUBLISH = True
 
-                    elapsed = now - LAST_PUBLISH_TS
-                    # A change is deferred to the end of the throttle window, never
-                    # dropped -- the previous `or` meant any change published
-                    # immediately, so UPDATE_INTERVAL_SEC could never throttle
-                    # anything and the option did nothing at all. core.publish_tick
-                    # flushes it when the window ends if no payload does first.
-                    due = PENDING_PUBLISH and elapsed >= UPDATE_INTERVAL_SEC
+                        elapsed = now - LAST_PUBLISH_TS
+                        # A change is deferred to the end of the throttle window, never
+                        # dropped -- the previous `or` meant any change published
+                        # immediately, so UPDATE_INTERVAL_SEC could never throttle
+                        # anything and the option did nothing at all. core.publish_tick
+                        # flushes it when the window ends if no payload does first.
+                        due = PENDING_PUBLISH and elapsed >= UPDATE_INTERVAL_SEC
 
-                    if due:
-                        publish_outcome = (
-                            "sent" if publish_grouped_state(snapshot) else "broker-unreachable"
-                        )
-                        # Advanced even when the broker refused it: on_connect
-                        # republishes the whole snapshot on every CONNACK, so a dropped
-                        # publish self-heals and retrying at a dead socket would cost a
-                        # no-op on every payload.
-                        LAST_PUBLISH_TS = now
-                        PENDING_PUBLISH = False
-                    else:
-                        publish_outcome = "throttled"
+                        if due:
+                            publish_outcome = (
+                                "sent" if publish_grouped_state(snapshot) else "broker-unreachable"
+                            )
+                            # Advanced even when the broker refused it: on_connect
+                            # republishes the whole snapshot on every CONNACK, so a
+                            # dropped publish self-heals and retrying at a dead socket
+                            # would cost a no-op on every payload.
+                            LAST_PUBLISH_TS = now
+                            PENDING_PUBLISH = False
+                        else:
+                            publish_outcome = "throttled"
 
                 # Say what actually happened. This line read "Published to HA" whether
                 # or not anything was published: it sits outside the throttle gate, and

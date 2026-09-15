@@ -738,9 +738,14 @@ class TestPublishOutcomeIsReportedHonestly(unittest.TestCase):
     def test_every_outcome_has_a_label(self):
         outcomes = set(parser_module.PUBLISH_OUTCOMES)
         self.assertEqual(
-            outcomes, {"sent", "throttled", "broker-unreachable", "no-broker-yet"}
+            outcomes,
+            {"sent", "throttled", "broker-unreachable", "no-broker-yet", "flushed", "flush-unreachable"},
         )
         self.assertEqual(parser_module.PUBLISH_OUTCOMES["sent"], "Published to HA")
+        # captures/README.md correlates that exact string with the portal; a flush line
+        # carrying it too would put a second match seconds after the real one.
+        for key in ("flushed", "flush-unreachable"):
+            self.assertNotIn("Published to HA", parser_module.PUBLISH_OUTCOMES[key])
 
 
 class TestPublishThrottle(unittest.TestCase):
@@ -1225,6 +1230,18 @@ class TestEveryOnceFlagIsIsolated(unittest.TestCase):
                     f"{name} is not restored by isolated_state",
                 )
 
+    def test_the_energy_clock_containers_are_restored(self):
+        """Not bools, so the scan above cannot see them. A restored domain leaked from
+        one test made a later test's abnormal gap start a new baseline instead of being
+        clamped, depending only on run order."""
+        clocks = dict(parser_module.LAST_ENERGY_TS)
+        restored = set(parser_module.RESTORED_ENERGY_DOMAINS)
+        with isolated_state():
+            parser_module.LAST_ENERGY_TS["sentinel"] = 1.0
+            parser_module.RESTORED_ENERGY_DOMAINS.add("sentinel")
+        self.assertEqual(parser_module.LAST_ENERGY_TS, clocks)
+        self.assertEqual(parser_module.RESTORED_ENERGY_DOMAINS, restored)
+
 
 class TestADeferredChangeIsFlushed(unittest.TestCase):
     """parse_payload defers a change made inside the UPDATE_INTERVAL_SEC window. Nothing
@@ -1264,14 +1281,149 @@ class TestADeferredChangeIsFlushed(unittest.TestCase):
     def test_it_is_due_when_the_window_ends_and_the_flush_clears_it(self):
         self._defer_a_change()
         self.assertTrue(parser_module.pending_publish_due(now=1010.0))
-        self.assertTrue(parser_module.republish_state(now=1010.0))
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            self.assertTrue(parser_module.republish_state(now=1010.0))
         self.publish_state.assert_called_once()
+        published = self.publish_state.call_args[0][0]
+        self.assertEqual(published.get("bat_v"), 53.4, "the flush must carry the deferred values")
         self.assertFalse(parser_module.PENDING_PUBLISH)
         self.assertFalse(parser_module.pending_publish_due(now=1020.0))
+        said = [str(c.args[0]) for c in logged.call_args_list if c.args]
+        self.assertTrue(any(line.endswith("Deferred change published to HA") for line in said), said)
+
+    def test_the_heartbeat_republishes_silently(self):
+        """Only a flush gets a line: a heartbeat sends nothing new, every ten minutes."""
+        parser_module.LAST_PUBLISH_TS = 0.0
+        shared_state.LAST_STATE["bat_v"] = 53.4
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            self.assertTrue(parser_module.republish_state(now=5000.0))
+        logged.assert_not_called()
+
+    def test_a_flush_to_a_dead_broker_says_so(self):
+        self._defer_a_change()
+        self.publish_state.return_value = False
+        with mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            self.assertFalse(parser_module.republish_state(now=1010.0))
+        said = [str(c.args[0]) for c in logged.call_args_list if c.args]
+        self.assertTrue(any(line.endswith("Deferred change NOT published -- broker unreachable") for line in said), said)
 
     def test_nothing_pending_means_nothing_due(self):
         parser_module.LAST_PUBLISH_TS = 0.0
         self.assertFalse(parser_module.pending_publish_due(now=10**6))
+
+
+class TestPublishersNeverRetainAnOlderSnapshot(unittest.TestCase):
+    """The health thread's flush and parse_payload publish the same retained topics, and
+    both used to snapshot, publish and then do the throttle bookkeeping with no lock. A
+    flush that took its snapshot before a payload was decoded could publish after it:
+    the broker kept the older values -- a total_increasing counter stepping backwards --
+    and the flush's bookkeeping cleared the newer change's pending flag, so nothing sent
+    it until the next change or the heartbeat. Here the flush is parked inside its first
+    publish while a payload is decoded."""
+
+    def setUp(self):
+        import threading
+
+        from src.siseli_bridge import mqtt as mqtt_module
+        from tests.helpers import FakeMqttClient
+
+        ctx = isolated_state()
+        ctx.__enter__()
+        self.addCleanup(lambda: ctx.__exit__(None, None, None))
+        shared_state.LAST_STATE.clear()
+        shared_state.DISCOVERY_PUBLISHED = True
+        parser_module.LAST_PUBLISH_TS = 0.0
+        parser_module.PENDING_PUBLISH = False
+        self.threading = threading
+        self.mqtt = mqtt_module
+        self.entered = threading.Event()
+        self.release = threading.Event()
+        self.addCleanup(self.release.set)
+        entered, release = self.entered, self.release
+
+        class ParkingClient(FakeMqttClient):
+            """Holds the health thread inside its first publish until released."""
+
+            def publish(self, topic, payload=None, qos=0, retain=False):
+                if threading.current_thread().name == "health" and not entered.is_set():
+                    entered.set()
+                    release.wait(5)
+                return super().publish(topic, payload, qos, retain)
+
+        self.client = ParkingClient()
+        self.now = {"MainThread": 900.0}
+        for target, value in (
+            ("src.siseli_bridge.mqtt.client", self.client),
+            ("src.siseli_bridge.parsers.UPDATE_INTERVAL_SEC", 10),
+            ("src.siseli_bridge.parsers.EXPIRE_AFTER_SEC", 0),
+            ("src.siseli_bridge.parsers.log_kv", mock.Mock()),
+            ("src.siseli_bridge.parsers.log", mock.Mock()),
+        ):
+            p = mock.patch(target, value)
+            p.start()
+            self.addCleanup(p.stop)
+        clock = mock.patch.object(
+            parser_module.time,
+            "monotonic",
+            side_effect=lambda: self.now.get(threading.current_thread().name, self.now["MainThread"]),
+        )
+        clock.start()
+        self.addCleanup(clock.stop)
+
+    def _run(self, name, target, errors):
+        def body():
+            try:
+                target()
+            except Exception as exc:  # pragma: no cover - reported by the assertion below
+                errors.append(exc)
+
+        thread = self.threading.Thread(target=body, name=name, daemon=True)
+        thread.start()
+        return thread
+
+    def _last_published(self, key):
+        import json
+
+        from src.siseli_bridge.sensors import get_sensor_group
+
+        topic = self.mqtt.state_topic_for_group(get_sensor_group(key))
+        payloads = [p.payload for p in self.client.published if p.topic == topic]
+        self.assertTrue(payloads, f"nothing was published to {topic}")
+        return json.loads(payloads[-1])[key]
+
+    def test_the_newest_values_are_the_ones_left_on_the_broker(self):
+        from src.siseli_bridge import core
+
+        # A first payload is published, then a change is deferred inside the window.
+        SolarParser.parse_payload(envelope(captures.CAPTURE_TELEMETRY))
+        decoded = shared_state.LAST_STATE["bat_v"]
+        shared_state.update_state({"bat_v": decoded + 10})
+        parser_module.LAST_PUBLISH_TS = 1000.0
+        parser_module.PENDING_PUBLISH = True
+
+        errors = []
+        self.now.update(health=1012.0, capture=1012.5)
+        health = self._run("health", core.publish_tick, errors)
+        self.assertTrue(self.entered.wait(5), "the flush never reached its publish")
+        capture = self._run(
+            "capture", lambda: SolarParser.parse_payload(envelope(captures.CAPTURE_TELEMETRY)), errors
+        )
+        capture.join(0.5)  # blocked on the lock, or finished if there is none
+        self.release.set()
+        health.join(5)
+        capture.join(5)
+        self.assertFalse(health.is_alive() or capture.is_alive(), "a publisher deadlocked")
+        self.assertEqual(errors, [])
+
+        # The next tick flushes whatever is still pending.
+        self.now["MainThread"] = 1030.0
+        core.publish_tick()
+        self.assertEqual(shared_state.LAST_STATE["bat_v"], decoded)
+        self.assertEqual(
+            self._last_published("bat_v"),
+            decoded,
+            "the broker was left holding an older snapshot than the one in memory",
+        )
 
 
 if __name__ == "__main__":

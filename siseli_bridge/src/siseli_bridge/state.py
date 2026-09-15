@@ -138,3 +138,12 @@ def host_boot_id() -> Optional[str]:
     except (OSError, UnicodeDecodeError):
         return None
     return value or None
+
+
+#: Held from the snapshot to the throttle bookkeeping by every thread that publishes the
+#: state topics: the capture thread (parse_payload), the health thread (publish_tick, via
+#: parsers.republish_state) and the paho thread (on_connect's replay). Without it a thread
+#: that took its snapshot first could publish it last, and the broker would keep the older
+#: values retained -- a total_increasing counter stepping backwards. Taken before
+#: STATE_LOCK, never while holding it. Reach it as ``_state.PUBLISH_LOCK``.
+PUBLISH_LOCK = threading.Lock()

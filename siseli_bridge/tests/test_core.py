@@ -766,7 +766,7 @@ class TestStartupPath(unittest.TestCase):
         from src.siseli_bridge import config as cfg
 
         lines = []
-        with mock.patch("src.siseli_bridge.core.log", side_effect=lines.append):
+        with mock.patch("src.siseli_bridge.core.log", side_effect=lambda m, **k: lines.append(m)):
             core.log_startup_configuration()
         flags = [ln for ln in lines if "DEBUG_FLAGS" in ln]
         self.assertEqual(len(flags), 1)
@@ -1079,11 +1079,11 @@ class TestStartupPrintsTheForwardingMode(unittest.TestCase):
         and then swapped: a hard-coded string cannot pass both cases."""
         for auto, forward in ((False, True), (True, False)):
             with self.subTest(AUTO_INTERCEPT=auto, FORWARD_ALL_INVERTER_TRAFFIC=forward):
-                lines = []
                 with mock.patch.multiple(
                     core, AUTO_INTERCEPT=auto, FORWARD_ALL_INVERTER_TRAFFIC=forward
-                ), mock.patch("src.siseli_bridge.core.log", side_effect=lines.append):
+                ), mock.patch("src.siseli_bridge.core.log") as logged:
                     core.log_startup_configuration()
+                lines = [c.args[0] for c in logged.call_args_list]
                 mode = [ln for ln in lines if "AUTO_INTERCEPT=" in ln]
                 self.assertEqual(len(mode), 1)
                 self.assertIn(
@@ -1217,6 +1217,22 @@ class TestFramesCarryTheCaptureInterfaceMac(_CoreTestCase):
         self.assertIn(self.OWN, message)
         self.assertIn("aa:aa:aa:aa:aa:aa", message)
 
+    def test_a_broker_route_that_differs_is_reported(self):
+        """A VPN's default route can carry the broker connection while the inverter and
+        router stay on the LAN. Checking the inverter's route alone printed the plain
+        info line on exactly that host, although its forwarded frames had changed."""
+        routes = {INV_IP: self.OWN, RTR_IP: self.OWN, CLOUD_IP: "bb:bb:bb:bb:bb:bb"}
+        lines = []
+        with mock.patch("src.siseli_bridge.core.resolve_own_mac", return_value=self.OWN), \
+             mock.patch("src.siseli_bridge.core.route_mac_for", side_effect=routes.get), \
+             mock.patch("src.siseli_bridge.core.log", side_effect=lambda m, **k: lines.append((m, k.get("level")))):
+            core.arp_spoofer.report_source_mac()
+        self.assertEqual(len(lines), 1)
+        message, level = lines[0]
+        self.assertEqual(level, "warning")
+        self.assertIn(f"forwarded broker traffic (route to {CLOUD_IP}) would have carried bb:bb:bb:bb:bb:bb", message)
+        self.assertNotIn("ARP replies", message)
+
     def test_an_all_zero_mac_counts_as_unresolved(self):
         """scapy answers an interface without an address with all zeros. Stamped into an
         ARP reply that would tell both peers the other lives at 00:00:00:00:00:00."""
@@ -1229,7 +1245,8 @@ class TestFramesCarryTheCaptureInterfaceMac(_CoreTestCase):
 class TestEnergyClocksSurviveARestart(unittest.TestCase):
     """Each restart used to drop one integration interval per energy domain: the clocks
     lived only in memory, so the first payload after a restart set a baseline and
-    credited nothing -- 0.4-0.9 kWh per domain at the reference install's cadence. The
+    credited nothing -- 0.1-0.5 kWh per domain at the reference install's captured power
+    and 300-600 s cadence. The
     clocks now travel in state.json beside the counters they gate, tagged with the host
     boot id, because a monotonic reading means nothing after a reboot."""
 
@@ -1393,9 +1410,57 @@ class TestEnergyClocksSurviveARestart(unittest.TestCase):
 
         self.assertNotIn(shared_state.ENERGY_CLOCKS_CACHE_KEY, SENSORS)
 
+    def test_a_counter_dropped_as_invalid_keeps_its_clock_from_resuming(self):
+        """The restore is handed the keys that survived load_cached_state's filters, not
+        the keys in the file. A clock resumed onto a counter that restarts from 0 would
+        credit the downtime to a fresh total."""
+        with open(self.path, "w") as handle:
+            json.dump(
+                {
+                    "c_battery_charge_energy_kwh": -1.0,
+                    "c_battery_discharge_energy_kwh": 1.0,
+                    shared_state.ENERGY_CLOCKS_CACHE_KEY: {"boot_id": self.BOOT, "clocks": {"battery": 1300.0}},
+                },
+                handle,
+            )
+        lines = self._restart(now=1400.0)
+        self.assertTrue(any("battery new baseline (counters not restored)" in line for line in lines))
+        self.assertNotIn("battery", parser_module.LAST_ENERGY_TS)
+
+    def test_each_domain_resumes_with_its_own_counters_and_only_then(self):
+        """The resume test above drives battery alone; this covers every domain."""
+        for domain, counters in parser_module.ENERGY_DOMAIN_COUNTERS.items():
+            with self.subTest(domain=domain):
+                parser_module.LAST_ENERGY_TS.clear()
+                parser_module.RESTORED_ENERGY_DOMAINS.clear()
+                record = {"boot_id": self.BOOT, "clocks": {domain: 900.0}}
+                outcomes = parser_module.restore_energy_clocks(record, set(counters), now=1000.0)
+                self.assertEqual(outcomes, {domain: "resumed (100s old)"})
+                self.assertEqual(parser_module.LAST_ENERGY_TS, {domain: 900.0})
+                parser_module.LAST_ENERGY_TS.clear()
+                outcomes = parser_module.restore_energy_clocks(record, set(counters[1:]), now=1000.0)
+                self.assertEqual(outcomes, {domain: "new baseline (counters not restored)"})
+                self.assertEqual(parser_module.LAST_ENERGY_TS, {})
+
+    def test_an_unreadable_boot_id_is_named_at_startup(self):
+        """Without it the only line is 'none saved', printed at every start -- the same
+        words as the first start after upgrading, on a host where resuming can never work."""
+        for boot_id, expected in ((None, 1), ("0b7c9d6e-boot-a", 0)):
+            with self.subTest(boot_id=boot_id):
+                with mock.patch.object(shared_state, "host_boot_id", return_value=boot_id), \
+                     mock.patch("src.siseli_bridge.core.log") as logged:
+                    core.log_startup_configuration()
+                lines = [(c.args[0], c.kwargs.get("level")) for c in logged.call_args_list]
+                warned = [(m, level) for m, level in lines if "Energy clocks cannot be saved" in m]
+                self.assertEqual(len(warned), expected)
+                for message, level in warned:
+                    self.assertEqual(level, "warning")
+                    self.assertIn(shared_state.BOOT_ID_PATH, message)
+
 
 class TestPublishTick(unittest.TestCase):
-    """health_logger's publish check, extracted so it can run: the loop cannot."""
+    """health_logger's publish check, extracted into a function so each branch can be
+    driven alone. TestTheHealthTickFlushesADeferredChange runs the loop itself."""
 
     def test_a_due_deferred_change_is_published(self):
         with mock.patch("src.siseli_bridge.core.heartbeat_due", return_value=False), \
@@ -1423,7 +1488,81 @@ class TestPublishTick(unittest.TestCase):
         with mock.patch("src.siseli_bridge.core.heartbeat_due", side_effect=RuntimeError("boom")), \
              mock.patch("src.siseli_bridge.core.log") as logged:
             self.assertFalse(core.publish_tick())
-        self.assertTrue(any("[HEARTBEAT ERROR]" in str(c.args[0]) for c in logged.call_args_list))
+        self.assertTrue(any("[PUBLISH TICK ERROR]" in str(c.args[0]) for c in logged.call_args_list))
+
+
+class TestTheHealthTickFlushesADeferredChange(unittest.TestCase):
+    """The heartbeat and the flush both depend on health_logger calling publish_tick, and
+    deleting that call failed no test: every other test drives publish_tick or
+    republish_state directly. This runs one real iteration of the loop, from a change
+    parse_payload deferred to the values on the broker."""
+
+    def setUp(self):
+        ctx = isolated_state()
+        ctx.__enter__()
+        self.addCleanup(lambda: ctx.__exit__(None, None, None))
+        self.addCleanup(setattr, shared_state, "RUNNING", shared_state.RUNNING)
+        shared_state.RUNNING = True
+        shared_state.LAST_STATE.clear()
+        shared_state.DISCOVERY_PUBLISHED = True
+        parser_module.PENDING_PUBLISH = False
+        self.client = FakeMqttClient()
+        for target, value in (
+            ("src.siseli_bridge.mqtt.client", self.client),
+            ("src.siseli_bridge.parsers.UPDATE_INTERVAL_SEC", 10),
+        ):
+            p = mock.patch(target, value)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_one_tick_puts_the_deferred_values_on_the_broker(self):
+        from src.siseli_bridge.sensors import get_sensor_group
+
+        parser_module.LAST_PUBLISH_TS = 1000.0
+        with mock.patch.object(parser_module.time, "monotonic", return_value=1002.0), \
+             mock.patch("src.siseli_bridge.parsers.log_kv"):
+            parser_module.SolarParser.parse_payload(envelope(CAPTURE_TELEMETRY))
+        self.assertTrue(parser_module.PENDING_PUBLISH)
+        topic = mqtt_mod.state_topic_for_group(get_sensor_group("bat_v"))
+        self.assertEqual([p for p in self.client.published if p.topic == topic], [], "throttled")
+
+        def stop(_seconds):
+            shared_state.RUNNING = False
+
+        with mock.patch("src.siseli_bridge.core.time.sleep", side_effect=stop), \
+             mock.patch("src.siseli_bridge.core.check_capture_thread"), \
+             mock.patch("src.siseli_bridge.core.availability_watchdog_tick"), \
+             mock.patch.object(parser_module.time, "monotonic", return_value=1012.0), \
+             mock.patch("src.siseli_bridge.parsers.log_kv") as logged:
+            core.health_logger()
+
+        published = [json.loads(p.payload) for p in self.client.published if p.topic == topic]
+        self.assertEqual(len(published), 1)
+        self.assertEqual(published[0]["bat_v"], shared_state.LAST_STATE["bat_v"])
+        self.assertFalse(parser_module.PENDING_PUBLISH)
+        said = [str(c.args[0]) for c in logged.call_args_list if c.args]
+        self.assertTrue(any(line.endswith("Deferred change published to HA") for line in said), said)
+
+
+class TestEnergyDomainListsAgree(unittest.TestCase):
+    """Three hand-kept lists name the energy domains and their counters:
+    core.ENERGY_COUNTER_KEYS, parsers.ENERGY_DOMAIN_COUNTERS, and the domain literals the
+    integrator passes to _energy_dt_seconds. A typo in any one of them silently stopped
+    that domain's clock from resuming, and the suite passed: only battery was driven."""
+
+    def test_every_counter_is_gated_by_exactly_one_domain(self):
+        gated = [key for keys in parser_module.ENERGY_DOMAIN_COUNTERS.values() for key in keys]
+        self.assertEqual(len(gated), len(set(gated)))
+        self.assertEqual(set(gated), set(core.ENERGY_COUNTER_KEYS))
+
+    def test_every_domain_is_one_the_integrator_uses(self):
+        import inspect
+        import re
+
+        source = inspect.getsource(parser_module.SolarParser._apply_energy_dashboard_calculations)
+        used = set(re.findall(r'_energy_dt_seconds\(\s*"(\w+)"', source))
+        self.assertTrue(used, "the scan no longer finds the integrator's domains")
+        self.assertEqual(used, set(parser_module.ENERGY_DOMAIN_COUNTERS))
 
 
 if __name__ == "__main__":

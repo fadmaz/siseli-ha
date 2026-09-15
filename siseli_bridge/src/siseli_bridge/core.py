@@ -215,15 +215,17 @@ def resolve_own_mac() -> Optional[str]:
     if OWN_MAC is not None:
         return OWN_MAC
     try:
-        OWN_MAC = norm_mac(get_if_hwaddr(SNIFF_IFACE or conf.iface))
+        mac = norm_mac(get_if_hwaddr(SNIFF_IFACE or conf.iface))
     except Exception:
-        OWN_MAC = None
+        mac = None
     # scapy answers an interface with no address with all zeros rather than raising.
     # Stamped into an ARP reply that would tell both peers the other lives at
-    # 00:00:00:00:00:00, so it counts as unresolved and is retried next time.
-    if OWN_MAC == "00:00:00:00:00:00":
-        OWN_MAC = None
-    return OWN_MAC
+    # 00:00:00:00:00:00, so it counts as unresolved and is retried next time. Checked
+    # before the global is written, so another thread never reads the zeros.
+    if mac == "00:00:00:00:00:00":
+        mac = None
+    OWN_MAC = mac
+    return mac
 
 
 def route_mac_for(ip: str) -> Optional[str]:
@@ -268,7 +270,12 @@ class ArpSpoofer:
 
     def report_source_mac(self) -> None:
         """Say once which MAC the bridge's frames carry, and whether scapy's own choice
-        would have differed. The only on-host evidence that the source fix matters."""
+        would have differed. The only on-host evidence that the source fix matters.
+
+        Each route that used to pick a source is checked, because they can leave by
+        different interfaces: a VPN's default route carries the broker connection while
+        the inverter and router stay on the LAN. Traffic forwarded only with
+        FORWARD_ALL_INVERTER_TRAFFIC goes to destinations that cannot be listed here."""
         own_mac = resolve_own_mac()
         iface = SNIFF_IFACE or conf.iface
         if not own_mac:
@@ -279,12 +286,19 @@ class ArpSpoofer:
                 level="warning",
             )
             return
-        route_mac = route_mac_for(INVERTER_IP)
-        if route_mac and route_mac != own_mac:
+        differed = []
+        for frames, ip in (
+            ("ARP replies to the inverter", INVERTER_IP),
+            ("ARP replies to the router", ROUTER_IP),
+            ("forwarded broker traffic", TARGET_HOST),
+        ):
+            route_mac = route_mac_for(ip)
+            if route_mac and route_mac != own_mac:
+                differed.append(f"{frames} (route to {ip}) would have carried {route_mac}")
+        if differed:
             log(
-                f"[ARP] Frames are sent from {own_mac} on {iface}; scapy's route to "
-                f"{INVERTER_IP} would have stamped {route_mac} -- before 2.6.24 that was "
-                f"the MAC your inverter and router were told",
+                f"[ARP] Frames are sent from {own_mac} on {iface}; before 2.6.24 scapy's "
+                f"routing table chose differently: " + "; ".join(differed),
                 level="warning",
             )
         else:
@@ -684,13 +698,14 @@ def publish_tick() -> bool:
     Two reasons to publish without a payload arriving: the heartbeat, which keeps the
     retained state inside Home Assistant's expire_after window while the inverter is
     quiet, and a change the throttle deferred whose window has now ended. Returns
-    whether it published. Module-level so a test can run it; health_logger cannot be.
+    whether it published. The check is repeated under PUBLISH_LOCK inside
+    republish_state, because a payload may have been published since this one.
     """
     try:
         if heartbeat_due() or pending_publish_due():
-            return republish_state()
+            return republish_state(due=lambda: heartbeat_due() or pending_publish_due())
     except Exception as exc:
-        log(f"[HEARTBEAT ERROR] {exc}", level="error")
+        log(f"[PUBLISH TICK ERROR] {exc}", level="error")
     return False
 
 
@@ -838,6 +853,15 @@ def log_startup_configuration() -> None:
         f"TELEMETRY_TIMEOUT_SEC={TELEMETRY_TIMEOUT_SEC}"
     )
     log(f"[Config] DEBUG_FLAGS={list(ACTIVE_DEBUG_FLAGS) or 'none'}")
+    # The energy clocks are saved only with the boot id that makes them meaningful.
+    # Without this line a host where it cannot be read would print "none saved" at every
+    # start, which reads like a first start rather than a feature that cannot work here.
+    if _state.host_boot_id() is None:
+        log(
+            f"[CACHE] Energy clocks cannot be saved: {_state.BOOT_ID_PATH} is unreadable, "
+            f"so each domain starts a new baseline after every restart",
+            level="warning",
+        )
 
 
 def install_signal_handlers() -> None:
