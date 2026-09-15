@@ -1075,12 +1075,40 @@ class TestStartupPrintsTheForwardingMode(unittest.TestCase):
     differ from the shipped default."""
 
     def test_both_forwarding_options_are_printed_on_one_line(self):
-        lines = []
-        with mock.patch("src.siseli_bridge.core.log", side_effect=lines.append):
-            core.log_startup_configuration()
-        mode = [ln for ln in lines if "AUTO_INTERCEPT=" in ln]
-        self.assertEqual(len(mode), 1)
-        self.assertIn(f"FORWARD_ALL_INVERTER_TRAFFIC={core.FORWARD_ALL_INVERTER_TRAFFIC}", mode[0])
+        """Each slot must follow its own option, so both are set to non-default values
+        and then swapped: a hard-coded string cannot pass both cases."""
+        for auto, forward in ((False, True), (True, False)):
+            with self.subTest(AUTO_INTERCEPT=auto, FORWARD_ALL_INVERTER_TRAFFIC=forward):
+                lines = []
+                with mock.patch.multiple(
+                    core, AUTO_INTERCEPT=auto, FORWARD_ALL_INVERTER_TRAFFIC=forward
+                ), mock.patch("src.siseli_bridge.core.log", side_effect=lines.append):
+                    core.log_startup_configuration()
+                mode = [ln for ln in lines if "AUTO_INTERCEPT=" in ln]
+                self.assertEqual(len(mode), 1)
+                self.assertIn(
+                    f"AUTO_INTERCEPT={auto} FORWARD_ALL_INVERTER_TRAFFIC={forward}", mode[0]
+                )
+
+
+class TestNoTestTouchesData(unittest.TestCase):
+    """tests/conftest.py redirects the two files the runtime writes under /data. If that
+    fixture were removed or narrowed, nothing else would notice until a developer found
+    stale capture values on their own disk -- which is how it was found."""
+
+    def test_the_runtime_paths_are_redirected_during_tests(self):
+        from src.siseli_bridge import config as cfg
+        from src.siseli_bridge import mqtt as mqtt_mod
+        from src.siseli_bridge import parsers as parser_mod
+
+        real = os.path.dirname("/data/state.json")
+        self.assertEqual(os.path.dirname(cfg.STATE_CACHE_FILE), real)
+        for name, path in (
+            ("parsers.STATE_CACHE_FILE", parser_mod.STATE_CACHE_FILE),
+            ("mqtt.DISCOVERY_MARKER_FILE", mqtt_mod.DISCOVERY_MARKER_FILE),
+        ):
+            with self.subTest(path=name):
+                self.assertNotEqual(os.path.dirname(path), real, f"{name} points at /data")
 
 
 if __name__ == "__main__":

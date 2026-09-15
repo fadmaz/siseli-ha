@@ -893,6 +893,10 @@ class TestForeignProtocolIsDiagnosed(_ParserTestCase):
         self.assertNotEqual(described["body"], "binary")
         self.assertEqual(described["looks_like"], "voltronic_pi30")
         self.assertEqual(described["recognised"], 0)
+        # Pinned exactly: the ahLb block is a hand-built stand-in for the reporter's
+        # serial, chosen so every frame still verifies and classifies as the original did.
+        self.assertEqual(described["voltronic_crc_ok"], "14/14")
+        self.assertEqual(described["body_shapes"], "ascii=3,ascii+binary_tail=11")
 
     def test_the_modbus_device_does_not_regress_to_voltronic(self):
         """Issue #30's payload contains exactly one valid Voltronic frame -- its DTU
@@ -1141,6 +1145,15 @@ class TestCellListOverflow(_ParserTestCase):
         self.assertEqual(state["cell_16_mv"], 3316)
         self.assertNotIn("cell_17_mv", state)
 
+    def test_sixteen_cells_raise_no_warning(self):
+        """The reference pack sends exactly 16. An off-by-one here would warn on every
+        start of every real install."""
+        with mock.patch("src.siseli_bridge.parsers.log") as logged:
+            state = SolarParser._try_ascii_schema(captures.CAPTURE_IDENTITY)
+        self.assertEqual(state["bms_cell_count"], 16)
+        self.assertFalse(any("[CELLS]" in str(c.args[0]) for c in logged.call_args_list if c.args))
+        self.assertFalse(parser_module.CELL_LIST_OVERFLOW_LOGGED)
+
     def test_the_overflow_is_reported_once_not_per_payload(self):
         with mock.patch("src.siseli_bridge.parsers.log") as logged:
             for _ in range(3):
@@ -1148,6 +1161,29 @@ class TestCellListOverflow(_ParserTestCase):
         overflow = [c for c in logged.call_args_list if c.args and "[CELLS]" in str(c.args[0])]
         self.assertEqual(len(overflow), 1)
         self.assertEqual(overflow[0].kwargs.get("level"), "warning")
+
+
+class TestAFailingCacheWriteDoesNotStopDecoding(unittest.TestCase):
+    """Before the test suite was kept out of /data, every Linux CI run failed to write
+    /data/state.json and so exercised this path by accident. It is the one that keeps a
+    full disk or a read-only /data from taking the sensors down with it."""
+
+    def setUp(self):
+        ctx = isolated_state()
+        ctx.__enter__()
+        self.addCleanup(lambda: ctx.__exit__(None, None, None))
+        parser_module.LAST_CACHE_WRITE_TS = 0.0
+
+    def test_decoding_and_publishing_survive_a_failed_write(self):
+        lines = []
+        with mock.patch(
+            "src.siseli_bridge.state.atomic_write_json", side_effect=OSError("read-only file system")
+        ), mock.patch("src.siseli_bridge.parsers.log", side_effect=lambda m, **k: lines.append(m)):
+            ok = SolarParser.parse_payload(envelope(captures.CAPTURE_TELEMETRY))
+        self.assertTrue(ok, "a failed cache write must not fail the decode")
+        self.assertEqual(shared_state.LAST_STATE.get("bat_v"), 53.4)
+        self.assertEqual(sum("[CACHE WRITE ERROR]" in str(line) for line in lines), 1)
+        self.assertEqual(parser_module.LAST_CACHE_WRITE_TS, 0.0, "a failed write is retried, not throttled")
 
 
 class TestEveryOnceFlagIsIsolated(unittest.TestCase):

@@ -9,6 +9,7 @@ another.
 import pathlib
 import re
 import unittest
+from unittest import mock
 
 import yaml
 
@@ -138,10 +139,12 @@ class TestSchemaValidatorParity(unittest.TestCase):
         self.assertIn("UPDATE_INTERVAL_SEC", minima, "expected at least one bounded int option")
 
         cfg = reload_config(**minima)
-        try:
-            cfg.validate_config()
-        except SystemExit as exc:  # pragma: no cover - only on regression
-            self.fail(f"schema minima {minima} rejected by validate_config: {exc}")
+        # validate_config creates the state directory; keep it off the developer's disk.
+        with mock.patch("src.siseli_bridge.config.os.makedirs"):
+            try:
+                cfg.validate_config()
+            except SystemExit as exc:  # pragma: no cover - only on regression
+                self.fail(f"schema minima {minima} rejected by validate_config: {exc}")
 
 
 class TestPackagingMetadata(unittest.TestCase):
@@ -718,6 +721,14 @@ class TestShippedDefaultsSatisfyTheSchema(unittest.TestCase):
                     _validates(value, declaration),
                     f"the shipped default {value!r} does not satisfy {declaration!r}",
                 )
+
+    def test_a_stored_hostname_target_still_installs(self):
+        """TARGET_HOST stays a plain `str` on purpose. The runtime refuses a hostname at
+        start (validate_config), but a schema that rejected it would fail the stored
+        value before the update -- blocking the very release that explains the problem."""
+        self.assertTrue(
+            _validates("broker.mqtt.solar.siseli.com", self.cfg["schema"]["TARGET_HOST"])
+        )
 
     def test_an_optional_pattern_still_accepts_an_empty_string(self):
         """`?` marks the option optional; it does not exempt an empty string from the
