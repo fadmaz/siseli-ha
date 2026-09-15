@@ -1,0 +1,127 @@
+configuration:
+  MQTT_HOST:
+    name: 'MQTT Broker Host'
+    description: "The IP address of your MQTT Broker. Use 'core-mosquitto' if you are using the official Mosquitto add-on."
+  MQTT_PORT:
+    name: 'MQTT Broker Port'
+    description: 'Usually 1883.'
+  MQTT_USER:
+    name: 'MQTT Username'
+    description: 'The username for your MQTT broker. Leave blank if not required.'
+  MQTT_PASSWORD:
+    name: 'MQTT Password'
+    description: 'The password for your MQTT broker.'
+  LISTEN_PORT:
+    name: 'Listen Port (deprecated)'
+    description: 'Unused and ignored. The bridge observes traffic rather than listening on a socket. Removed in 2.7.0.'
+  LOCAL_CLOUD_IP:
+    name: 'Local Cloud IP'
+    description: 'A dedicated secondary IP address on this host (e.g. from the network_ip_alias add-on) that impersonates the vendor cloud once DNS is redirected to it. Leave blank to keep passing telemetry through to the real cloud instead.'
+  LOCAL_CLOUD_PORT:
+    name: 'Local Cloud Port'
+    description: 'The port the fake MQTT broker listens on at Local Cloud IP. Match the real broker port unless you know otherwise (default: 1883).'
+  HTTP_STUB_PORT:
+    name: 'HTTP Stub Port'
+    description: 'The port the fake cloud-discovery HTTP API listens on at Local Cloud IP. The inverter calls this over plain HTTP before it even knows which MQTT broker to use, so this has to be answered too for fully offline operation (default: 80).'
+  HTTP_STUB_REAL_IPS:
+    name: 'HTTP Stub Real IPs'
+    description: 'Comma-separated real internet IPs of the vendor cloud-discovery service. Some inverters skip DNS entirely and connect straight to a cached address, bypassing DNS Spoof Domain -- these IPs are answered locally too, just like Local Cloud IP, so that path is covered as well.'
+  DEV_SN:
+    name: 'Device Serial'
+    description: 'Serial number the HTTP stub answers with for POST /dtu/devices/findSingle during the inverter cloud-discovery bootstrap. Not validated by the dongle in any capture seen so far -- this add-on is the authority answering its own device, not a client proving itself to one -- so the placeholder default works for any single-inverter setup.'
+  DNS_SPOOF_DOMAIN:
+    name: 'DNS Spoof Domain'
+    description: 'Comma-separated domain suffixes. Any DNS name the inverter asks for under one of these is answered with Local Cloud IP instead of its real address. Needs both the broker domain and the HTTP discovery domain to work offline -- leaving one out reproduces a real regression where the inverter connects to the broker but never sends telemetry. Only used when Local Cloud IP is set.'
+  MQTT_BROKER_HOSTNAME:
+    name: 'MQTT Broker Hostname'
+    description: 'What the HTTP stub tells the inverter its broker is. Must be a name DNS Spoof Domain actually matches, or the inverter will resolve it to the real internet instead of Local Cloud IP.'
+  TELEMETRY_POLL_INTERVAL_SEC:
+    name: 'Telemetry Poll Interval (Seconds)'
+    description: 'Actively asks the inverter for a full reading this often, instead of waiting on its own reporting schedule (which can be much slower). 0 disables polling and relies on the inverter alone, matching the original behaviour. Only used when Local Cloud IP is set.'
+  INVERTER_IP:
+    name: 'Inverter IP Address'
+    description: 'The local IPv4 address of your Siseli-compatible inverter (e.g. 192.168.1.139).'
+  ROUTER_IP:
+    name: 'Router IP Address'
+    description: 'The local IPv4 address of your main internet router/gateway (e.g. 192.168.1.1).'
+  AUTO_INTERCEPT:
+    name: 'Auto-Intercept (ARP Spoofing)'
+    description: 'Tricks the inverter into sending data to Home Assistant instead of the cloud. Required unless you configured a manual static route on your router.'
+  TARGET_HOST:
+    name: 'Target Cloud Host'
+    description: 'The official Siseli cloud server. DO NOT CHANGE unless the cloud IP changes (default: 8.212.18.157).'
+  TARGET_PORT:
+    name: 'Target Cloud Port'
+    description: 'The MQTT port used by the Siseli cloud (default: 1883).'
+  INVERTER_MAC:
+    name: 'Inverter MAC Address'
+    description: 'Optional. Manually specify the MAC address of your inverter (e.g. aa:bb:cc:dd:ee:ff). Leave blank for auto-detection.'
+  ROUTER_MAC:
+    name: 'Router MAC Address'
+    description: 'Optional. Manually specify the MAC address of your router. Leave blank for auto-detection.'
+  MQTT_DISCOVERY_PREFIX:
+    name: 'MQTT Discovery Prefix'
+    description: "The MQTT discovery prefix used by Home Assistant (default: 'homeassistant'). Only change if you have a custom setup."
+  DEVICE_ID:
+    name: 'Device ID'
+    description: 'Unique identifier for this specific inverter in Home Assistant.'
+  DEVICE_NAME:
+    name: 'Device Name'
+    description: "The human-readable name of your inverter shown in Home Assistant (e.g., 'Main Solar Inverter')."
+  MODEL_NAME:
+    name: 'Model Name'
+    description: 'The hardware model of your inverter.'
+  MANUFACTURER:
+    name: 'Manufacturer'
+    description: 'The manufacturer of your inverter (e.g., Luminous, PowMr, Taico).'
+  ENTITY_PREFIX:
+    name: 'Entity ID Prefix'
+    description: "The prefix attached to all individual sensors (e.g., 'Siseli'). Useful if running multiple instances side-by-side."
+  INVERTER_COUNT:
+    name: 'Inverter Count'
+    description: 'Number of inverters in your parallel setup. Calculated c_ power sensors use this count for scaling.'
+  BATTERY_COUNT:
+    name: 'Battery Count'
+    description: 'Number of batteries in the bank. Used to calculate c_ BMS capacity helper sensors.'
+  BATTERY_CAPACITY_PER_BATTERY_AH:
+    name: 'Battery Capacity Per Battery (Ah)'
+    description: 'Capacity of each battery in Ah. Set 0 to disable c_ BMS capacity helper sensors.'
+  STATE_TOPIC:
+    name: 'MQTT State Topic'
+    description: 'Leave blank to derive it from the Device ID. Only set this if you need a specific topic layout.'
+  AVAILABILITY_TOPIC:
+    name: 'MQTT Availability Topic'
+    description: 'Leave blank to derive it from the Device ID. Every sensor watches this one topic, so it is also the bridge last-will topic.'
+  SNIFF_IFACE:
+    name: 'Network Sniffer Interface'
+    description: "Advanced: Specific network interface to intercept traffic on (e.g., 'eth0'). Leave blank for auto-detection."
+  LOG_VERBOSE:
+    name: 'Legacy Verbose Logging (deprecated)'
+    description: 'Ignored since 2.6.1 and removed in 2.7.0. Use Debug Flags with xray and/or packets instead.'
+  DEBUG_FLAGS:
+    name: 'Debug Flags'
+    description: 'Extra diagnostic output, off unless listed. xray = every captured frame; packets = reassembled MQTT packets; blocks = decoded inverter blocks; unparsed_publish = payloads that could not be decoded (start here if your inverter is unsupported); state_diff, state_snapshot, clean_state = published values; raw_json, mqtt_topics, mqtt_payload_preview = raw cloud traffic; stream_events = TCP reassembly; null_targets = sensors still undecoded. Requires Log Level of info or debug.'
+  LOG_LEVEL:
+    name: 'Logging Level'
+    description: "Controls the verbosity of the add-on logs. Set to 'warning' for quiet logs, or 'debug' for deep troubleshooting."
+  UPDATE_INTERVAL_SEC:
+    name: 'Update Throttling (Seconds)'
+    description: 'Throttles how often data states are pushed to Home Assistant. Raising this will significantly save database storage (Default: 10 seconds).'
+  EXPIRE_AFTER_SEC:
+    name: 'Sensor Expiry (Seconds)'
+    description: 'How long a sensor keeps its last value before Home Assistant marks it unavailable. This is what stops stale readings looking live if the bridge stops receiving data. Must be larger than Update Throttling and than Telemetry Timeout. Inverters report every few minutes, so this is measured in minutes, not seconds. Set 0 to disable (Default: 1800).'
+  RESET_ENERGY_COUNTERS:
+    name: 'Reset Calculated Energy Counters'
+    description: 'Zeroes the calculated battery and grid energy totals on the next start. These are total_increasing sensors, so an inflated value can never correct itself downward. Turn on, restart once, then turn off again.'
+  DISCOVERY_CLEANUP:
+    name: 'Clean Up Stale Entities'
+    description: 'On the first start after an upgrade, removes leftover Home Assistant entities from earlier versions that grouped sensors differently. Leave enabled unless you are troubleshooting.'
+  TELEMETRY_TIMEOUT_SEC:
+    name: 'Telemetry Timeout (Seconds)'
+    description: 'How long without a decoded reading before every sensor is marked unavailable. The bridge automatically raises this if it measures your inverter reporting less often than this, so entities cannot flap (Default: 1800).'
+  FORWARD_ALL_INVERTER_TRAFFIC:
+    name: 'Forward All Inverter Traffic'
+    description: 'Advanced. With ARP interception on, the add-on becomes the inverter gateway but only relays broker traffic, so DNS and NTP are dropped. Enable this if the health log reports dropped packets and your inverter fails to reconnect. Off by default.'
+  MQTT_RETAIN:
+    name: 'MQTT Retain Flag'
+    description: 'If enabled, Home Assistant will remember your real-time sensor states across reboots.'

@@ -1,0 +1,21 @@
+name: 'Network IP Alias'
+description: 'Adds one secondary IPv4 address to a Home Assistant host interface.'
+version: '1.0.0'
+slug: 'network_ip_alias'
+url: 'https://github.com/fadmaz/siseli-ha'
+init: false
+arch:
+  - aarch64
+  - amd64
+host_network: true
+privileged:
+  - NET_ADMIN
+apparmor: false
+
+options:
+  INTERFACE: 'end0'
+  IP_ADDRESS: '192.168.1.200/24'
+
+schema:
+  INTERFACE: str
+  IP_ADDRESS: str

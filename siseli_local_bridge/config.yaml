@@ -1,0 +1,113 @@
+name: 'Siseli Local Bridge'
+description: 'Local bridge for Siseli-compatible inverters with MQTT discovery for Home Assistant.'
+version: '2.6.37'
+slug: 'siseli_local_bridge'
+url: 'https://github.com/fadmaz/siseli-ha'
+init: false
+arch:
+  - aarch64
+  - amd64
+host_network: true
+privileged:
+  - NET_ADMIN
+  - NET_RAW
+apparmor: false
+
+options:
+  MQTT_HOST: 'core-mosquitto'
+  MQTT_PORT: 1883
+  MQTT_USER: ''
+  MQTT_PASSWORD: ''
+
+  TARGET_HOST: '8.212.18.157'
+  TARGET_PORT: 1883
+  LISTEN_PORT: 18899
+
+  LOCAL_CLOUD_IP: '192.168.1.200'
+  LOCAL_CLOUD_PORT: 1883
+  HTTP_STUB_PORT: 80
+  HTTP_STUB_REAL_IPS: '8.212.16.60'
+  DEV_SN: '0000000000-1'
+  DNS_SPOOF_DOMAIN: 'broker.mqtt.solar.siseli.com,dtu.access.solar.siseli.com'
+  MQTT_BROKER_HOSTNAME: 'hongkong.broker.mqtt.solar.siseli.com'
+  TELEMETRY_POLL_INTERVAL_SEC: 0
+
+  INVERTER_IP: '192.168.1.50'
+  ROUTER_IP: '192.168.1.1'
+  INVERTER_MAC: ''
+  ROUTER_MAC: ''
+  AUTO_INTERCEPT: true
+
+  MQTT_DISCOVERY_PREFIX: 'homeassistant'
+  DEVICE_ID: 'siseli_local_inverter_1'
+  DEVICE_NAME: 'Siseli Local Inverter 1'
+  MODEL_NAME: 'Siseli Local Inverter 1'
+  MANUFACTURER: 'Siseli Compatible'
+  ENTITY_PREFIX: 'Siseli'
+  INVERTER_COUNT: 1
+  BATTERY_COUNT: 1
+  BATTERY_CAPACITY_PER_BATTERY_AH: 0.0
+
+  STATE_TOPIC: ''
+  AVAILABILITY_TOPIC: ''
+  SNIFF_IFACE: ''
+  LOG_VERBOSE: false
+  DEBUG_FLAGS: []
+  LOG_LEVEL: 'info'
+  UPDATE_INTERVAL_SEC: 10
+  EXPIRE_AFTER_SEC: 1800
+  RESET_ENERGY_COUNTERS: false
+  DISCOVERY_CLEANUP: true
+  TELEMETRY_TIMEOUT_SEC: 1800
+  FORWARD_ALL_INVERTER_TRAFFIC: false
+  MQTT_RETAIN: true
+
+schema:
+  MQTT_HOST: str
+  MQTT_PORT: int(1,65535)
+  MQTT_USER: str?
+  MQTT_PASSWORD: password?
+
+  TARGET_HOST: str
+  TARGET_PORT: int(1,65535)
+  LISTEN_PORT: int(1,65535)?
+
+  LOCAL_CLOUD_IP: str?
+  LOCAL_CLOUD_PORT: int(1,65535)
+  HTTP_STUB_PORT: int(1,65535)
+  HTTP_STUB_REAL_IPS: str?
+  DEV_SN: str?
+  DNS_SPOOF_DOMAIN: str?
+  MQTT_BROKER_HOSTNAME: str?
+  TELEMETRY_POLL_INTERVAL_SEC: int(0,)
+
+  INVERTER_IP: str
+  ROUTER_IP: str
+  INVERTER_MAC: match(^(([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})?$)?
+  ROUTER_MAC: match(^(([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})?$)?
+  AUTO_INTERCEPT: bool
+
+  MQTT_DISCOVERY_PREFIX: match(^[A-Za-z0-9_-]{1,64}$)
+  DEVICE_ID: match(^[a-zA-Z0-9_-]+$)
+  DEVICE_NAME: str
+  MODEL_NAME: str
+  MANUFACTURER: str
+  ENTITY_PREFIX: str?
+  INVERTER_COUNT: int(1,32)
+  BATTERY_COUNT: int(1,64)
+  BATTERY_CAPACITY_PER_BATTERY_AH: float(0,)
+
+  STATE_TOPIC: str?
+  AVAILABILITY_TOPIC: str?
+  SNIFF_IFACE: str?
+  LOG_VERBOSE: bool?
+  DEBUG_FLAGS:
+    - list(xray|packets|blocks|state_diff|state_snapshot|raw_json|clean_state|mqtt_topics|mqtt_payload_preview|unparsed_publish|stream_events|null_targets)
+  LOG_LEVEL: list(debug|info|warning|error)
+  UPDATE_INTERVAL_SEC: int(1,3600)
+  EXPIRE_AFTER_SEC: int(0,)
+  RESET_ENERGY_COUNTERS: bool
+  DISCOVERY_CLEANUP: bool
+  TELEMETRY_TIMEOUT_SEC: int(30,)
+  FORWARD_ALL_INVERTER_TRAFFIC: bool
+  MQTT_RETAIN: bool

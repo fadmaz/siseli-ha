@@ -1,0 +1,29 @@
+# Don't ship dev/test files into the production image.
+#
+# Docker matches with filepath.Match semantics, where `*` does not cross `/`. A bare
+# `__pycache__/` therefore matched only the context root, so src/__pycache__ and
+# src/siseli_local_bridge/__pycache__ shipped in every locally built image -- changing the
+# layer hash, so two developers building the same commit got different images. Every
+# pattern below that can occur at depth carries a `**/` prefix for that reason.
+.git/
+.gitignore
+tests/
+
+# Build, test and coverage residue. None of it is tracked, so a clean checkout never
+# has any of it and CI cannot notice its absence -- tests/test_packaging.py asserts
+# these patterns directly rather than inspecting a built image.
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.egg-info/
+**/.coverage
+**/coverage.xml
+**/.pytest_cache/
+**/.ruff_cache/
+
+# Documentation. CHANGELOG.md is re-included deliberately: Supervisor renders the
+# add-on's own copy on the Changelog tab, and test_packaging.py treats it as
+# canonical. DOCS.md is not re-included -- Supervisor reads the Documentation tab
+# from the repository checkout, not from the image.
+*.md
+!CHANGELOG.md
