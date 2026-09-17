@@ -3,7 +3,7 @@ import json
 import re
 import time
 from datetime import datetime
-from typing import Dict, FrozenSet, List, Optional, Tuple
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from . import state as _shared_state
 from .loggers import log, log_kv, json_log, log_payload_preview, log_error_always, hex_preview
@@ -126,12 +126,16 @@ BATTERY_CURRENT_MAX_A = 1000
 #: saying "throttled" there would swap a crash for a new false statement. "Published to
 #: HA" is verbatim on purpose: captures/README.md correlates it against the vendor
 #: portal's UpdateTime, and tests/captures.py records EXPECTED_TELEMETRY's provenance
-#: from it.
+#: from it. The two "flush" states are the later line for a throttled change, worded so
+#: they never contain that verbatim string: a second copy seconds after the first would
+#: blur the correlation.
 PUBLISH_OUTCOMES = {
     "sent": "Published to HA",
     "throttled": "Decoded, publish throttled",
     "broker-unreachable": "Decoded but NOT published -- broker unreachable",
     "no-broker-yet": "Decoded but NOT published -- no broker connection yet",
+    "flushed": "Deferred change published to HA",
+    "flush-unreachable": "Deferred change NOT published -- broker unreachable",
 }
 
 #: One-shot guard so a rejected current is reported once, not per payload.
@@ -171,11 +175,23 @@ _CHECKSUM_TAIL_BYTES = 2
 
 #: One-shot guard so a foreign device is diagnosed once, not on every payload.
 UNSUPPORTED_PROTOCOL_LOGGED = False
-#: Integration clock per energy domain, holding time.monotonic() readings -- which are
-#: meaningless across a process boundary and must never be persisted. A dict rather than one global per domain, so
+#: Integration clock per energy domain, holding time.monotonic() readings. They mean
+#: something only within one host boot, so they are persisted together with the boot id
+#: and resumed only in that boot (restore_energy_clocks). A dict rather than one global per domain, so
 #: adding a calculated energy counter does not need a new module-level name -- and so
 #: the test isolation helper has one thing to save instead of a growing list.
 LAST_ENERGY_TS: Dict[str, float] = {}
+#: Domains whose clock was resumed from the cache and not used since. Their first
+#: interval spans the bridge's own downtime, so it is checked against the integration
+#: limit before it is credited: past the limit it starts a new baseline, unclamped.
+RESTORED_ENERGY_DOMAINS: Set[str] = set()
+#: The counters each domain's clock gates. A clock resumes only if these were restored.
+ENERGY_DOMAIN_COUNTERS: Dict[str, Tuple[str, ...]] = {
+    "battery": ("c_battery_charge_energy_kwh", "c_battery_discharge_energy_kwh"),
+    "grid": ("c_grid_import_energy_kwh",),
+    "generation": ("c_generation_energy_kwh",),
+    "load": ("c_load_energy_kwh",),
+}
 _FLOW_EVICT_COUNTER: int = 0
 _FLOW_EVICT_INTERVAL: int = 200  # Prune stale TCP flows every N state lookups.
 
@@ -628,6 +644,59 @@ def _get_mqtt_publish():
     return mqtt.publish_sensor_discovery, mqtt.publish_grouped_state
 
 
+def energy_clocks_record() -> Optional[Dict[str, object]]:
+    """The integrator's clocks tagged with the host boot they were read in, or None."""
+    boot_id = _shared_state.host_boot_id()
+    if not boot_id or not LAST_ENERGY_TS:
+        return None
+    return {"boot_id": boot_id, "clocks": dict(LAST_ENERGY_TS)}
+
+
+def restore_energy_clocks(
+    saved: object, restored_keys, reset: bool = False, now: Optional[float] = None
+) -> Dict[str, str]:
+    """Resume the energy clocks an earlier process saved in this same host boot.
+
+    Returns {domain: outcome} for the startup log. A domain resumes only when the record
+    is well formed, both boot ids are known and equal, its reading is a finite number no
+    later than now, and every counter the domain gates was restored as well. Anything
+    else leaves the domain to start a new baseline, which is what every restart did
+    before 2.6.24 -- one interval per domain, uncredited.
+    """
+    now = now if now is not None else time.monotonic()
+    if saved is None:
+        return {}
+    every = list(ENERGY_DOMAIN_COUNTERS)
+    if reset:
+        return {domain: "new baseline (counters reset)" for domain in every}
+    if not isinstance(saved, dict) or not isinstance(saved.get("clocks"), dict):
+        return {domain: "new baseline (malformed record)" for domain in every}
+    saved_boot = saved.get("boot_id")
+    current_boot = _shared_state.host_boot_id()
+    if not isinstance(saved_boot, str) or not saved_boot or current_boot is None:
+        return {domain: "new baseline (no boot id)" for domain in every}
+    if saved_boot != current_boot:
+        return {domain: "new baseline (host rebooted)" for domain in every}
+
+    outcomes: Dict[str, str] = {}
+    for domain, counters in ENERGY_DOMAIN_COUNTERS.items():
+        value = saved["clocks"].get(domain)
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value \
+                or value in (float("inf"), float("-inf")):
+            outcomes[domain] = "new baseline (malformed reading)"
+        elif value > now:
+            outcomes[domain] = "new baseline (reading in the future)"
+        elif not all(key in restored_keys for key in counters):
+            outcomes[domain] = "new baseline (counters not restored)"
+        else:
+            LAST_ENERGY_TS[domain] = float(value)
+            RESTORED_ENERGY_DOMAINS.add(domain)
+            outcomes[domain] = f"resumed ({int(now - value)}s old)"
+    return outcomes
+
+
 def heartbeat_due(now: Optional[float] = None) -> bool:
     """Whether the retained state is old enough to be worth republishing.
 
@@ -643,20 +712,53 @@ def heartbeat_due(now: Optional[float] = None) -> bool:
     return (now - LAST_PUBLISH_TS) >= interval
 
 
-def republish_state(now: Optional[float] = None) -> bool:
-    """Republish the retained state so it does not age out. Returns True if sent."""
+def pending_publish_due(now: Optional[float] = None) -> bool:
+    """Whether a change the publish throttle deferred is now due.
+
+    parse_payload holds a change made inside the UPDATE_INTERVAL_SEC window and, until
+    now, published it only with the next payload -- or the 600 s heartbeat. Nothing
+    flushed it when the window ended, although the comment at the throttle said it
+    would. A payload landing inside the previous one's window (Device A's second
+    payload does, every time) reached Home Assistant a whole cadence late.
+    """
+    if not PENDING_PUBLISH:
+        return False
+    now = now if now is not None else time.monotonic()
+    return (now - LAST_PUBLISH_TS) >= UPDATE_INTERVAL_SEC
+
+
+def republish_state(now: Optional[float] = None, due=None) -> bool:
+    """Republish the retained state without a payload. Returns True if sent.
+
+    Runs on the health thread while parse_payload publishes from the capture thread, so
+    both take the snapshot they publish, publish it and do the bookkeeping under
+    PUBLISH_LOCK. Without it a flush that took its snapshot before a payload was decoded
+    could publish it after, leaving the older values retained. ``due``, when given, is
+    checked again under the lock, so a publish the capture thread made in the meantime
+    is not repeated.
+    """
     global LAST_PUBLISH_TS, PENDING_PUBLISH
-    if not _shared_state.DISCOVERY_PUBLISHED:
-        return False
-    snapshot = _shared_state.snapshot_state()
-    if not snapshot:
-        return False
-    _, publish_grouped_state = _get_mqtt_publish()
-    delivered = publish_grouped_state(snapshot)
-    # Bookkeeping advances either way, for the same reason as the payload path: a
-    # CONNACK republishes everything, so a dropped heartbeat self-heals.
-    LAST_PUBLISH_TS = now if now is not None else time.monotonic()
-    PENDING_PUBLISH = False
+    with _shared_state.PUBLISH_LOCK:
+        if due is not None and not due():
+            return False
+        if not _shared_state.DISCOVERY_PUBLISHED:
+            return False
+        snapshot = _shared_state.snapshot_state()
+        if not snapshot:
+            return False
+        flushing = PENDING_PUBLISH
+        _, publish_grouped_state = _get_mqtt_publish()
+        delivered = publish_grouped_state(snapshot)
+        # Bookkeeping advances either way, for the same reason as the payload path: a
+        # CONNACK republishes everything, so a dropped heartbeat self-heals.
+        LAST_PUBLISH_TS = now if now is not None else time.monotonic()
+        PENDING_PUBLISH = False
+    if flushing:
+        # The payload that carried this change was logged as throttled. Without this
+        # line nothing records when -- or whether -- its values reached Home Assistant.
+        # The heartbeat stays silent: it republishes nothing new.
+        outcome = PUBLISH_OUTCOMES["flushed" if delivered else "flush-unreachable"]
+        log_kv(f"[{datetime.now().strftime('%H:%M:%S')}] {outcome}", level="info")
     return delivered
 
 
@@ -671,8 +773,18 @@ def _write_state_cache(snapshot: Dict[str, object], now: Optional[float] = None)
     now = now if now is not None else time.monotonic()
     if LAST_CACHE_WRITE_TS and (now - LAST_CACHE_WRITE_TS) < STATE_CACHE_INTERVAL_SEC:
         return False
+    # A copy: the caller publishes `snapshot` to MQTT right after this, and the clocks
+    # must never reach the broker. Read after the snapshot, on this same thread -- the
+    # only writer of both -- so the pair on disk always comes from one payload.
+    record = dict(snapshot)
     try:
-        _shared_state.atomic_write_json(STATE_CACHE_FILE, snapshot)
+        clocks = energy_clocks_record()
+    except Exception:
+        clocks = None
+    if clocks:
+        record[_shared_state.ENERGY_CLOCKS_CACHE_KEY] = clocks
+    try:
+        _shared_state.atomic_write_json(STATE_CACHE_FILE, record)
         LAST_CACHE_WRITE_TS = now
         return True
     except Exception as exc:
@@ -736,6 +848,19 @@ class SolarParser:
         dt_seconds = max(0.0, now_ts - previous)
 
         max_dt_seconds = SolarParser._energy_max_dt()
+        if domain in RESTORED_ENERGY_DOMAINS:
+            # The first interval after a restart spans the bridge's own downtime. Within
+            # the limit it is credited like any other; past it, it is not an interval this
+            # process observed, so it starts a new baseline instead of being clamped --
+            # which keeps the clamp warning for a genuine stall.
+            RESTORED_ENERGY_DOMAINS.discard(domain)
+            if dt_seconds > max_dt_seconds:
+                log(
+                    f"[CACHE] {domain}: {int(dt_seconds)}s since the saved energy clock, over "
+                    f"the {int(max_dt_seconds)}s limit; starting a new baseline",
+                    level="info",
+                )
+                return 0.0
         if dt_seconds <= max_dt_seconds:
             return dt_seconds
 
@@ -2221,29 +2346,41 @@ class SolarParser:
                             publish_sensor_discovery(key)
 
                     global LAST_PUBLISH_TS, PENDING_PUBLISH
-                    now = time.monotonic()
-                    if changed_keys:
-                        PENDING_PUBLISH = True
+                    # Held from the snapshot to the bookkeeping, as in republish_state:
+                    # the health thread's flush publishes the same topics, and whichever
+                    # thread publishes last is what the broker keeps. The snapshot is
+                    # retaken inside the lock so that holds even if LAST_STATE ever gains
+                    # a second writer; today this thread is its only one. The merge and
+                    # the change diff stay outside, so a tick landing between them and
+                    # the lock can publish this payload's values first. This payload is
+                    # then logged as throttled and the next tick republishes the same
+                    # values -- a redundant line, never an older value left retained.
+                    with _shared_state.PUBLISH_LOCK:
+                        snapshot = _shared_state.snapshot_state()
+                        now = time.monotonic()
+                        if changed_keys:
+                            PENDING_PUBLISH = True
 
-                    elapsed = now - LAST_PUBLISH_TS
-                    # A change is deferred to the end of the throttle window, never
-                    # dropped -- the previous `or` meant any change published
-                    # immediately, so UPDATE_INTERVAL_SEC could never throttle
-                    # anything and the option did nothing at all.
-                    due = PENDING_PUBLISH and elapsed >= UPDATE_INTERVAL_SEC
+                        elapsed = now - LAST_PUBLISH_TS
+                        # A change is deferred to the end of the throttle window, never
+                        # dropped -- the previous `or` meant any change published
+                        # immediately, so UPDATE_INTERVAL_SEC could never throttle
+                        # anything and the option did nothing at all. core.publish_tick
+                        # flushes it when the window ends if no payload does first.
+                        due = PENDING_PUBLISH and elapsed >= UPDATE_INTERVAL_SEC
 
-                    if due:
-                        publish_outcome = (
-                            "sent" if publish_grouped_state(snapshot) else "broker-unreachable"
-                        )
-                        # Advanced even when the broker refused it: on_connect
-                        # republishes the whole snapshot on every CONNACK, so a dropped
-                        # publish self-heals and retrying at a dead socket would cost a
-                        # no-op on every payload.
-                        LAST_PUBLISH_TS = now
-                        PENDING_PUBLISH = False
-                    else:
-                        publish_outcome = "throttled"
+                        if due:
+                            publish_outcome = (
+                                "sent" if publish_grouped_state(snapshot) else "broker-unreachable"
+                            )
+                            # Advanced even when the broker refused it: on_connect
+                            # republishes the whole snapshot on every CONNACK, so a
+                            # dropped publish self-heals and retrying at a dead socket
+                            # would cost a no-op on every payload.
+                            LAST_PUBLISH_TS = now
+                            PENDING_PUBLISH = False
+                        else:
+                            publish_outcome = "throttled"
 
                 # Say what actually happened. This line read "Published to HA" whether
                 # or not anything was published: it sits outside the throttle gate, and

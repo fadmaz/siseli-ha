@@ -35,8 +35,10 @@ from .parsers import (
     extract_publish_payload,
     heartbeat_due,
     mqtt_type_name,
+    pending_publish_due,
     republish_state,
     reset_flow,
+    restore_energy_clocks,
 )
 from .version import __version__ as VERSION
 
@@ -113,6 +115,10 @@ def load_cached_state(path: str = STATE_CACHE_FILE) -> None:
                 log(f"[CACHE] Ignoring {path}: expected an object, got {type(cached).__name__}", level="error")
                 return
 
+            # The integrator's clocks travel in the same record as the counters they
+            # gate. Taken out first, so the filters below never see the key.
+            clocks_record = cached.pop(_state.ENERGY_CLOCKS_CACHE_KEY, None)
+
             # The energy counters are state_class: total_increasing, so a corrupt or
             # negative value can never correct itself downward. Drop those rather
             # than restoring them.
@@ -171,6 +177,23 @@ def load_cached_state(path: str = STATE_CACHE_FILE) -> None:
                 )
 
             _state.LAST_STATE.update(cached)
+
+            # Its own try, after the counters are in: nothing about the clocks may cost
+            # the totals they gate.
+            try:
+                outcomes = restore_energy_clocks(
+                    clocks_record, restored_keys=set(cached), reset=RESET_ENERGY_COUNTERS
+                )
+                if outcomes:
+                    log(
+                        "[CACHE] Energy clocks: "
+                        + ", ".join(f"{domain} {outcome}" for domain, outcome in sorted(outcomes.items())),
+                        level="info",
+                    )
+                elif clocks_record is None:
+                    log("[CACHE] Energy clocks: none saved; each domain starts a new baseline", level="info")
+            except Exception as exc:
+                log(f"[CACHE] Could not restore energy clocks: {exc}", level="error")
     except Exception as e:
         log(f"[CACHE] Error loading state: {e}", level="error")
 
@@ -192,10 +215,32 @@ def resolve_own_mac() -> Optional[str]:
     if OWN_MAC is not None:
         return OWN_MAC
     try:
-        OWN_MAC = norm_mac(get_if_hwaddr(SNIFF_IFACE or conf.iface))
+        mac = norm_mac(get_if_hwaddr(SNIFF_IFACE or conf.iface))
     except Exception:
-        OWN_MAC = None
-    return OWN_MAC
+        mac = None
+    # scapy answers an interface with no address with all zeros rather than raising.
+    # Stamped into an ARP reply that would tell both peers the other lives at
+    # 00:00:00:00:00:00, so it counts as unresolved and is retried next time. Checked
+    # before the global is written, so another thread never reads the zeros.
+    if mac == "00:00:00:00:00:00":
+        mac = None
+    OWN_MAC = mac
+    return mac
+
+
+def route_mac_for(ip: str) -> Optional[str]:
+    """The MAC scapy would stamp on a frame to `ip` if the source were left unset.
+
+    An unset Ether.src or ARP hwsrc is filled from the interface the routing table
+    picks for the destination -- not from the interface the frame is sent on. On a
+    host with two interfaces on this network the two differ, which is the defect
+    stamping the source explicitly fixes. Logged beside our own MAC at startup, so a
+    user's log shows whether the fix changed anything on their host.
+    """
+    try:
+        return norm_mac(get_if_hwaddr(conf.route.route(ip)[0]))
+    except Exception:
+        return None
 
 
 KNOWN_INVERTER_MACS = set()
@@ -223,17 +268,66 @@ class ArpSpoofer:
             log(f"[ARP] Inverter MAC: {INV_MAC}", level="info")
             log(f"[ARP] Router MAC:   {RTR_MAC}", level="info")
 
+    def report_source_mac(self) -> None:
+        """Say once which MAC the bridge's frames carry, and whether scapy's own choice
+        would have differed. The only on-host evidence that the source fix matters.
+
+        Each route that used to pick a source is checked, because they can leave by
+        different interfaces: a VPN's default route carries the broker connection while
+        the inverter and router stay on the LAN. Traffic forwarded only with
+        FORWARD_ALL_INVERTER_TRAFFIC goes to destinations that cannot be listed here."""
+        own_mac = resolve_own_mac()
+        iface = SNIFF_IFACE or conf.iface
+        if not own_mac:
+            log(
+                f"[ARP] Could not read this host's MAC on {iface}; scapy will choose the "
+                f"source from the routing table, which is wrong on a host with two "
+                f"interfaces on this network -- pin SNIFF_IFACE",
+                level="warning",
+            )
+            return
+        differed = []
+        for frames, ip in (
+            ("ARP replies to the inverter", INVERTER_IP),
+            ("ARP replies to the router", ROUTER_IP),
+            ("forwarded broker traffic", TARGET_HOST),
+        ):
+            route_mac = route_mac_for(ip)
+            if route_mac and route_mac != own_mac:
+                differed.append(f"{frames} (route to {ip}) would have carried {route_mac}")
+        if differed:
+            log(
+                f"[ARP] Frames are sent from {own_mac} on {iface}; before 2.6.24 scapy's "
+                f"routing table chose differently: " + "; ".join(differed),
+                level="warning",
+            )
+        else:
+            log(f"[ARP] Frames are sent from {own_mac} on {iface}", level="info")
+
     def run(self) -> None:
         self.resolve_macs()
         if not _state.RUNNING:
             return
 
         log(f"[ARP] Interception ACTIVE: {INVERTER_IP} <-> {ROUTER_IP}", level="info")
+        self.report_source_mac()
 
         while _state.RUNNING:
+            # Stamped explicitly: left unset, scapy fills both fields from the route to
+            # the destination, which on a host with two interfaces on this network is
+            # the wrong interface's MAC. None (unresolvable) sends today's frames.
+            own_mac = resolve_own_mac()
             try:
-                send_layer2(Ether(dst=INV_MAC) / ARP(op=2, pdst=INVERTER_IP, psrc=ROUTER_IP, hwdst=INV_MAC), SNIFF_IFACE)
-                send_layer2(Ether(dst=RTR_MAC) / ARP(op=2, pdst=ROUTER_IP, psrc=INVERTER_IP, hwdst=RTR_MAC), SNIFF_IFACE)
+                send_layer2(
+                    Ether(src=own_mac, dst=INV_MAC)
+                    / ARP(op=2, hwsrc=own_mac, pdst=INVERTER_IP, psrc=ROUTER_IP, hwdst=INV_MAC),
+                    SNIFF_IFACE,
+                )
+                send_layer2(
+                    Ether(src=own_mac, dst=RTR_MAC)
+                    / ARP(op=2, hwsrc=own_mac, pdst=ROUTER_IP, psrc=INVERTER_IP, hwdst=RTR_MAC),
+                    SNIFF_IFACE,
+                )
             except Exception as exc:
                 log(f"[ARP ERROR] {exc}", level="error")
 
@@ -352,7 +446,7 @@ def packet_callback(pkt) -> None:
 
             if AUTO_INTERCEPT and RTR_MAC:
                 try:
-                    fwd_pkt = Ether(dst=RTR_MAC) / pkt[IP]
+                    fwd_pkt = Ether(src=own_mac, dst=RTR_MAC) / pkt[IP]
                     send_layer2(fwd_pkt, SNIFF_IFACE)
                 except Exception as exc:
                     log(f"[FWD ERROR] inverter->router {exc}", level="error")
@@ -372,7 +466,7 @@ def packet_callback(pkt) -> None:
             # re-emitted, duplicating what the real router already received.
             if own_mac and norm_mac(pkt[Ether].dst) == own_mac:
                 try:
-                    send_layer2(Ether(dst=RTR_MAC) / pkt[IP], SNIFF_IFACE)
+                    send_layer2(Ether(src=own_mac, dst=RTR_MAC) / pkt[IP], SNIFF_IFACE)
                     DROPPED_NON_TARGET[bucket] -= 1
                 except Exception as exc:
                     log(f"[FWD ERROR] inverter->router (non-broker) {exc}", level="error")
@@ -387,7 +481,7 @@ def packet_callback(pkt) -> None:
 
         if AUTO_INTERCEPT and INV_MAC:
             try:
-                fwd_pkt = Ether(dst=INV_MAC) / pkt[IP]
+                fwd_pkt = Ether(src=own_mac, dst=INV_MAC) / pkt[IP]
                 send_layer2(fwd_pkt, SNIFF_IFACE)
             except Exception as exc:
                 log(f"[FWD ERROR] router->inverter {exc}", level="error")
@@ -598,6 +692,23 @@ def check_capture_thread() -> bool:
     return True
 
 
+def publish_tick() -> bool:
+    """One timer-driven publish check, called from health_logger every 10 s.
+
+    Two reasons to publish without a payload arriving: the heartbeat, which keeps the
+    retained state inside Home Assistant's expire_after window while the inverter is
+    quiet, and a change the throttle deferred whose window has now ended. Returns
+    whether it published. The check is repeated under PUBLISH_LOCK inside
+    republish_state, because a payload may have been published since this one.
+    """
+    try:
+        if heartbeat_due() or pending_publish_due():
+            return republish_state(due=lambda: heartbeat_due() or pending_publish_due())
+    except Exception as exc:
+        log(f"[PUBLISH TICK ERROR] {exc}", level="error")
+    return False
+
+
 def health_logger() -> None:
     ticks = 0
     while _state.RUNNING:
@@ -618,14 +729,7 @@ def health_logger() -> None:
         except Exception as exc:
             log(f"[HEALTH ERROR] {exc}", level="error")
 
-        try:
-            # Timer-driven, so the retained state stays fresh while the inverter is
-            # quiet. Doing this from parse_payload meant it could only fire when a
-            # payload arrived, which is exactly when it was not needed.
-            if heartbeat_due():
-                republish_state()
-        except Exception as exc:
-            log(f"[HEARTBEAT ERROR] {exc}", level="error")
+        publish_tick()
 
         ticks += 1
         if ticks % 3:
@@ -664,9 +768,9 @@ def restore_arp() -> None:
 
     The spoofer only ever emits poisoning replies, so stopping the add-on used to
     leave both caches wrong until they aged out -- minutes during which the inverter
-    could not reach the cloud at all. Note hwsrc is set explicitly here: the poisoning
-    replies omit it precisely so scapy fills in our own MAC, and the corrective ones
-    must not.
+    could not reach the cloud at all. hwsrc carries each peer's real MAC -- that is the
+    correction -- while the Ethernet source is ours, as on every frame we send. It
+    reads the cached OWN_MAC rather than resolving: this runs in a signal handler.
 
     Runs inside a signal handler, so it is hard-bounded at about a second and every
     failure is swallowed -- it must never block the MQTT teardown that follows.
@@ -676,12 +780,12 @@ def restore_arp() -> None:
     try:
         for _ in range(5):
             send_layer2(
-                Ether(dst=INV_MAC)
+                Ether(src=OWN_MAC, dst=INV_MAC)
                 / ARP(op=2, psrc=ROUTER_IP, hwsrc=RTR_MAC, pdst=INVERTER_IP, hwdst=INV_MAC),
                 SNIFF_IFACE,
             )
             send_layer2(
-                Ether(dst=RTR_MAC)
+                Ether(src=OWN_MAC, dst=RTR_MAC)
                 / ARP(op=2, psrc=INVERTER_IP, hwsrc=INV_MAC, pdst=ROUTER_IP, hwdst=RTR_MAC),
                 SNIFF_IFACE,
             )
@@ -749,6 +853,15 @@ def log_startup_configuration() -> None:
         f"TELEMETRY_TIMEOUT_SEC={TELEMETRY_TIMEOUT_SEC}"
     )
     log(f"[Config] DEBUG_FLAGS={list(ACTIVE_DEBUG_FLAGS) or 'none'}")
+    # The energy clocks are saved only with the boot id that makes them meaningful.
+    # Without this line a host where it cannot be read would print "none saved" at every
+    # start, which reads like a first start rather than a feature that cannot work here.
+    if _state.host_boot_id() is None:
+        log(
+            f"[CACHE] Energy clocks cannot be saved: {_state.BOOT_ID_PATH} is unreadable, "
+            f"so each domain starts a new baseline after every restart",
+            level="warning",
+        )
 
 
 def install_signal_handlers() -> None:

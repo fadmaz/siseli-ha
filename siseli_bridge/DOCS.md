@@ -98,7 +98,7 @@ in step 3 above.
 | `ROUTER_IP` | `192.168.1.1` | **Must be set to your gateway** |
 | `INVERTER_MAC` / `ROUTER_MAC` | *(blank)* | Optional. Pin these if auto-detection picks the wrong device |
 | `AUTO_INTERCEPT` | `true` | ARP interception. Turn off only if you route the traffic yourself |
-| `SNIFF_IFACE` | *(blank)* | Advanced. Pin the capture interface if auto-detection fails |
+| `SNIFF_IFACE` | *(blank)* | Advanced. Pin the capture interface if auto-detection fails. Every ARP reply and forwarded frame the add-on sends carries this interface's MAC; the startup log line `[ARP] Frames are sent from …` shows which |
 | `FORWARD_ALL_INVERTER_TRAFFIC` | `false` | See [the caveat below](#a-caveat-on-forwarding) |
 
 ### Identity and scaling
@@ -367,8 +367,13 @@ managed to connect at all, rather than having lost a working connection. Look fo
 `[HA MQTT] Cannot reach the broker` or `[HA MQTT ERROR] Broker refused the connection`
 above it: the first is a wrong host, port or a stopped broker, the second is credentials.
 
-`Decoded, publish throttled` is different and normal: the reading was fine and the
-publish was skipped because nothing had changed since the last one.
+`Decoded, publish throttled` is different and normal: the reading was fine but was not
+published yet. Either nothing in it changed, or it arrived within `UPDATE_INTERVAL_SEC` of
+the last publish; `changed_key_count` on the line tells the two apart. A change is held,
+not dropped. It is published once that window has passed, within about ten seconds, with a
+line of its own: `Deferred change published to HA`, or
+`Deferred change NOT published -- broker unreachable`, which means the same as the broker
+line above.
 
 ### Every sensor reads Unknown
 

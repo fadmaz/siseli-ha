@@ -145,6 +145,7 @@ def isolated_state():
     saved_direction_conflict = parser_mod.GRID_DIRECTION_CONFLICT_LOGGED
     saved_cell_overflow = parser_mod.CELL_LIST_OVERFLOW_LOGGED
     saved_cache_write_ts = parser_mod.LAST_CACHE_WRITE_TS
+    saved_restored_domains = set(parser_mod.RESTORED_ENERGY_DOMAINS)
     try:
         yield
     finally:
@@ -173,6 +174,8 @@ def isolated_state():
         parser_mod.GRID_DIRECTION_CONFLICT_LOGGED = saved_direction_conflict
         parser_mod.CELL_LIST_OVERFLOW_LOGGED = saved_cell_overflow
         parser_mod.LAST_CACHE_WRITE_TS = saved_cache_write_ts
+        parser_mod.RESTORED_ENERGY_DOMAINS.clear()
+        parser_mod.RESTORED_ENERGY_DOMAINS.update(saved_restored_domains)
 
 
 # ---------------------------------------------------------------- fake broker

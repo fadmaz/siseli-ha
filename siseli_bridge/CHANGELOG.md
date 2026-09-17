@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.24] - 2026-09-17
+
+### Fixed
+
+- **Frames Carried The Wrong MAC On A Host With Two Interfaces**: every frame the bridge
+  builds — the ARP replies that put it in the path, the forwarded traffic and the corrective
+  replies sent on stop — left its source MAC unset, and scapy fills an unset source from the
+  interface its routing table picks for the destination, not from the interface the frame
+  goes out on. On a host with two interfaces on this network, with `SNIFF_IFACE` pinned, the
+  inverter and router were told the wrong MAC. Every frame now carries the capture
+  interface's MAC explicitly. A startup line, `[ARP] Frames are sent from …`, names it and
+  warns if scapy's own choice for the ARP replies or the broker connection would have
+  differed; a VPN that carries the default route can change the second alone. On a host
+  with one interface the frames are unchanged. An interface scapy reports as
+  `00:00:00:00:00:00` counts as unresolved rather than being stamped into an ARP reply.
+- **Each Restart Lost One Interval Of Energy Per Domain**: the energy integrator's clocks
+  lived only in memory, so the first payload after any restart — an update, a config
+  change, the watchdog — set a new baseline and credited nothing: about 0.1–0.5 kWh per
+  domain at the reference install's power and cadence. The clocks are now saved in the
+  same `/data/state.json` record as the counters, tagged with the host's boot id, and
+  resumed only in that same boot, since a monotonic reading means nothing after a reboot.
+  A resumed interval longer than the integration limit starts a new baseline instead of
+  being clamped. The startup log says, per domain, whether it resumed, and warns once if
+  the host's boot id cannot be read, since then nothing can resume. A reboot still starts
+  from a new baseline, as before. Versions from 2.6.11 on drop the extra key if you go
+  back, and restoring an older backup replaces the file anyway.
+- **A Throttled Change Waited For The Next Payload**: a change made inside the
+  `UPDATE_INTERVAL_SEC` window was held back and published only with the next payload
+  or the 600 s heartbeat, although the throttle's own comment said it was deferred to
+  the end of the window. Every second payload from the reference inverter lands inside
+  the first one's window, so its values reached Home Assistant a whole reporting
+  interval late. The ten-second health tick now flushes a deferred change once its window
+  has passed, and logs it as `Deferred change published to HA` — before, a held change
+  reached Home Assistant with no line at all. The flush, the payload path and a
+  reconnect's replay now publish under one lock. Without it, a publish whose snapshot was
+  taken first could land last and leave the older values retained on the broker, stepping
+  an energy counter back. The heartbeat and the replay could already do that; the flush,
+  which runs after every deferred change, would have made it more likely. Errors on this
+  path are logged as `[PUBLISH TICK ERROR]` (formerly `[HEARTBEAT ERROR]`), and the
+  Documentation tab no longer says a throttled line means nothing changed.
+
 ## [2.6.23] - 2026-09-15
 
 ### Changed
