@@ -9,7 +9,9 @@ than rediscovered.
 Unlike [Device B](2026-08-22_device-b-modbus.md), this one clears the bar a decode needs:
 the re-capture is complete and byte-faithful, every frame's checksum verifies, and — what
 Device B never had — the portal screenshots pair with it to the second. Support is planned
-and tracked in #32; what is still missing is listed at the end.
+and tracked in #32; the proposed design is
+[`../docs/PI30_DESIGN.md`](../docs/PI30_DESIGN.md), and what is still missing is listed
+at the end.
 
 ## What is shared, and what is not
 
@@ -100,20 +102,20 @@ shows whether another PI30 dongle reuses these names. Shape alone cannot tell QE
 | 14 | `184.1` | PV1 input voltage, V | 184.1 V |
 | 15 | `00.00` | battery voltage from SCC, V | 0 V |
 | 16 | `00006` | battery discharge current, A | 6 A |
-| 17 | `00010000` | status bits b7…b0 | all eight paired: load on, everything else off or unchanged |
+| 17 | `00010000` | status bits b7…b0 | all eight shown: load on, everything else off or unchanged. PI30MAX reserves b7 and b3 on Axpert models, and the portal also shows fields it has no data for, so its b7 and b3 are weak evidence |
 | 18 | `00` | fan-on voltage offset, 10 mV units | 0 V |
 | 19 | `00` | EEPROM version | 0 |
 | 20 | `00151` | PV1 charging power, W | 151 W |
-| 21 | `011` | status bits b10 b9 b8 | b9 paired ("Switch On: yes"); b10 (float) and b8 not shown |
+| 21 | `011` | status bits b10 b9 b8 | b9 paired ("Switch On: yes"); b10 (float) and b8 not shown. The unpaired 08-31 capture read `111`, with the battery at its 28.8 V float setting, 100 % and 0 A |
 | 22 | `0` | reserved, solar feed to grid | "Solar feed to grid: disable" — may come from QFLAG instead |
 | 23 | `01` | reserved, country regulation | not shown |
 | 24 | `0054` | reserved, feed-in power | not shown; unexplained on an off-grid unit in battery mode |
 
 Field 20 is the device's own figure; 184.1 V × 1.2 A would be 221 W. Publish what the
-device states, never a derived value. PI30MAX describes field 12 as a raw NTC reading on
-1–3 kW models; the vendor displays it as °C for this 4 kW unit.
+device states, never a derived value. PI30 2014, PI30 2015 and PI30MAX all describe field
+12 as a raw NTC reading on 1–3 kVA models; the vendor displays it as °C for this 4 kW unit.
 
-## `MrfS` is QPIRI — all 25 fields paired
+## `MrfS` is QPIRI — all 25 agree with the portal, 8 pinned by value
 
 | # | Wire | Field | Portal |
 |---|---|---|---|
@@ -147,8 +149,68 @@ Field 14 has three digits where the spec shows two; the portal settles the order
 15. The portal's "Maximum charging current 120 A" and "Maximum utility charging current
 100 A" appear not to be settings: they match the largest entries in `DB48` and `wb83`.
 
-These are **live settings, not constants**. Between the two captures the owner changed the
-output priority, input range, re-charge voltage, float voltage and equalisation voltage.
+Only fields 4, 9, 11, 12, 14, 15, 20 and 23 have a value that occurs once in the reply. The
+other 17 share theirs with another field (1/3, 2/5, 6/7, 8/10, 13/17/18, 16/19/25,
+21/22/24), so the portal cannot tell a swap within those groups. Their order rests on the
+specs, which all define it identically.
+
+These are **live settings, not constants**. Between the two captures the output priority,
+input range, re-charge voltage, float voltage and equalisation voltage all changed. The
+reporter has not said what changed them.
+
+## `sJqt` is QFLAG — states paired with the portal
+
+The reply is `EakxyzDbdjuv`. `E` opens the list of enabled flags and `D` the list of
+disabled ones. Split on those uppercase separators only: `d` (0x64) is itself a flag letter
+in this reply. The PI30 documents print the letters in upper case; the wire and mpp-solar
+use lower case.
+
+| Letter | Flag | Spec | Wire | Portal |
+|---|---|---|---|---|
+| `a` | buzzer (E = sounds, per mpp-solar's "Buzzer"; the spec wording leaves the direction open) | PI30, PI30MAX | enabled | "silence buzzer or open buzzer: enable" (S1) |
+| `b` | overload bypass | PI30, PI30MAX | disabled | "overload bypass function: disable" (S1; not the separate "bypass function: --") |
+| `d` | solar feed to grid | PI30MAX only, reserved feature | disabled | "Solar feed to grid: disable" (S1). Not a unique pairing: QPIGS field 22 also reads 0. |
+| `j` | power saving | PI30 only | disabled | "power saving: disable" (S1) |
+| `k` | LCD returns to the default page after a timeout | PI30, PI30MAX | enabled | "LCD return to default page: Enabled" (S2) |
+| `u` | overload restart | PI30, PI30MAX | disabled | "Over load restart: Disable" (S1) |
+| `v` | over-temperature restart | PI30, PI30MAX | disabled | "Over temperature restart: Disable" (S1) |
+| `x` | LCD backlight | PI30, PI30MAX | enabled | "LCD backLight control: Enabled" (S2) |
+| `y` | alarm when the primary source is interrupted | PI30, PI30MAX | enabled | "Alarm on when primary source interrupt: Enabled" (S3) |
+| `z` | fault code record | PI30, PI30MAX | enabled | "Fault code record: enable" (S2) |
+
+All ten letters are defined in a published spec (see the Spec column), and all ten states
+agree with the portal. The portal confirms states, not letters. The five enabled flags all
+read "enable" and the five disabled ones all read "disable", so two letters in the same
+state could be swapped and nothing would show it. QFLAG was also byte-identical in the 08-31
+and 09-02 captures, so no letter has been seen changing. Letter meanings therefore rest on
+the specs. To pin one letter, the owner could toggle a single flag on the LCD and
+re-capture.
+
+## `7v9T` is QBEQI — three fields pinned by the portal
+
+| # | Wire | Field (PI30MAX §2.20) | Portal |
+|---|---|---|---|
+| 1 | `0` | equalisation enabled | "Battery equalization: disable" (S3) |
+| 2 | `060` | equalisation time, min | "Battery equalization Time: 60 min" (S3) |
+| 3 | `030` | equalisation period, days | "Equalization Period: 30 day" (S2) |
+| 4 | `030` | equalisation max current, A | "Equalization max current: 30 A" (S2) |
+| 5 | `030` | reserved | — |
+| 6 | `27.60` | equalisation voltage, V | "Battery equalization voltage: 27.6 V" (S3) |
+| 7 | `000` | reserved | — |
+| 8 | `120` | equalisation over-time, min | "Equalization over time: 120 min" (S2) |
+| 9 | `0` | equalisation active | "Equalization active status: disable" (S2) |
+| 10 | `0000` | equalisation elapsed, hours | "Battery equalization elapseTime: 0 hour" (S3) |
+
+All ten positions follow PI30MAX §2.20. QBEQI is not in the PI30 documents or in
+mpp-solar's `pi30.py`. The portal pins three fields by value, because `060`, `27.60` and
+`120` each occur once in the reply. The other five agree with the portal but it cannot tell
+them apart: fields 3, 4 and 5 all read `030`, fields 1 and 9 both read `0`, and fields 7
+and 10 are both zero. Their order comes from the specification alone. Fields 5 and 7 are
+reserved and not decoded.
+
+Field 6 read `29.20` in the 2026-08-31 capture and `27.60` here, so it is a live value, not
+a constant. The reporter has not said what changed it. The float voltage moved from 28.8 to
+27.6 over the same interval.
 
 ## The system, as the wire describes it
 
@@ -169,7 +231,9 @@ title is not on the wire; `EMu5`'s `-4000` is QMN's rated-VA suffix.
 - Every block except QT is byte-identical between the two sets, so each portal value
   pairs with both.
 - About 80 wire values have a portal counterpart: roughly 28 from `G4WT`, 25 from `MrfS`,
-  10 QFLAG flags and 8 QBEQI fields, plus model, firmware, QMOD, QT, QET and QLT.
+  10 QFLAG states and 8 QBEQI values, plus model, firmware, QMOD, QT, QET and QLT. The
+  QFLAG states pair but their letters rest on the specs, and only 3 of the QBEQI values
+  and 8 of the `MrfS` values are unique in their reply; see their sections above.
 
 Some portal values must not be published. "PV2 … 0" has no wire source at all — there is
 no QPIGS2 reply. "Battery percentage 0 %" and the 0 V cut-off and C.V. voltages do come
@@ -200,7 +264,8 @@ sample time. The envelope itself is described in
    record one gap per set.
 4. **Use the device's own energy counters.** QET and QLT are Wh totals, so they become
    `total_increasing` sensors directly and nothing needs integrating.
-5. **Treat settings as live.** QPIRI, QFLAG and QBEQI change when the owner changes them.
+5. **Treat settings as live.** QPIRI and QBEQI values changed between the two captures.
+   QFLAG did not, but it is a settings reply too and is treated the same way.
 6. **Publish only what the wire says** — see the portal-only values above.
 
 ## Still missing
@@ -208,12 +273,15 @@ sample time. The envelope itself is described in
 1. **Cadence.** Each capture holds a single `dev_prop_post` set, and timing bounds come
    from measured cadence. A 30–60 minute log is needed first.
 2. **Other states,** each paired with the portal: solar charging (battery current above
-   0), line mode with AC charging, and after dark.
+   0), the only state that can set `G4WT` field 17 b1 and show whether field 15 is live;
+   line mode with AC charging, captured on 08-31 but unpaired (QMOD `L`, field 17
+   `00010101`, field 21 `111`); and after dark.
 3. **Warnings and faults.** QPIWS is not among the queries, and three are NAKs whose query
    is unknown; the `raw_json` debug flag logs the block order, which may help attribute
    them. No fault entity is possible yet.
 4. **Unpaired fields:** `G4WT` 21 (b10, b8) and 22–24, `u51Q`, the QOPPT/QCHPT arrays, and
-   the reserved QBEQI fields.
+   the reserved QBEQI fields. QBEQI fields 1, 3, 4, 9 and 10 and the ten QFLAG letters
+   rest on the specs: the portal agrees with their values but cannot tell them apart.
 
 ## Fixtures
 
@@ -224,11 +292,18 @@ per-fragment and taken from the paired set below.
 
 ## Sources
 
-- Voltronic, *PI30MAX Communication Protocol* (2021-02-17), in
+- Voltronic, *PI30MAX Communication Protocol* (2021-02-17), and the 2014 and 2015
+  revisions of the *PI30* protocol, in
   [BMBIT-oss/Various-Solar-Protocols-Docs](https://github.com/BMBIT-oss/Various-Solar-Protocols-Docs)
 - mpp-solar's [`pi30.py`, `pi30max.py` and `protocol_helpers.py`](https://github.com/jblance/mpp-solar/tree/master/mppsolar/protocols)
 - The reporter's capture and screenshots, in
-  [this comment on #32](https://github.com/fadmaz/siseli-ha/issues/32#issuecomment-5510993696)
+  [this comment on #32](https://github.com/fadmaz/siseli-ha/issues/32#issuecomment-5510993696).
+  The tables cite the four screenshots by content:
+  - **S1** runs from "Machine type" to "total output load energy".
+  - **S2** runs from "Battery voltage offset for fans on" to "Output mode".
+  - **S3** runs from "PV1 input voltage" to "Battery under voltage".
+  - **S4** is the overview headed "UpdateTime", with the battery, grid, load and PV
+    panels.
 
 ## Appendix — the portal-paired `dev_prop_post` set, verbatim
 
