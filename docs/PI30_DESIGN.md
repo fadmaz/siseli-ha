@@ -1,6 +1,6 @@
 # Voltronic PI30 support — design
 
-**Status: Proposed — awaiting the maintainer's approval. Nothing here is implemented.**
+**Status: Approved 2026-09-20. Implementation is staged and has not started.**
 
 This is the design for decoding the second protocol family this add-on has met: Voltronic
 PI30, spoken by the Falcon VMIII-4000 in
@@ -10,6 +10,12 @@ and the transport in [`DTU_PROTOCOL.md`](DTU_PROTOCOL.md). Three rounds of adver
 review shaped it; the alternatives they rejected are listed at the end so they are not
 re-proposed. It builds on 2.6.24 (the deferred-publish flush, `publish_tick`,
 `PUBLISH_LOCK` and the saved energy clocks).
+
+**The cadence log arrived on 2026-09-16** (issue #32), covering a full hour with the portal and
+the vendor app closed. It shows a response set every 300 s, steady across the hour, every frame
+CRC-verified, `cCft` answering `PI30` and `EMu5` reading `VMIII-4000`. That settles the two
+numbers this design left open: `STARTUP_GRACE_SEC` fits with room to spare (§7), and the energy
+guard's N = 3 sets amount to a hold of about 15 minutes (§6).
 
 **Terms.** A **set** is one response set: the DTU's replies to all 24 queries of one polling
 cycle. The DTU splits each set into two MQTT messages, **fragment 1** (14 blocks) and
@@ -30,8 +36,8 @@ sensor dict: `SENSORS` (Device A, 207 keys) or the new `PI30_SENSORS`. They shar
 - Not a goal: PI30 devices whose block names differ from the proven map. They get a clear
   diagnostic, not a guess. Not a goal: any write path to the inverter.
 
-**Implementation waits for two things:** approval of this document, and the cadence log
-already requested from the #32 reporter.
+**Both preconditions are met:** this document is approved, and the cadence log arrived. Work is
+staged as a test-only regression PR first (the golden of §10 item 1), then the decoder itself.
 
 ### What changes for Device A
 
@@ -333,9 +339,10 @@ hour, permanently.
     about every 26 s on another device, served from the DTU's cache (`DTU_PROTOCOL.md`,
     not verified here); no capture here holds two of them. Counted, they could meet N
     within about a minute of a DTU restart.
-  - The cadence log turns N into a hold time of N `dev_prop_post` periods. It cannot
-    change N, because no capture has shown a decrease; both counters rose between 08-31
-    and 09-02. N changes only if a capture shows a low reading persisting.
+  - The cadence log (below) makes N a hold of about 15 minutes at this device's measured
+    300 s period. It cannot change N, because no capture has shown a decrease; both
+    counters rose between 08-31 and 09-02. N changes only if a capture shows a low
+    reading persisting.
 - **Logging.** Holding a reading logs `[PI30 ENERGY HELD]` once, with the old and new
   values. Accepting a reset logs a one-shot warning. A held reading is a bound that fires in
   normal operation, so it is never silent.
@@ -356,8 +363,8 @@ hour, permanently.
   about every 26 s). Counting them would empty the measured floor, which is what the
   capture note warns about.
 - Device A keeps `record_telemetry()` unchanged, stamping and recording together.
-- `STARTUP_GRACE_SEC` (1200 s) assumes a cadence under 20 minutes. The requested timing log
-  decides whether that holds for PI30.
+- `STARTUP_GRACE_SEC` (1200 s) assumes a cadence under 20 minutes. The timing log confirms it
+  holds: this device reports every 300 s, four times inside the grace window.
 
 ## 8. Fragment 2 and the throttle
 
@@ -514,8 +521,6 @@ ends. So fragment 2 reaches Home Assistant within `UPDATE_INTERVAL_SEC` + 10 s, 
 
 ## 12. Evidence still needed
 
-- **The cadence log from #32.** It sets whether `STARTUP_GRACE_SEC` fits and how long the
-  energy guard's 3 sets take.
 - **Other states,** each paired with the portal.
   - Solar charging has never been captured. It is the only state that can set field 17 b1
     and show whether field 15 is live.
