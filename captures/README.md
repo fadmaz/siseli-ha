@@ -63,9 +63,11 @@ Two entries that used to be on this list are done, and one was never going to wo
 - **A single-inverter capture** is not needed for `total_number_of_grid_connection`; the
   dark-PV reading already settled it.
 
-The one open question that no capture will answer is the `INVERTER_COUNT` scaling. It
-needs a photograph of an inverter's rating plate, or a clamp meter on the AC output —
-see the discharging capture for why.
+The `INVERTER_COUNT` scaling question, long open here, was settled on 2026-09-20 without a
+capture: over three days the bridge's generation counter tracked the inverter's own lifetime PV
+counter to 0.6 % per inverter, which a system-total basis could not do. See risk #2 in
+[`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md). A rating-plate photo would still settle it
+for any other model.
 
 See [`../sensor_mapping_verified.md`](../sensor_mapping_verified.md) for the running
 analysis these captures feed.

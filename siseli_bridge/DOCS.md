@@ -67,12 +67,18 @@ Enable **Watchdog** and **Start on boot**, then start the add-on. Within a coupl
 minutes the log should show:
 
 ```
+[CACHE] Energy clocks: battery resumed (258s old), generation resumed (258s old), ...
 --- Siseli Inverter Bridge 2.6.x ---
 [ARP] Interception ACTIVE: 192.168.x.x <-> 192.168.x.x
+[ARP] Frames are sent from aa:bb:cc:dd:ee:ff on eth0
 [HA MQTT] Connected to ...
 [HA MQTT] Discovery published
 [Bridge] Sniffer started
 ```
+
+The energy-clock line reports, per domain, whether the counters carried on from the last run. On
+the very first start after the update that introduced it, the line reads `none saved`, which is
+normal.
 
 Entities appear under **Settings → Devices & Services → MQTT** once the first telemetry
 payload arrives. Inverters typically report every few minutes, so give it up to ten
@@ -370,8 +376,8 @@ above it: the first is a wrong host, port or a stopped broker, the second is cre
 `Decoded, publish throttled` is different and normal: the reading was fine but was not
 published yet. Either nothing in it changed, or it arrived within `UPDATE_INTERVAL_SEC` of
 the last publish; `changed_key_count` on the line tells the two apart. A change is held,
-not dropped. It is published once that window has passed, within about ten seconds, with a
-line of its own: `Deferred change published to HA`, or
+not dropped. It is published at the first ten-second health tick after that window closes, so within about
+twenty seconds, with a line of its own: `Deferred change published to HA`, or
 `Deferred change NOT published -- broker unreachable`, which means the same as the broker
 line above.
 
@@ -445,6 +451,10 @@ Configuration page. Values stored by an older release are not updated by an upgr
 
 If the totals are inflated or were accumulated by a version before 2.6.7, set
 `RESET_ENERGY_COUNTERS` to `true`, restart the add-on once, then set it back to `false`.
+
+Restarting no longer costs you energy. Earlier releases dropped one reporting interval per
+counter on every restart; the integration clocks are now saved alongside the totals and resume
+within the same boot, which the startup `[CACHE] Energy clocks:` line reports.
 
 ### The log says [GRID DIRECTION CONFLICT]
 

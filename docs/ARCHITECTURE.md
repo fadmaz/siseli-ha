@@ -131,9 +131,9 @@ Consequences:
 
 **Isolation helper**: `helpers.isolated_state` (`tests/helpers.py:121-178`) saves and restores 20 module globals across `parsers.py` and `state.py`, including every once-logged flag — `TestEveryOnceFlagIsIsolated` fails on any `*_LOGGED` flag in either module it does not restore, and an autouse fixture in `tests/conftest.py` keeps every test out of `/data`. It does **not** cover `core.py` globals (`INV_MAC`, `KNOWN_*_MACS`, `LAST_PACKET_TS`, `DROPPED_NON_TARGET`), `state.RUNNING` or `state.DISCOVERY_CLEANED`; `test_core._CoreTestCase` (`tests/test_core.py:49-100`) restores those by hand. `BASE_ENV` (`:22-57`) is pinned to `config.yaml` by `tests/test_packaging.py:787-818` because `reload_config` (`:73`) reloads `config.py` in place and never restores it; `tests/test_packaging.py:645-649` records the order-dependent false pass that caused. `FakeMqttClient` (`:176`) records publishes, retained topics and the will.
 
-**Coverage**: 393 tests + 1387 subtests at 2.6.23, ~7 s. Measured 85 % overall and 75 % for `mqtt.py`+`core.py` against floors of 78 and 65 (`.github/workflows/ci.yml:53-54`); the "~2 points under" comment at `:50-51` is stale. `core.py` alone sits at 65 %, carried by `mqtt.py` at 94 %; nothing gates `core.py` individually.
+**Coverage**: 430 tests + 1411 subtests at 2.6.24, ~8 s. Measured 87 % overall and 81 % for `mqtt.py`+`core.py` against floors of 78 and 65 (`.github/workflows/ci.yml:53-54`); the "~2 points under" comment at `:50-51` is stale. `core.py` alone sits at 76 %, carried by `mqtt.py`; nothing gates `core.py` individually.
 
-**What only the smoke test proves**: the `__main__` body (`core.py:875-916`), `start_mqtt` (`mqtt.py:397-405`), and that the image starts at all. **What nothing proves**: the ARP send path (`core.py:172-207`, `:50-54`, always mocked at `tests/test_core.py:63-68`, disabled in smoke at `scripts/smoke-test.sh:39`); `SIGTERM -> shutdown` (`core.py:572-577` is only asserted callable at `tests/test_core.py:373-374`, and smoke tears down with `docker rm -f`, `scripts/smoke-test.sh:25`); the `health_logger` loop body (`core.py:712`); `run.sh` itself (entrypoint overridden at `scripts/smoke-test.sh:46`; only grepped by `tests/test_packaging.py:97-100`). One test is vacuous: `tests/test_core.py:309-314` patches `core.client` but `shutdown` publishes through `mqtt.py`'s own client (`core.py:798` -> `mqtt.py:179-181`), so the `except` at `core.py:536` never runs.
+**What only the smoke test proves**: the `__main__` body (`core.py:875-916`), `start_mqtt` (`mqtt.py:397-405`), and that the image starts at all. **What no automated test proves, though the 2026-09-20 hardware run now does**: the ARP send path (`core.py:172-207`, `:50-54`, always mocked at `tests/test_core.py:63-68`, disabled in smoke at `scripts/smoke-test.sh:39`); `SIGTERM -> shutdown` (`core.py:572-577` is only asserted callable at `tests/test_core.py:373-374`, and smoke tears down with `docker rm -f`, `scripts/smoke-test.sh:25`); the `health_logger` loop body (`core.py:712`); `run.sh` itself (entrypoint overridden at `scripts/smoke-test.sh:46`; only grepped by `tests/test_packaging.py:97-100`). One test is vacuous: `tests/test_core.py:309-314` patches `core.client` but `shutdown` publishes through `mqtt.py`'s own client (`core.py:798` -> `mqtt.py:179-181`), so the `except` at `core.py:536` never runs.
 
 **Source-as-data tests**: five tests parse source text rather than executing it and will fail on a purely stylistic rewrite: `tests/test_sensors.py:147-190` (regex over `parsers.py` for `state["key"] =`), `tests/test_core.py:577-600`, `tests/test_truthfulness.py:709-721`, `tests/test_packaging.py:285-305` (ci.yml -> check names), `tests/test_packaging.py:102-105` (`os.getenv("KEY"` literals).
 
@@ -188,14 +188,19 @@ Status: **FIXED in 2.6.20.** The health loop checks capture liveness every 10 s,
 dead sniffer in place, and after three consecutive failures restores ARP and exits non-zero.
 Kept here because the first attempt at the fix called `shutdown()` from the daemon health
 thread, where the interpreter killed it mid-restore — the reusable lesson is that a teardown
-which needs a second of wall time has to run on the main thread.
+which needs a second of wall time has to run on the main thread. First exercised on hardware on
+2026-09-20: 9 h of health ticks every 30 s with no gap, and a deliberate restart that printed
+`[ARP] Restored both peers to their real MAC addresses` then `[Bridge] Stopped`.
 Fix: have `health_logger` or the main loop check `sniffer.running` and either restart the sniffer or clear `RUNNING` so the container exits and Supervisor restarts it. The smoke test cannot catch this; its ready marker is the same log line (`scripts/smoke-test.sh:20`).
 
 **2. The `INVERTER_COUNT` scaling basis is unproven.**
 `_scale_main_power` (`parsers.py:1419`) multiplies load, mains and generation power by `INVERTER_COUNT` (`:1316`, `:1387`, `:1581`), the factor also enters grid import (`:863`) and the legacy battery current (`:744`, `:768`), and all of it feeds five monotonic kWh counters (`:772-778`) that persist across restarts (`:1974` -> `core.py:140`). Whether the inverter's blocks carry per-unit or system figures is recorded as the top open question in `captures/README.md:66-68` and `captures/2026-08-21_2341_discharging.md:108-122`, yet `DOCS.md:209` says "per-unit figures" flatly and `siseli_bridge/CHANGELOG.md:259` calls the 11 kW nameplate confirmed. The proposed 24-hour `c_generation_energy_kwh` vs `pv_today_kwh` ratio (`CHANGELOG.md:237`) cannot discriminate, because both derive from the same device's blocks (`parsers.py:1572-1581`, `:1187-1188`). The shipped default `INVERTER_COUNT: 1` (`config.yaml:38`) is unaffected, and the night-time efficiency figure (89.6 %) leans the code's way.
-Status: **open question — still open.** The docs no longer state the basis as fact (2.6.19); the
-question itself is unresolved and only a rating plate or a clamp meter settles it.
-Settle: a rating-plate photo or a clamp-meter reading on the maintainer's install at night with PV = 0; soften `DOCS.md:209` until then.
+Status: **settled on the maintainer's install (2026-09-20); open for any other device.** Over the
+three days after 2.6.24 the bridge credited 34.42 kWh of generation per inverter while the
+inverter's own lifetime PV counter rose 34.2 kWh — 0.6 % apart. A system-total basis would have
+left that counter near half, so this device's blocks carry per-unit figures. The docs stopped
+stating the basis as fact in 2.6.19 and can now say it plainly for this model.
+Settle elsewhere: the same lifetime-counter comparison on another install, or a rating-plate photo.
 
 **3. Battery-current guards reject anything over 300 A, below the BMS's own 390 A limit, and say nothing.**
 `parsers.py:1468` and `:1473` (2ONL) and `:1769`, `:1771` (Yavb) drop currents outside `0..300` with no log, while the same device reports `bms_charge_current_limit_a = 390` (`captures/2026-08-21_2341_discharging.md:27`). A rejected reading leaves its key absent, `[ENERGY SOURCE DISAGREEMENT]` fires only when *both* sources are present (`:743`), and `_battery_current` silently uses the survivor (`:765-768`), which on the reference install is the scaled inverter ammeter that the captures show disagreeing with the BMS by 1.6x to ~10x. If both are absent, charge/discharge power become 0 (`:837-846`) and `battery_status` reads `Idle` (`:795-800`). The only test of the guard uses 9999 A (`tests/captures.py:220`, `tests/test_truthfulness.py:299-304`).
@@ -207,17 +212,24 @@ Fix: raise the bound to a physical ceiling or the device's declared limit, and l
 `mqtt.py:322-323` uses `connect_async` + `loop_start`; paho 1.6.1 (`requirements.txt:1`) retries forever and reports connect failure only through `on_connect_fail` or `on_log`, which nothing in `src/` sets. `on_connect` (`:288`) needs a CONNACK, so the `rc != 0` branch at `:302` covers bad credentials only. `parse_payload`'s "Published to HA" line (`parsers.py:1955`) sits outside the `DISCOVERY_PUBLISHED` gate (`:1987`), so it prints when nothing was published; `health_logger` prints no client state (`core.py:512`); `DOCS.md:322-323` tells the user a failed connection means wrong credentials.
 Status: **FIXED in 2.6.21.** `on_connect_fail` is registered, `publish_grouped_state`
 returns whether the broker accepted the publish, the per-payload line reports which of
-three things happened, and the health line opens with `broker=up`/`broker=DOWN`.
+three things happened, and the health line opens with `broker=up`/`broker=DOWN`. Confirmed on
+hardware (2026-09-20): 1094 consecutive health lines read `broker=up; avail=online`.
 Fix: register `on_connect_fail`, print `client.is_connected()` in the `[HEALTH]` line, and gate the "Published" line on an actual publish.
 
 **5. Grid import has never been captured non-zero, and its label and integrator consult different sources.**
 Import is integrated only when WdRR[6] is positive (`parsers.py:946`) and feeds a monotonic `total_increasing` counter (`:974-976`, `sensors.py:73`); every recorded token is `+00000` (`captures/README.md:49`, `captures/2026-08-21_1341_charging.md:347`), yet the reference install carries 56 kWh of import (`captures/2026-08-21_1341_charging.md:114`). Git shows the `> 0` rule unchanged since the counter was introduced (`2d8b3e6`), so the token has been positive at some point, presumably below the 35 % return-to-mains SOC (`captures/2026-08-21_1341_charging.md:68`) that neither capture reached. The direction label is decided by a single-digit flow code before the sign is read (`:1638-1652`; a two-digit code such as `01` falls through to the sign): running the parser with token `-01500` and code `0` yields "Mains To Inverter" and 0 W, so label and integrator can contradict.
 Status: **detected and logged in 2.6.23; the rule itself is still open.** `_grid_direction_conflicts` compares the sign with the direction the flow code states — one digit or two, via `_flow_code_direction` — or with the published label when there is no usable code, and logs `[GRID DIRECTION CONFLICT]` once with both raw tokens. Crediting is deliberately unchanged: making the integrator follow the label was designed and then rejected in review, because the reference install has credited 56 kWh of import from positive tokens whose flow code was never recorded — a rule that trusts the code could silently flatten a counter that was right. The sign convention and codes 1/2 remain unverified.
+Three days of 2.6.23 and 2.6.24 on the reference install logged no conflict, because it stayed off
+grid the whole time; that settles nothing either way.
 Settle: the first logged conflict on a real install, or the reference install's Home Assistant history (what "Mains Current Flow Direction" read when "Grid Import Energy" last rose), then choose one source for both.
 
 **6. A pinned `SNIFF_IFACE` on a dual-homed host stamps ARP replies and forwarded frames with the wrong MAC.**
 `core.py:202-203` builds `Ether(dst)/ARP(op=2, ...)` with no `hwsrc` and no `Ether.src`; forwarded frames at `:322`, `:342`, `:357` likewise; `send_layer2` (`:50-54`) passes `iface` only to `sendp`, which selects the send socket and rewrites nothing. scapy fills the source fields from the interface its routing table picks for the *destination IP*, not from `iface`; executing the exact frame from `:202` confirms it. `DOCS.md:101` and `:328` recommend pinning `SNIFF_IFACE` precisely on hosts where capture is not seeing traffic, i.e. multi-homed ones. No test sends an unmocked frame (`tests/test_core.py:63-68`) and smoke runs `AUTO_INTERCEPT=false`.
-Status: **FIXED in 2.6.24**, but the end-to-end effect on a real dual-homed host is still unverified. Every ARP reply and forwarded frame now carries `Ether.src` (and the poisoning replies ARP `hwsrc`) from `resolve_own_mac`, which treats scapy's all-zero answer as unresolved; unresolved sends byte-identical frames to before. The who-has lookups scapy's getmacbyip makes while INVERTER_MAC or ROUTER_MAC is blank still leave by the routed interface, with its MAC. `restore_arp` uses the cached MAC because it runs in a signal handler. `ArpSpoofer.report_source_mac` logs the MAC used next to `route_mac_for`'s answer and warns when they differ — that line is the on-host evidence.
+Status: **FIXED in 2.6.24**, and the no-op half is confirmed on hardware (2026-09-20): on the
+single-interface reference install, with `SNIFF_IFACE` blank, the plain `[ARP] Frames are sent
+from 2c:cf:67:6e:cb:14 on end0` line printed with no warning, the vendor app stayed live for
+three days, and the health line never showed a second MAC per role. The warning branch and the
+dual-homed case a pinned `SNIFF_IFACE` creates remain unexercised outside the in-memory harness. Every ARP reply and forwarded frame now carries `Ether.src` (and the poisoning replies ARP `hwsrc`) from `resolve_own_mac`, which treats scapy's all-zero answer as unresolved; unresolved sends byte-identical frames to before. The who-has lookups scapy's getmacbyip makes while INVERTER_MAC or ROUTER_MAC is blank still leave by the routed interface, with its MAC. `restore_arp` uses the cached MAC because it runs in a signal handler. `ArpSpoofer.report_source_mac` logs the MAC used next to `route_mac_for`'s answer and warns when they differ — that line is the on-host evidence.
 Fix: set `hwsrc` and `Ether.src` explicitly from `resolve_own_mac()` (`:151`), which already reads `SNIFF_IFACE`'s MAC for the own-frame guard (`:291-292`).
 
 **7. The unsupported-protocol diagnostic mis-triages an ASCII device as binary (issue #32).**
@@ -243,7 +255,10 @@ Status: **restart loss fixed in 2.6.24; the failing-write half is still open.** 
 `restore_energy_clocks` resumes a domain only in the same boot and only with its counters. The
 first interval after a restart is checked where it closes: past `_energy_max_dt` it starts a new
 baseline rather than being clamped. A reboot, an unreadable boot id or a reset still drops one
-interval, as before. Still open: a failing cache write keeps publishing, so the broker and
+interval, as before. Confirmed on hardware (2026-09-20): a restart logged `resumed (258s old)` for
+all four domains and the next payload credited 0.525 kWh — generation, battery charge and load
+each within 0.3 % of power x time over the 301 s gap — where 2.6.23's restart four days earlier
+had credited nothing. Still open: a failing cache write keeps publishing, so the broker and
 `/data/state.json` can diverge until a write succeeds. The lesson: a clock and the total it gates
 must be saved as one record, or a restart double-counts the gap between them.
 Fix: persist the per-domain clocks next to the snapshot and clamp `dt` on restore with the existing `_energy_max_dt` (`:712-727`).
