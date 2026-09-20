@@ -24,7 +24,15 @@ from src.siseli_bridge import mqtt as mqtt_mod
 from src.siseli_bridge import parsers as parser_module
 from src.siseli_bridge import state as shared_state
 from tests.captures import CAPTURE_TELEMETRY
-from tests.helpers import FakeMqttClient, envelope, inverter_packet, isolated_state, publish_packet, tcp_segments
+from tests.helpers import (
+    FakeMqttClient,
+    envelope,
+    inverter_packet,
+    isolated_state,
+    patched_env,
+    publish_packet,
+    tcp_segments,
+)
 
 INV_IP = "192.168.1.139"
 RTR_IP = "192.168.1.1"
@@ -522,13 +530,24 @@ class TestShutdown(_CoreTestCase):
 class TestSignalHandlerInstallation(unittest.TestCase):
     def test_importing_core_does_not_install_handlers(self):
         """Module-level signal.signal() made core.py untestable: it hijacked the
-        test runner's SIGINT and raised ValueError off the main thread."""
+        test runner's SIGINT and raised ValueError off the main thread.
+
+        The reload runs under BASE_ENV, and reloads config.py first, because
+        `from .config import *` rebinds every option on core from whatever config.py
+        holds at that moment. test_config.py leaves it reloaded under its own
+        overrides, so an unguarded reload here handed core UPDATE_INTERVAL_SEC=700
+        for the rest of the session -- invisible, because the tests that care patch
+        the constants they read. test_device_a_golden.py found it by refusing to run
+        against a configuration that is not the shipped one."""
+        import importlib
         import signal
 
-        before = signal.getsignal(signal.SIGINT)
-        import importlib
+        import src.siseli_bridge.config as cfg
 
-        importlib.reload(core)
+        before = signal.getsignal(signal.SIGINT)
+        with patched_env():
+            importlib.reload(cfg)
+            importlib.reload(core)
         self.assertIs(signal.getsignal(signal.SIGINT), before)
 
     def test_install_signal_handlers_is_callable(self):

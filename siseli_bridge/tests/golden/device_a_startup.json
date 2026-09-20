@@ -1,0 +1,1839 @@
+{
+ "recorded_with": {
+  "mqtt.DEVICE_ID": "siseli_inverter_1",
+  "mqtt.DEVICE_NAME": "Siseli Inverter 1",
+  "mqtt.MANUFACTURER": "Siseli Compatible",
+  "mqtt.MODEL_NAME": "Siseli Inverter 1",
+  "mqtt.ENTITY_PREFIX": "Siseli",
+  "mqtt.STATE_TOPIC": "siseli/siseli_inverter_1/state",
+  "mqtt.AVAILABILITY_TOPIC": "siseli/siseli_inverter_1/availability",
+  "mqtt.MQTT_DISCOVERY_PREFIX": "homeassistant",
+  "mqtt.MQTT_RETAIN": true,
+  "mqtt.MQTT_HOST": "core-mosquitto",
+  "mqtt.MQTT_PORT": 1883,
+  "mqtt.INVERTER_IP": "192.168.1.139",
+  "mqtt.ROUTER_IP": "192.168.1.1",
+  "mqtt.TARGET_HOST": "8.212.18.157",
+  "mqtt.TARGET_PORT": 1883,
+  "mqtt.AUTO_INTERCEPT": true,
+  "mqtt.FORWARD_ALL_INVERTER_TRAFFIC": false,
+  "mqtt.SNIFF_IFACE": null,
+  "mqtt.INVERTER_COUNT": 1,
+  "mqtt.BATTERY_COUNT": 1,
+  "mqtt.BATTERY_CAPACITY_PER_BATTERY_AH": 0.0,
+  "mqtt.UPDATE_INTERVAL_SEC": 10,
+  "mqtt.EXPIRE_AFTER_SEC": 1800,
+  "mqtt.TELEMETRY_TIMEOUT_SEC": 1800,
+  "mqtt.DISCOVERY_CLEANUP": true,
+  "mqtt.RESET_ENERGY_COUNTERS": false,
+  "mqtt.STATE_CACHE_INTERVAL_SEC": 30,
+  "mqtt.LOG_LEVEL_STR": "info",
+  "mqtt.LOG_VERBOSE": false,
+  "mqtt.ACTIVE_DEBUG_FLAGS": "()",
+  "parsers.INVERTER_COUNT": 1,
+  "parsers.BATTERY_COUNT": 1,
+  "parsers.BATTERY_CAPACITY_PER_BATTERY_AH": 0.0,
+  "parsers.UPDATE_INTERVAL_SEC": 10,
+  "parsers.EXPIRE_AFTER_SEC": 1800,
+  "parsers.STATE_CACHE_INTERVAL_SEC": 30,
+  "core.DEVICE_ID": "siseli_inverter_1",
+  "core.DEVICE_NAME": "Siseli Inverter 1",
+  "core.MANUFACTURER": "Siseli Compatible",
+  "core.MODEL_NAME": "Siseli Inverter 1",
+  "core.ENTITY_PREFIX": "Siseli",
+  "core.STATE_TOPIC": "siseli/siseli_inverter_1/state",
+  "core.AVAILABILITY_TOPIC": "siseli/siseli_inverter_1/availability",
+  "core.MQTT_DISCOVERY_PREFIX": "homeassistant",
+  "core.MQTT_RETAIN": true,
+  "core.MQTT_HOST": "core-mosquitto",
+  "core.MQTT_PORT": 1883,
+  "core.INVERTER_IP": "192.168.1.139",
+  "core.ROUTER_IP": "192.168.1.1",
+  "core.TARGET_HOST": "8.212.18.157",
+  "core.TARGET_PORT": 1883,
+  "core.AUTO_INTERCEPT": true,
+  "core.FORWARD_ALL_INVERTER_TRAFFIC": false,
+  "core.SNIFF_IFACE": null,
+  "core.INVERTER_COUNT": 1,
+  "core.BATTERY_COUNT": 1,
+  "core.BATTERY_CAPACITY_PER_BATTERY_AH": 0.0,
+  "core.UPDATE_INTERVAL_SEC": 10,
+  "core.EXPIRE_AFTER_SEC": 1800,
+  "core.TELEMETRY_TIMEOUT_SEC": 1800,
+  "core.DISCOVERY_CLEANUP": true,
+  "core.RESET_ENERGY_COUNTERS": false,
+  "core.STATE_CACHE_INTERVAL_SEC": 30,
+  "core.LOG_LEVEL_STR": "info",
+  "core.LOG_VERBOSE": false,
+  "core.ACTIVE_DEBUG_FLAGS": "()",
+  "loggers.CURRENT_LOG_LEVEL": "info"
+ },
+ "runs": {
+  "f_first_start": {
+   "published": [
+    "<1248 cleared topics>\tsha256:a79274cd412ced27bc9ad40cd9368d85\tfirst=homeassistant/sensor/siseli_inverter_1/abnormal_fan_speed/config\tlast=siseli/siseli_inverter_1/pv/availability",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/abnormal_fan_speed/config\t1\t0\tsha256:4375621486ec850d3136ad9ab87df0fc",
+    "homeassistant/sensor/siseli_inverter_1_pv/abnormal_low_pv_power/config\t1\t0\tsha256:240723ad1fc5b234a8e27bc3b23c76a2",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/abnormal_temperature_sensor/config\t1\t0\tsha256:14bbec3813dd19923c300bef3e94a997",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/ac_charging_switch/config\t1\t0\tsha256:a9d414e24e73bd1ed46f414976c3be60",
+    "homeassistant/sensor/siseli_inverter_1_load/apparent_va/config\t1\t0\tsha256:1ecff9a3dcf85285f359b2c2ae643feb",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/automatic_return_to_first_page/config\t1\t0\tsha256:a427ad5b922ffdfa89fd2fd95804fccb",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_cap/config\t1\t0\tsha256:02ffc78f5f268ac5f3b9ce8befb66713",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_charge_current/config\t1\t0\tsha256:5e83e2af6f0f3f59ed3153c1a4cc7a2e",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_series_count/config\t1\t0\tsha256:fa51a58b232ba26c843c9a9b388ab34c",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bat_temp/config\t1\t0\tsha256:7d0ab25502e532956e8fa6b1a8619ec3",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_v/config\t1\t0\tsha256:10d288350e982f4945423a9ca056f7be",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_equalization_mode/config\t1\t0\tsha256:4aa5457cc9b41606491824753c3b7363",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_equalization_voltage_v/config\t1\t0\tsha256:a35ed20dd3ab3866f5b748bf9b3e3fce",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_not_connected/config\t1\t0\tsha256:08defd2e975a25a8c1ace4a07e3a5e22",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_overvoltage_shutdown_voltage_v/config\t1\t0\tsha256:fb994c25339fe7032a783abb3cf56421",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_status/config\t1\t0\tsha256:12722f64a18886e9394d152873ec0065",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_type/config\t1\t0\tsha256:6553a0b5ca734a9bd0300f46154f46cb",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_voltage_higher/config\t1\t0\tsha256:e71f35830f2b849aa9c3cd7a94af3726",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_allow_charging_flag/config\t1\t0\tsha256:547d98573bf4ac828d71f06cc0e3bd66",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_allow_discharge_flag/config\t1\t0\tsha256:02eced73ef2821421f34114d5e949a61",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_auto_start_soc_after_low/config\t1\t0\tsha256:9f8ba83c6ae38f66934bf0b7066071e2",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_avg_temp_c/config\t1\t0\tsha256:d2f9d59b65c404d163d4edfed5355a22",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_cell_count/config\t1\t0\tsha256:d76b13855302f858881fe5ca58a0b5a1",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_cell_delta_mv/config\t1\t0\tsha256:9b4d41713482b3f74827ec1b92cb27e5",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charge_current_limit_a/config\t1\t0\tsha256:c0edff473c5dc1747d6396f2914cfafd",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charge_voltage_limit_v/config\t1\t0\tsha256:3cef35f8837ce816cdf69fc1340040f4",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charging_current_a/config\t1\t0\tsha256:243ee0b1c382da0a8b6eb215bb3bf331",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charging_overcurrent_sign/config\t1\t0\tsha256:fa20db38178f841df0b5209750141a32",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_communication_control_function/config\t1\t0\tsha256:1d70d0f8e9858f07445286d135e34f84",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_communication_normal/config\t1\t0\tsha256:e96504333946f577f9a8e58d80b3d43d",
+    "homeassistant/sensor/siseli_inverter_1/bms_current_soc/config\t1\t0\tsha256:d518a922fc27a8b00557a0de808dd207",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_current_a/config\t1\t0\tsha256:4efd3ec38455972f8afd2a5f9bbcc6be",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_overcurrent_flag/config\t1\t0\tsha256:11e4cea720f2aa68146ac63eb40b3ed7",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_voltage_limit_v/config\t1\t0\tsha256:41aab42f5a5f83401bfbe287444a512b",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_display_mode/config\t1\t0\tsha256:9d017697e22b349e64e83e92f59ebf4b",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_battery_alarm_flag/config\t1\t0\tsha256:bdc97a02c9719bfb401c2be05833b2d0",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_power_fault_flag/config\t1\t0\tsha256:120bb3b0c16094929f9a40b51b8b2421",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_power_soc/config\t1\t0\tsha256:55b5cc5d3a570de8f02e0e2c049d2632",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_temperature_flag/config\t1\t0\tsha256:60767e04240678fc23bb4f1cf9b5545b",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_max_cell_mv/config\t1\t0\tsha256:c643d3a892762206bfb37651b1bc2113",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_max_cell_pos/config\t1\t0\tsha256:fb332efb1ea545859fc08202fb2186e2",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_min_cell_mv/config\t1\t0\tsha256:ea3aae646594be4eb914fceab022f676",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_min_cell_pos/config\t1\t0\tsha256:4982e783540e947243b6262cb91d2bc4",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_nominal_ah/config\t1\t0\tsha256:99061f355f1bc0703d968f6b60e1444e",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_remaining_ah/config\t1\t0\tsha256:7832ffbfdb8129c0918ae29630050766",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_returns_to_battery_mode_soc/config\t1\t0\tsha256:1a9d471e81d058e453e80a99d61199db",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_returns_to_mains_mode_soc/config\t1\t0\tsha256:0ee0c5ce5ffc11c8cc47b1d4c12d3595",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_temperature_too_high_flag/config\t1\t0\tsha256:7bce5b94ae4e942ece0d88e081d05837",
+    "homeassistant/sensor/siseli_inverter_1_battery/boost_temperature_c/config\t1\t0\tsha256:c4dba477e5a7feadf64ecea780f9c5dd",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bulk_v/config\t1\t0\tsha256:32f40044f6856939470951d0642e6b00",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bus_voltage/config\t1\t0\tsha256:82d349d865183373e85eeeb3816aca93",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/buzzer_function/config\t1\t0\tsha256:7fc3057a06981b175f28dc975abf6b7b",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_charge_energy_kwh/config\t1\t0\tsha256:47f21814a8b079991bb28b36637c0649",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_charge_power_w/config\t1\t0\tsha256:89ec332810f7d739c1765abe411d9223",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_discharge_energy_kwh/config\t1\t0\tsha256:f7689636186712635ec9e41be36868fb",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_discharge_power_w/config\t1\t0\tsha256:0924be055a72fa396284e8409dd010d2",
+    "homeassistant/sensor/siseli_inverter_1/c_bms_total_capacity_ah/config\t1\t0\tsha256:ab4f5db1a7c8b50694fb015e1df0153b",
+    "homeassistant/sensor/siseli_inverter_1/c_generation_energy_kwh/config\t1\t0\tsha256:cc0b0846a08425fc451df96287226312",
+    "homeassistant/sensor/siseli_inverter_1/c_generation_power_w/config\t1\t0\tsha256:a0ae963221dd8672d2550d1ab64f353d",
+    "homeassistant/sensor/siseli_inverter_1/c_grid_import_energy_kwh/config\t1\t0\tsha256:82d5eeaa5e724d88436c845ddbd121a4",
+    "homeassistant/sensor/siseli_inverter_1/c_grid_import_power_w/config\t1\t0\tsha256:bfa799b3fe96d24745bcedaa6fa564d0",
+    "homeassistant/sensor/siseli_inverter_1/c_load_energy_kwh/config\t1\t0\tsha256:3f76cd6d47548c7aea4a8844dababa7f",
+    "homeassistant/sensor/siseli_inverter_1/c_load_w/config\t1\t0\tsha256:45b28d6af806fe002123909581fc8b17",
+    "homeassistant/sensor/siseli_inverter_1/c_mains_power_w/config\t1\t0\tsha256:b2a6c8ee8139baf3ce4a4fc9690265b5",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_10_mv/config\t1\t0\tsha256:479e3b8e234450946f14d90b6f657486",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_11_mv/config\t1\t0\tsha256:44c23d28b3e541ae3ef352ecb43dbc22",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_12_mv/config\t1\t0\tsha256:dc7028a55e28cb0d017e8ea8ac6e0736",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_13_mv/config\t1\t0\tsha256:525f3bd72bab7af1e0f373522c0ff5fa",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_14_mv/config\t1\t0\tsha256:f59262d7a8626616b13d882bc5dde54a",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_15_mv/config\t1\t0\tsha256:081ab5f4c6b2acdbc1755226b6fe9673",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_16_mv/config\t1\t0\tsha256:038098cb2de38ec84f2167002d551af6",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_1_mv/config\t1\t0\tsha256:d7eaef1d43718baca32aee90e0097e14",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_2_mv/config\t1\t0\tsha256:fd2709d9213733dc3e2b12ee12c1a614",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_3_mv/config\t1\t0\tsha256:10a1984f7ffb1044a5a19431e8195222",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_4_mv/config\t1\t0\tsha256:79f930f14cc3c80cbf4704b88bcc3987",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_5_mv/config\t1\t0\tsha256:67734f358f02770e54b1aa4605c33614",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_6_mv/config\t1\t0\tsha256:5d41c795dbbc86653556f3250991744c",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_7_mv/config\t1\t0\tsha256:a9d640fa52ee05f3fd4672128565b485",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_8_mv/config\t1\t0\tsha256:31dce604db9427a6a4a3fb74f6329025",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_9_mv/config\t1\t0\tsha256:47665542b410bf8d8b97e5ce02648fd2",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_light_status/config\t1\t0\tsha256:ac49ad089b7d1c48982b7543084da0bf",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_main_switch/config\t1\t0\tsha256:2e3665f85e60be8cd38a2123db9d5dc8",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_priority_order/config\t1\t0\tsha256:a1310a419671c6bb1f698f61c85f7e79",
+    "homeassistant/sensor/siseli_inverter_1_grid/ct_function_switch/config\t1\t0\tsha256:829aa0449339e79ccc64e3787f39cbd1",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/cut_v/config\t1\t0\tsha256:cff195350c15ced5d49e9bc132fcda66",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/dc_rectification_temperature_c/config\t1\t0\tsha256:1e7662631597d69629e45d38931b518a",
+    "homeassistant/sensor/siseli_inverter_1_battery/dischg_current/config\t1\t0\tsha256:7bbb6b8214932737a92504520ab7b130",
+    "homeassistant/sensor/siseli_inverter_1_load/does_machine_have_output/config\t1\t0\tsha256:01c3210fc393a0e96e6f2a9924385dcc",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/dtu_id/config\t1\t0\tsha256:4c46ccf33c49e87f2ad021afbff1f0bf",
+    "homeassistant/sensor/siseli_inverter_1_load/dual_output_mode/config\t1\t0\tsha256:f7daac8a27ab452d6e38242ba4459691",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eco/config\t1\t0\tsha256:a6bea9b9ed9a69d82629b697ee4afb8e",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eeprom_data_abnormality/config\t1\t0\tsha256:2722ea259af94cdf2f193ca03d78ae02",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eeprom_read_write_exception/config\t1\t0\tsha256:03f00899afc6d1b5fe715e2baed5532b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eo8w_blob_raw/config\t1\t0\tsha256:573ff8642f0285a2801f92310740327b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eo8w_flags_raw/config\t1\t0\tsha256:143e975c5d6c9b04e7576e17b75c5137",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_interval/config\t1\t0\tsha256:80a4b5e4e633f53fd8e81939c0589c5b",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_overtime/config\t1\t0\tsha256:4973ba5a6ce7c555e113cee37b98ee4c",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_time/config\t1\t0\tsha256:e105ab674b9d5a8012453b8482679da6",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_1_speed/config\t1\t0\tsha256:428fc6a655e19acd93915b041d4c4784",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_1_status/config\t1\t0\tsha256:f7cc72755c63a424b24120bf43be5802",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_2_speed/config\t1\t0\tsha256:a3243425228062e940fa1255a6fb3bfb",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_2_status/config\t1\t0\tsha256:f25d1279270dde7717415508550a39da",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_build_date/config\t1\t0\tsha256:44a091feb193add586c46bb3d619066c",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_build_slot/config\t1\t0\tsha256:7f0602616ebc52f4b517599218bf8a2d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_info/config\t1\t0\tsha256:fbacdf80bf02bc970b387be838d9a091",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_version/config\t1\t0\tsha256:5a0cb46e9aaa89a5fc3f11377031479d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/float_charging_voltage_v/config\t1\t0\tsha256:669bc473bad59ca1e45da4e3e440c7e9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/float_v/config\t1\t0\tsha256:2b982c2bd0eca78c625d9c35c7b6eb07",
+    "homeassistant/sensor/siseli_inverter_1_pv/generation_power_w/config\t1\t0\tsha256:cb575a745947dd68231121a0bb4a57e1",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connected_current_a/config\t1\t0\tsha256:c81499da59c4c6b9541c0b3aa6bb5024",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connection_function/config\t1\t0\tsha256:b3d8020b9bae6df0036cebcdb5ebe927",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connection_sign/config\t1\t0\tsha256:fa27c6b1720aebd1cc56aff7187acd9f",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_hz/config\t1\t0\tsha256:75415edfaa9d3867c81166e62d41c94f",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_v/config\t1\t0\tsha256:5a3c1fc087c7800d1361aa15a98deed7",
+    "homeassistant/sensor/siseli_inverter_1_grid/high_frequency_of_mains_power_loss_hz/config\t1\t0\tsha256:69a7fa7c5bf87876528a1f8903a102b0",
+    "homeassistant/sensor/siseli_inverter_1_grid/high_point_of_mains_power_loss_voltage_v/config\t1\t0\tsha256:0942142d15b6c0d31ab6dba231abfbd4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/inductor_current_a/config\t1\t0\tsha256:10752d6ea033dfa1b840ad6f90017380",
+    "homeassistant/sensor/siseli_inverter_1_grid/input_source_prompt_function/config\t1\t0\tsha256:42cbe41f67588fc83a6af5c2e7624df9",
+    "homeassistant/sensor/siseli_inverter_1_grid/input_voltage_too_high/config\t1\t0\tsha256:40f95cefa7f0d6844be858c00dca3252",
+    "homeassistant/sensor/siseli_inverter_1_load/inverter_light_status/config\t1\t0\tsha256:ac7905bcd12c33c5e88445fb720e23a7",
+    "homeassistant/sensor/siseli_inverter_1_load/inverter_temperature_c/config\t1\t0\tsha256:79ed41dd402e5d257432197bf5c60191",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/lcd_back_lighting/config\t1\t0\tsha256:666a2082d2dfda0827b489557ebe1ca6",
+    "homeassistant/sensor/siseli_inverter_1_battery/li_battery_activation_function_switch/config\t1\t0\tsha256:c836eaeb482b8e958f649c60d3bf21eb",
+    "homeassistant/sensor/siseli_inverter_1_battery/li_battery_activation_process/config\t1\t0\tsha256:aed40e713c578163e09bb04f02244e78",
+    "homeassistant/sensor/siseli_inverter_1_load/load_pct/config\t1\t0\tsha256:f7e02985db553d3a60dda10040337108",
+    "homeassistant/sensor/siseli_inverter_1_load/load_w/config\t1\t0\tsha256:88db848571de998ce97ffeab2cf2cf2d",
+    "homeassistant/sensor/siseli_inverter_1_battery/low_battery_alarm/config\t1\t0\tsha256:c5a5641277c97d100d17637d7f320520",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/low_electric_lock_voltage_v/config\t1\t0\tsha256:8eeb41886267f18220cd97feb577b1a6",
+    "homeassistant/sensor/siseli_inverter_1_grid/low_frequency_of_mains_power_loss_hz/config\t1\t0\tsha256:d700fa7c50513296a6256ec69cc65e18",
+    "homeassistant/sensor/siseli_inverter_1_grid/low_point_of_mains_power_loss_voltage_v/config\t1\t0\tsha256:6f3eed171b5f2c969fc94888d3897de9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/machine_over_temperature/config\t1\t0\tsha256:abb797588448537355c8313fafdc1938",
+    "homeassistant/sensor/siseli_inverter_1_grid/main_output_relay_status/config\t1\t0\tsha256:b937904c0e2072d0a591383dfe36c1be",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_apparent_va/config\t1\t0\tsha256:37a2bdf215578fee10852f3c16a3f8b0",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_charging_ending_time/config\t1\t0\tsha256:22434e2fa55341f6f2c3514716c13f4c",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_charging_starting_time/config\t1\t0\tsha256:337a8504544f614bc6d5f297a4e45afb",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_current_flow_direction/config\t1\t0\tsha256:95ca7aa2d069adf82fea902475669c88",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_eo8w_code/config\t1\t0\tsha256:33c27549a953d20d4a1670bf73f0ae51",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_flow_code/config\t1\t0\tsha256:7fdf61221bfae2cda1a7d4c7b329009e",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_flow_state/config\t1\t0\tsha256:38f706626bdead7aba30f553131d3442",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_input_range/config\t1\t0\tsha256:d618e9efa27648e89ca816efeebb7297",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_input_range_code/config\t1\t0\tsha256:ecef4da5e92f444089b6eb7360335f78",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_light_status/config\t1\t0\tsha256:015c96248b5580e4cd5b38fe8ebae9f5",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_power_w/config\t1\t0\tsha256:593f9628c20f54d6b8f3de5f5282e737",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_abs/config\t1\t0\tsha256:ce94dfc537efc0d1718adda180cf629f",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_token/config\t1\t0\tsha256:4a9039dc2099a0e566fa2d6600238ed2",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_value/config\t1\t0\tsha256:2257b116f0dee7a0724ba3cf7861884b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/max_chg/config\t1\t0\tsha256:4c023aae4ca4cd0117a9289e735e11d4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/max_temperature_c/config\t1\t0\tsha256:ebee54a31a26c14430fca616c243f537",
+    "homeassistant/sensor/siseli_inverter_1_battery/max_utility_charge_current_a/config\t1\t0\tsha256:bdaac56c90dfaeed6c59949c827d63af",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/maximum_total_charging_current_a/config\t1\t0\tsha256:42c805bd83a4fd93eb1c4e01ff80f12b",
+    "homeassistant/sensor/siseli_inverter_1/mode/config\t1\t0\tsha256:bb9c1a66470acd6f1a157f42afa383ce",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/model_code/config\t1\t0\tsha256:a3f38e2ea0d7819150a57e6686931d86",
+    "homeassistant/sensor/siseli_inverter_1_pv/mppt_constant_temperature_mode/config\t1\t0\tsha256:491bbf7183a13bcbd4e745064e116bfe",
+    "homeassistant/sensor/siseli_inverter_1_load/out_hz/config\t1\t0\tsha256:d1a90595b335d589be97d5d9b5310577",
+    "homeassistant/sensor/siseli_inverter_1_load/out_v/config\t1\t0\tsha256:49432a52e9f1a6ecaac04c3acfb3526a",
+    "homeassistant/sensor/siseli_inverter_1_load/output_dc_comp/config\t1\t0\tsha256:359358b44bcf1db11b8fffa825fa46ab",
+    "homeassistant/sensor/siseli_inverter_1_load/output_ending_time/config\t1\t0\tsha256:eea5cec8a5c8b13d18a448f6007b01c4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/output_model/config\t1\t0\tsha256:51d62a3798134c510ca5300749708781",
+    "homeassistant/sensor/siseli_inverter_1_load/output_set_frequency/config\t1\t0\tsha256:35964a09ba5595f70b989f263fd18f87",
+    "homeassistant/sensor/siseli_inverter_1_load/output_set_voltage/config\t1\t0\tsha256:b82c89489cab9b9f0a4c9780afe7aa3b",
+    "homeassistant/sensor/siseli_inverter_1_load/output_starting_time/config\t1\t0\tsha256:23452b719573e77e97efd844c63f4537",
+    "homeassistant/sensor/siseli_inverter_1_load/output_status_bits/config\t1\t0\tsha256:10bc7add48b4b82903b5a29bca7018c6",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/over_temperature_restart_function/config\t1\t0\tsha256:ac28e9dedb093631bc3ebbb8fdf5f046",
+    "homeassistant/sensor/siseli_inverter_1_load/overload_restart_function/config\t1\t0\tsha256:178fb23cee639da3dd187bc9cecc7749",
+    "homeassistant/sensor/siseli_inverter_1_load/overload_to_bypass_function/config\t1\t0\tsha256:594ef569ac79d675955e8b13500d12d1",
+    "homeassistant/sensor/siseli_inverter_1_load/overloaded/config\t1\t0\tsha256:a0fa9f81185940f1234c537256ec14c5",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_mode/config\t1\t0\tsha256:5ecb69a951755fa805474befb975add2",
+    "homeassistant/sensor/siseli_inverter_1_battery/parallel_mode_turn_off_soc/config\t1\t0\tsha256:11f86e3a7898de489576de43acf78026",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_mode_turn_off_voltage_v/config\t1\t0\tsha256:4165c3292a21a3d0331073f32e97df33",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_role/config\t1\t0\tsha256:54f892f18d4b5b0c75e2c85baec6e085",
+    "homeassistant/sensor/siseli_inverter_1_pv/power_supply_from_pv_to_load_in_ac_state/config\t1\t0\tsha256:8b611e8fad67cf866d4ee07fbafd2d42",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_current_a/config\t1\t0\tsha256:a33977f33bae08dc82a302dfd1e4532d",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_power_w/config\t1\t0\tsha256:fdc9491ed5e9ec85e6273efce3aa57fd",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_temp/config\t1\t0\tsha256:c88e89e7e6b66a6d931a29f9e3eea1e8",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_v/config\t1\t0\tsha256:ad81c348ca40acb0768f1e799a98f1b1",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_current_a/config\t1\t0\tsha256:f10b541f71d7df1cb788a89c8d8cfead",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_energy_feeding_priority/config\t1\t0\tsha256:f6828d9ab982be7ab9c687a13864fcfe",
+    "homeassistant/sensor/siseli_inverter_1_grid/pv_grid_connection_agreement/config\t1\t0\tsha256:c76a5aae6f386028a2621ae594f3d696",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_month_kwh/config\t1\t0\tsha256:cf2764211ddf3929b37fadbcd336a880",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_temp/config\t1\t0\tsha256:66b0dbd2b5e589907150495086631b62",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_today_kwh/config\t1\t0\tsha256:44eff6cab4576e79bfa88403670280ea",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_total_kwh/config\t1\t0\tsha256:c6813876163545f29242dc91db883388",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_v/config\t1\t0\tsha256:e4bf1ca815785fe1fdd853548775b852",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_w/config\t1\t0\tsha256:a9e20d9ec4b48307715fe9d238a78b37",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_year_kwh/config\t1\t0\tsha256:023f8f33d2f146fd9ba01f225d2995e9",
+    "homeassistant/sensor/siseli_inverter_1_load/rated_apparent_va/config\t1\t0\tsha256:08373f601679ab7f5fc93b48a7b247fc",
+    "homeassistant/sensor/siseli_inverter_1_battery/return_to_battery_mode_voltage_v/config\t1\t0\tsha256:100f913643b4213f6ac575673ebcec06",
+    "homeassistant/sensor/siseli_inverter_1_grid/return_to_mains_mode_voltage_v/config\t1\t0\tsha256:cc143a0fd95442dd9f01b98c8baf4a90",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/second_delay_time/config\t1\t0\tsha256:0491388fa7d7f7245df63ddcfe814bcd",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_battery_capacity/config\t1\t0\tsha256:d9a13383a3ce709d7fb714c5ac6cbb78",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_battery_voltage_v/config\t1\t0\tsha256:eb501b26542a5b48731701d01a128781",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_discharge_time/config\t1\t0\tsha256:0a7ca27b18fc099ce988c25935397156",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/software_version/config\t1\t0\tsha256:89ce5cc744bec5773219e399c83ddd4a",
+    "homeassistant/sensor/siseli_inverter_1_pv/solar_charging_switch/config\t1\t0\tsha256:d5a61502c53ff4b182b596fb9e39b05f",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/status_code/config\t1\t0\tsha256:54d4b44c887649cbc869e26161eac505",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/strong_charging_voltage_v/config\t1\t0\tsha256:9436c07c10479bb3c6d4dba9e838130d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/system_time_hm/config\t1\t0\tsha256:b24c413c99ee3fb470cbc679b605b892",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/system_time_ymd/config\t1\t0\tsha256:b51a81ab3760f178aa7bbd25488d2a83",
+    "homeassistant/sensor/siseli_inverter_1_grid/total_number_of_grid_connection/config\t1\t0\tsha256:1639434d8fb673ae34de73718acd4ecd",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/transformer_temperature_c/config\t1\t0\tsha256:c5590f43e19f18acaa2870f6dc499795",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/util_chg/config\t1\t0\tsha256:c733a64d670f0d2f404a923045c56cb9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/warning_light_status/config\t1\t0\tsha256:a5313ccbbadf8aae365f1822cea29791",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/wdrr_status_bits/config\t1\t0\tsha256:725bbfd2083130db4cb36359b5be2540",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/working_mode/config\t1\t0\tsha256:421474de8e2a0bb8f2c88e6e8208a08f",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_aux_raw/config\t1\t0\tsha256:3d593ecac1f3c734f1dcfa59c90aa610",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_code_raw/config\t1\t0\tsha256:f7550d18c034fb96a58e2655fe97861a",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_flags_raw/config\t1\t0\tsha256:5b695795d11f7b8821deb75a09694bb1",
+    "siseli/siseli_inverter_1/availability\t1\t0\tonline"
+   ],
+   "log": [
+    "--- Siseli Inverter Bridge <VERSION> ---",
+    "[Config] INVERTER_IP=192.168.1.139 ROUTER_IP=192.168.1.1",
+    "[Config] TARGET=8.212.18.157:1883 MQTT=core-mosquitto:1883",
+    "[Config] AUTO_INTERCEPT=True FORWARD_ALL_INVERTER_TRAFFIC=False",
+    "[Config] INVERTER_COUNT=1",
+    "[Config] BATTERY_COUNT=1 BATTERY_CAPACITY_PER_BATTERY_AH=0.0",
+    "[Config] DEVICE_NAME=Siseli Inverter 1 MANUFACTURER=Siseli Compatible",
+    "[Config] STATE_TOPIC=siseli/siseli_inverter_1/state",
+    "[Config] SNIFF_IFACE=auto",
+    "[Config] UPDATE_INTERVAL_SEC=10 EXPIRE_AFTER_SEC=1800 TELEMETRY_TIMEOUT_SEC=1800",
+    "[Config] DEBUG_FLAGS=none",
+    "[HA MQTT] Connected to core-mosquitto:1883",
+    "[HA MQTT] Cleared 1248 stale discovery topics",
+    "[HA MQTT] Discovery published"
+   ]
+  },
+  "c_payloads_and_flush": {
+   "published": [
+    "siseli/siseli_inverter_1/diagnostics/state\t1\t0\t{\"dtu_id\": \"34545375423553743260\", \"model_code\": null, \"output_model\": null, \"status_code\": \"00\", \"firmware_info\": null, \"firmware_version\": null, \"firmware_build_date\": null, \"firmware_build_slot\": null, \"bus_voltage\": 420.0, \"ac_charging_switch\": \"Close\", \"abnormal_fan_speed\": null, \"abnormal_temperature_sensor\": null, \"automatic_return_to_first_page\": \"On\", \"buzzer_function\": \"On\", \"charging_light_status\": null, \"charging_main_switch\": null, \"charging_priority_order\": \"SNU\", \"dc_rectification_temperature_c\": 51.0, \"eco\": \"Off\", \"eeprom_data_abnormality\": null, \"eeprom_read_write_exception\": null, \"fan_1_speed\": 50, \"fan_1_status\": null, \"fan_2_speed\": 50, \"fan_2_status\": null, \"float_charging_voltage_v\": 56.4, \"inductor_current_a\": 8.7, \"lcd_back_lighting\": null, \"low_electric_lock_voltage_v\": 42.0, \"machine_over_temperature\": null, \"max_temperature_c\": 59.0, \"maximum_total_charging_current_a\": 50, \"over_temperature_restart_function\": null, \"second_delay_time\": \"5 min\", \"software_version\": null, \"strong_charging_voltage_v\": 56.4, \"system_time_hm\": \"10:04\", \"system_time_ymd\": \"260720\", \"transformer_temperature_c\": 59.0, \"warning_light_status\": null, \"working_mode\": \"SBU\", \"wdrr_status_bits\": \"11000\", \"eo8w_flags_raw\": \"B010000000000\", \"eo8w_blob_raw\": \"20211002120B117020000\", \"yavb_flags_raw\": \"1001100000000000\", \"yavb_code_raw\": \"03041\", \"yavb_aux_raw\": \"000000\", \"bat_temp\": 48.0, \"max_chg\": 50, \"util_chg\": null, \"bulk_v\": 56.4, \"float_v\": 56.4, \"cut_v\": 42.0}",
+    "siseli/siseli_inverter_1/state\t1\t0\t{\"mode\": null, \"c_battery_charge_power_w\": 1554, \"c_battery_discharge_power_w\": 0, \"c_battery_charge_energy_kwh\": 0.0, \"c_battery_discharge_energy_kwh\": 0.0, \"c_bms_total_capacity_ah\": null, \"c_mains_power_w\": 0, \"c_grid_import_power_w\": 0, \"c_load_energy_kwh\": 0.0, \"c_grid_import_energy_kwh\": 0.0, \"c_load_w\": 766, \"c_generation_energy_kwh\": 0.0, \"c_generation_power_w\": 1403, \"bms_current_soc\": 58}",
+    "siseli/siseli_inverter_1/battery/state\t1\t0\t{\"bat_v\": 53.4, \"bat_cap\": 58, \"bat_charge_current\": 7.0, \"dischg_current\": 0.0, \"bat_series_count\": 4, \"battery_status\": \"Charge\", \"battery_type\": null, \"bms_allow_charging_flag\": null, \"bms_allow_discharge_flag\": null, \"bms_auto_start_soc_after_low\": 25, \"bms_avg_temp_c\": 30.95, \"bms_charge_current_limit_a\": 195.0, \"bms_charge_voltage_limit_v\": 57.6, \"bms_charging_current_a\": 29.1, \"bms_charging_overcurrent_sign\": null, \"bms_communication_control_function\": null, \"bms_communication_normal\": null, \"bms_discharge_current_a\": 0.0, \"bms_discharge_overcurrent_flag\": null, \"bms_discharge_voltage_limit_v\": 42.0, \"bms_low_battery_alarm_flag\": null, \"bms_low_power_fault_flag\": null, \"bms_low_power_soc\": 15, \"bms_low_temperature_flag\": null, \"bms_returns_to_battery_mode_soc\": 50, \"bms_returns_to_mains_mode_soc\": 35, \"bms_temperature_too_high_flag\": null, \"battery_equalization_mode\": \"Disable\", \"battery_equalization_voltage_v\": 58.4, \"battery_not_connected\": null, \"battery_overvoltage_shutdown_voltage_v\": 44.0, \"battery_voltage_higher\": null, \"boost_temperature_c\": 38.0, \"equalization_interval\": \"30 day\", \"equalization_overtime\": \"120 min\", \"equalization_time\": \"60 min\", \"li_battery_activation_function_switch\": null, \"li_battery_activation_process\": null, \"low_battery_alarm\": null, \"max_utility_charge_current_a\": 10, \"parallel_mode_turn_off_soc\": 20, \"return_to_battery_mode_voltage_v\": 54.0, \"second_output_battery_capacity\": 50, \"second_output_battery_voltage_v\": 52.0, \"second_output_discharge_time\": \"0 min\"}",
+    "siseli/siseli_inverter_1/bms/state\t1\t0\t{\"bms_remaining_ah\": null, \"bms_nominal_ah\": null, \"bms_display_mode\": null, \"bms_max_cell_mv\": null, \"bms_max_cell_pos\": null, \"bms_min_cell_mv\": null, \"bms_min_cell_pos\": null, \"bms_cell_count\": null, \"bms_cell_delta_mv\": null, \"cell_1_mv\": null, \"cell_2_mv\": null, \"cell_3_mv\": null, \"cell_4_mv\": null, \"cell_5_mv\": null, \"cell_6_mv\": null, \"cell_7_mv\": null, \"cell_8_mv\": null, \"cell_9_mv\": null, \"cell_10_mv\": null, \"cell_11_mv\": null, \"cell_12_mv\": null, \"cell_13_mv\": null, \"cell_14_mv\": null, \"cell_15_mv\": null, \"cell_16_mv\": null}",
+    "siseli/siseli_inverter_1/grid/state\t1\t0\t{\"grid_v\": 232.7, \"grid_hz\": 49.9, \"mains_current_flow_direction\": \"Mains To Inverter\", \"mains_power_w\": 0, \"mains_apparent_va\": 0, \"ct_function_switch\": \"OFF\", \"grid_connected_current_a\": 20, \"grid_connection_function\": \"Off\", \"grid_connection_sign\": \"Off Grid\", \"high_frequency_of_mains_power_loss_hz\": 65.0, \"high_point_of_mains_power_loss_voltage_v\": 280.0, \"input_source_prompt_function\": \"On\", \"input_voltage_too_high\": null, \"low_frequency_of_mains_power_loss_hz\": 40.0, \"low_point_of_mains_power_loss_voltage_v\": 170.0, \"main_output_relay_status\": null, \"mains_charging_ending_time\": \"0 h\", \"mains_charging_starting_time\": \"0 h\", \"mains_input_range\": \"UPS\", \"mains_light_status\": null, \"pv_grid_connection_agreement\": null, \"return_to_mains_mode_voltage_v\": 46.0, \"total_number_of_grid_connection\": null, \"mains_wdrr_token\": \"+00000\", \"mains_wdrr_value\": 0, \"mains_wdrr_abs\": 0, \"mains_eo8w_code\": \"B B\", \"mains_flow_code\": \"0\", \"mains_input_range_code\": \"11\", \"mains_flow_state\": \"Mains To Inverter\"}",
+    "siseli/siseli_inverter_1/load/state\t1\t0\t{\"out_v\": 228.5, \"out_hz\": 49.9, \"apparent_va\": 868, \"load_w\": 766, \"load_pct\": 7, \"output_dc_comp\": 18, \"does_machine_have_output\": \"Yes\", \"dual_output_mode\": \"On\", \"inverter_light_status\": null, \"inverter_temperature_c\": 48.0, \"output_ending_time\": \"0 h\", \"output_set_frequency\": null, \"output_set_voltage\": 230, \"output_starting_time\": \"0 h\", \"overloaded\": null, \"overload_restart_function\": null, \"overload_to_bypass_function\": null, \"parallel_mode\": \"Enable\", \"parallel_mode_turn_off_voltage_v\": 44.0, \"parallel_role\": \"Host\", \"rated_apparent_va\": 11000, \"output_status_bits\": \"11000\"}",
+    "siseli/siseli_inverter_1/pv/state\t1\t0\t{\"generation_power_w\": 1403, \"pv_v\": 0.0, \"pv_current_a\": 0.0, \"pv_w\": 0, \"pv2_v\": 132.0, \"pv2_current_a\": 10.6, \"pv2_power_w\": 1403, \"pv_today_kwh\": 2.939, \"pv_month_kwh\": 315.7, \"pv_total_kwh\": 2284.6, \"pv_year_kwh\": 2081.0, \"pv_temp\": 58.0, \"pv2_temp\": 48.0, \"solar_charging_switch\": null, \"abnormal_low_pv_power\": null, \"mppt_constant_temperature_mode\": null, \"power_supply_from_pv_to_load_in_ac_state\": \"No\", \"pv_energy_feeding_priority\": null}",
+    "siseli/siseli_inverter_1/diagnostics/state\t1\t0\t{\"dtu_id\": \"34545375423553743260\", \"model_code\": \"HPVINV04\", \"output_model\": null, \"status_code\": \"00\", \"firmware_info\": \"0010.11 20250630 14\", \"firmware_version\": \"0010.11\", \"firmware_build_date\": \"2025-06-30\", \"firmware_build_slot\": \"14\", \"bus_voltage\": 420.0, \"ac_charging_switch\": \"Close\", \"abnormal_fan_speed\": null, \"abnormal_temperature_sensor\": null, \"automatic_return_to_first_page\": \"On\", \"buzzer_function\": \"On\", \"charging_light_status\": null, \"charging_main_switch\": null, \"charging_priority_order\": \"SNU\", \"dc_rectification_temperature_c\": 51.0, \"eco\": \"Off\", \"eeprom_data_abnormality\": null, \"eeprom_read_write_exception\": null, \"fan_1_speed\": 50, \"fan_1_status\": null, \"fan_2_speed\": 50, \"fan_2_status\": null, \"float_charging_voltage_v\": 56.4, \"inductor_current_a\": 8.7, \"lcd_back_lighting\": null, \"low_electric_lock_voltage_v\": 42.0, \"machine_over_temperature\": null, \"max_temperature_c\": 59.0, \"maximum_total_charging_current_a\": 50, \"over_temperature_restart_function\": null, \"second_delay_time\": \"5 min\", \"software_version\": \"10.11\", \"strong_charging_voltage_v\": 56.4, \"system_time_hm\": \"10:04\", \"system_time_ymd\": \"260720\", \"transformer_temperature_c\": 59.0, \"warning_light_status\": null, \"working_mode\": \"SBU\", \"wdrr_status_bits\": \"11000\", \"eo8w_flags_raw\": \"B010000000000\", \"eo8w_blob_raw\": \"20211002120B117020000\", \"yavb_flags_raw\": \"1001100000000000\", \"yavb_code_raw\": \"03041\", \"yavb_aux_raw\": \"000000\", \"bat_temp\": 48.0, \"max_chg\": 50, \"util_chg\": null, \"bulk_v\": 56.4, \"float_v\": 56.4, \"cut_v\": 42.0}",
+    "siseli/siseli_inverter_1/state\t1\t0\t{\"mode\": null, \"c_battery_charge_power_w\": 1554, \"c_battery_discharge_power_w\": 0, \"c_battery_charge_energy_kwh\": 0.0, \"c_battery_discharge_energy_kwh\": 0.0, \"c_bms_total_capacity_ah\": null, \"c_mains_power_w\": 0, \"c_grid_import_power_w\": 0, \"c_load_energy_kwh\": 0.0, \"c_grid_import_energy_kwh\": 0.0, \"c_load_w\": 766, \"c_generation_energy_kwh\": 0.0, \"c_generation_power_w\": 1403, \"bms_current_soc\": 58}",
+    "siseli/siseli_inverter_1/battery/state\t1\t0\t{\"bat_v\": 53.4, \"bat_cap\": 58, \"bat_charge_current\": 7.0, \"dischg_current\": 0.0, \"bat_series_count\": 4, \"battery_status\": \"Charge\", \"battery_type\": null, \"bms_allow_charging_flag\": null, \"bms_allow_discharge_flag\": null, \"bms_auto_start_soc_after_low\": 25, \"bms_avg_temp_c\": 30.95, \"bms_charge_current_limit_a\": 195.0, \"bms_charge_voltage_limit_v\": 57.6, \"bms_charging_current_a\": 29.1, \"bms_charging_overcurrent_sign\": null, \"bms_communication_control_function\": null, \"bms_communication_normal\": null, \"bms_discharge_current_a\": 0.0, \"bms_discharge_overcurrent_flag\": null, \"bms_discharge_voltage_limit_v\": 42.0, \"bms_low_battery_alarm_flag\": null, \"bms_low_power_fault_flag\": null, \"bms_low_power_soc\": 15, \"bms_low_temperature_flag\": null, \"bms_returns_to_battery_mode_soc\": 50, \"bms_returns_to_mains_mode_soc\": 35, \"bms_temperature_too_high_flag\": null, \"battery_equalization_mode\": \"Disable\", \"battery_equalization_voltage_v\": 58.4, \"battery_not_connected\": null, \"battery_overvoltage_shutdown_voltage_v\": 44.0, \"battery_voltage_higher\": null, \"boost_temperature_c\": 38.0, \"equalization_interval\": \"30 day\", \"equalization_overtime\": \"120 min\", \"equalization_time\": \"60 min\", \"li_battery_activation_function_switch\": null, \"li_battery_activation_process\": null, \"low_battery_alarm\": null, \"max_utility_charge_current_a\": 10, \"parallel_mode_turn_off_soc\": 20, \"return_to_battery_mode_voltage_v\": 54.0, \"second_output_battery_capacity\": 50, \"second_output_battery_voltage_v\": 52.0, \"second_output_discharge_time\": \"0 min\"}",
+    "siseli/siseli_inverter_1/bms/state\t1\t0\t{\"bms_remaining_ah\": 173.0, \"bms_nominal_ah\": 299.8, \"bms_display_mode\": \"Display All Battery Cell Data Locations\", \"bms_max_cell_mv\": 3327, \"bms_max_cell_pos\": 9, \"bms_min_cell_mv\": 3320, \"bms_min_cell_pos\": 32, \"bms_cell_count\": 16, \"bms_cell_delta_mv\": 7, \"cell_1_mv\": 3321, \"cell_2_mv\": 3321, \"cell_3_mv\": 3323, \"cell_4_mv\": 3322, \"cell_5_mv\": 3323, \"cell_6_mv\": 3322, \"cell_7_mv\": 3323, \"cell_8_mv\": 3321, \"cell_9_mv\": 3328, \"cell_10_mv\": 3326, \"cell_11_mv\": 3323, \"cell_12_mv\": 3323, \"cell_13_mv\": 3322, \"cell_14_mv\": 3325, \"cell_15_mv\": 3324, \"cell_16_mv\": 3321}",
+    "siseli/siseli_inverter_1/grid/state\t1\t0\t{\"grid_v\": 232.7, \"grid_hz\": 49.9, \"mains_current_flow_direction\": \"Mains To Inverter\", \"mains_power_w\": 0, \"mains_apparent_va\": 0, \"ct_function_switch\": \"OFF\", \"grid_connected_current_a\": 20, \"grid_connection_function\": \"Off\", \"grid_connection_sign\": \"Off Grid\", \"high_frequency_of_mains_power_loss_hz\": 65.0, \"high_point_of_mains_power_loss_voltage_v\": 280.0, \"input_source_prompt_function\": \"On\", \"input_voltage_too_high\": null, \"low_frequency_of_mains_power_loss_hz\": 40.0, \"low_point_of_mains_power_loss_voltage_v\": 170.0, \"main_output_relay_status\": null, \"mains_charging_ending_time\": \"0 h\", \"mains_charging_starting_time\": \"0 h\", \"mains_input_range\": \"UPS\", \"mains_light_status\": null, \"pv_grid_connection_agreement\": null, \"return_to_mains_mode_voltage_v\": 46.0, \"total_number_of_grid_connection\": null, \"mains_wdrr_token\": \"+00000\", \"mains_wdrr_value\": 0, \"mains_wdrr_abs\": 0, \"mains_eo8w_code\": \"B B\", \"mains_flow_code\": \"0\", \"mains_input_range_code\": \"11\", \"mains_flow_state\": \"Mains To Inverter\"}",
+    "siseli/siseli_inverter_1/load/state\t1\t0\t{\"out_v\": 228.5, \"out_hz\": 49.9, \"apparent_va\": 868, \"load_w\": 766, \"load_pct\": 7, \"output_dc_comp\": 18, \"does_machine_have_output\": \"Yes\", \"dual_output_mode\": \"On\", \"inverter_light_status\": null, \"inverter_temperature_c\": 48.0, \"output_ending_time\": \"0 h\", \"output_set_frequency\": null, \"output_set_voltage\": 230, \"output_starting_time\": \"0 h\", \"overloaded\": null, \"overload_restart_function\": null, \"overload_to_bypass_function\": null, \"parallel_mode\": \"Enable\", \"parallel_mode_turn_off_voltage_v\": 44.0, \"parallel_role\": \"Host\", \"rated_apparent_va\": 11000, \"output_status_bits\": \"11000\"}",
+    "siseli/siseli_inverter_1/pv/state\t1\t0\t{\"generation_power_w\": 1403, \"pv_v\": 0.0, \"pv_current_a\": 0.0, \"pv_w\": 0, \"pv2_v\": 132.0, \"pv2_current_a\": 10.6, \"pv2_power_w\": 1403, \"pv_today_kwh\": 2.939, \"pv_month_kwh\": 315.7, \"pv_total_kwh\": 2284.6, \"pv_year_kwh\": 2081.0, \"pv_temp\": 58.0, \"pv2_temp\": 48.0, \"solar_charging_switch\": null, \"abnormal_low_pv_power\": null, \"mppt_constant_temperature_mode\": null, \"power_supply_from_pv_to_load_in_ac_state\": \"No\", \"pv_energy_feeding_priority\": null}"
+   ],
+   "log": [
+    "[ENERGY SOURCE DISAGREEMENT] bms_key=\"bms_charging_current_a\" bms_value=29.1 legacy_key=\"bat_charge_current\" legacy_value=7.0 legacy_scaled=7.0 using=\"bms_charging_current_a\"",
+    "[12:00:00] Published to HA topic=\"dtu/34545375423553743260/pub/event/dev_prop_post\" clean_value_count=130 changed_key_count=130 changed_values=[\"ac_charging_switch=Close\", \"apparent_va=868\", \"automatic_return_to_first_page=On\", \"bat_cap=58\", \"bat_charge_current=7.0\", \"bat_series_count=4\", \"bat_temp=48.0\", \"bat_v=53.4\", \"battery_equalization_mode=Disable\", \"battery_equalization_voltage_v=58.4\", \"battery_overvoltage_shutdown_voltage_v=44.0\", \"battery_status=Charge\", \"bms_auto_start_soc_after_low=25\", \"bms_avg_temp_c=30.95\", \"bms_charge_current_limit_a=195.0\", \"bms_charge_voltage_limit_v=57.6\", \"bms_charging_current_a=29.1\", \"bms_current_soc=58\", \"bms_discharge_current_a=0.0\", \"bms_discharge_voltage_limit_v=42.0\", \"bms_low_power_soc=15\", \"bms_returns_to_battery_mode_soc=50\", \"bms_returns_to_mains_mode_soc=35\", \"boost_temperature_c=38.0\", \"bulk_v=56.4\", \"bus_voltage=420.0\", \"buzzer_function=On\", \"c_battery_charge_energy_kwh=0.0\", \"c_battery_charge_power_w=1554\", \"c_battery_discharge_energy_kwh=0.0\", \"c_battery_discharge_power_w=0\", \"c_generation_energy_kwh=0.0\", \"c_generation_power_w=1403\", \"c_grid_import_energy_kwh=0.0\", \"c_grid_import_power_w=0\", \"c_load_energy_kwh=0.0\", \"c_load_w=766\", \"c_mains_power_w=0\", \"charging_priority_order=SNU\", \"ct_function_switch=OFF\", \"cut_v=42.0\", \"dc_rectification_temperature_c=51.0\", \"dischg_current=0.0\", \"does_machine_have_output=Yes\", \"dtu_id=34545375423553743260\", \"dual_output_mode=On\", \"eco=Off\", \"eo8w_blob_raw=20211002120B117020000\", \"eo8w_flags_raw=B010000000000\", \"equalization_interval=30 day\", \"equalization_overtime=120 min\", \"equalization_time=60 min\", \"fan_1_speed=50\", \"fan_2_speed=50\", \"float_charging_voltage_v=56.4\", \"float_v=56.4\", \"generation_power_w=1403\", \"grid_connected_current_a=20\", \"grid_connection_function=Off\", \"grid_connection_sign=Off Grid\", \"grid_hz=49.9\", \"grid_v=232.7\", \"high_frequency_of_mains_power_loss_hz=65.0\", \"high_point_of_mains_power_loss_voltage_v=280.0\", \"inductor_current_a=8.7\", \"input_source_prompt_function=On\", \"inverter_temperature_c=48.0\", \"load_pct=7\", \"load_w=766\", \"low_electric_lock_voltage_v=42.0\", \"low_frequency_of_mains_power_loss_hz=40.0\", \"low_point_of_mains_power_loss_voltage_v=170.0\", \"mains_apparent_va=0\", \"mains_charging_ending_time=0 h\", \"mains_charging_starting_time=0 h\", \"mains_current_flow_direction=Mains To Inverter\", \"mains_eo8w_code=B B\", \"mains_flow_code=0\", \"mains_flow_state=Mains To Inverter\", \"mains_input_range=UPS\", \"mains_input_range_code=11\", \"mains_power_w=0\", \"mains_wdrr_abs=0\", \"mains_wdrr_token=+00000\", \"mains_wdrr_value=0\", \"max_chg=50\", \"max_temperature_c=59.0\", \"max_utility_charge_current_a=10\", \"maximum_total_charging_current_a=50\", \"out_hz=49.9\", \"out_v=228.5\", \"output_dc_comp=18\", \"output_ending_time=0 h\", \"output_set_voltage=230\", \"output_starting_time=0 h\", \"output_status_bits=11000\", \"parallel_mode=Enable\", \"parallel_mode_turn_off_soc=20\", \"parallel_mode_turn_off_voltage_v=44.0\", \"parallel_role=Host\", \"power_supply_from_pv_to_load_in_ac_state=No\", \"pv2_current_a=10.6\", \"pv2_power_w=1403\", \"pv2_temp=48.0\", \"pv2_v=132.0\", \"pv_current_a=0.0\", \"pv_month_kwh=315.7\", \"pv_temp=58.0\", \"pv_today_kwh=2.939\", \"pv_total_kwh=2284.6\", \"pv_v=0.0\", \"pv_w=0\", \"pv_year_kwh=2081.0\", \"rated_apparent_va=11000\", \"return_to_battery_mode_voltage_v=54.0\", \"return_to_mains_mode_voltage_v=46.0\", \"second_delay_time=5 min\", \"second_output_battery_capacity=50\", \"second_output_battery_voltage_v=52.0\", \"second_output_discharge_time=0 min\", \"status_code=00\", \"strong_charging_voltage_v=56.4\", \"system_time_hm=10:04\", \"system_time_ymd=260720\", \"transformer_temperature_c=59.0\", \"wdrr_status_bits=11000\", \"working_mode=SBU\", \"yavb_aux_raw=000000\", \"yavb_code_raw=03041\", \"yavb_flags_raw=1001100000000000\"]",
+    "[12:00:00] Decoded, publish throttled topic=\"dtu/34545375423553743260/pub/event/dev_prop_post\" clean_value_count=32 changed_key_count=31 changed_values=[\"bms_cell_count=16\", \"bms_cell_delta_mv=7\", \"bms_display_mode=Display All Battery Cell Data Locations\", \"bms_max_cell_mv=3327\", \"bms_max_cell_pos=9\", \"bms_min_cell_mv=3320\", \"bms_min_cell_pos=32\", \"bms_nominal_ah=299.8\", \"bms_remaining_ah=173.0\", \"cell_10_mv=3326\", \"cell_11_mv=3323\", \"cell_12_mv=3323\", \"cell_13_mv=3322\", \"cell_14_mv=3325\", \"cell_15_mv=3324\", \"cell_16_mv=3321\", \"cell_1_mv=3321\", \"cell_2_mv=3321\", \"cell_3_mv=3323\", \"cell_4_mv=3322\", \"cell_5_mv=3323\", \"cell_6_mv=3322\", \"cell_7_mv=3323\", \"cell_8_mv=3321\", \"cell_9_mv=3328\", \"firmware_build_date=2025-06-30\", \"firmware_build_slot=14\", \"firmware_info=0010.11 20250630 14\", \"firmware_version=0010.11\", \"model_code=HPVINV04\", \"software_version=10.11\"]",
+    "[12:00:00] Deferred change published to HA "
+   ],
+   "state_json": {
+    "dtu_id": "34545375423553743260",
+    "model_code": null,
+    "output_model": null,
+    "mode": null,
+    "status_code": "00",
+    "firmware_info": null,
+    "firmware_version": null,
+    "firmware_build_date": null,
+    "firmware_build_slot": null,
+    "bat_v": 53.4,
+    "bat_cap": 58,
+    "bat_charge_current": 7.0,
+    "dischg_current": 0.0,
+    "c_battery_charge_power_w": 1554,
+    "c_battery_discharge_power_w": 0,
+    "c_battery_charge_energy_kwh": 0.0,
+    "c_battery_discharge_energy_kwh": 0.0,
+    "bat_series_count": 4,
+    "battery_status": "Charge",
+    "battery_type": null,
+    "c_bms_total_capacity_ah": null,
+    "bms_remaining_ah": null,
+    "bms_nominal_ah": null,
+    "bms_display_mode": null,
+    "bms_max_cell_mv": null,
+    "bms_max_cell_pos": null,
+    "bms_min_cell_mv": null,
+    "bms_min_cell_pos": null,
+    "bms_cell_count": null,
+    "bms_cell_delta_mv": null,
+    "cell_1_mv": null,
+    "cell_2_mv": null,
+    "cell_3_mv": null,
+    "cell_4_mv": null,
+    "cell_5_mv": null,
+    "cell_6_mv": null,
+    "cell_7_mv": null,
+    "cell_8_mv": null,
+    "cell_9_mv": null,
+    "cell_10_mv": null,
+    "cell_11_mv": null,
+    "cell_12_mv": null,
+    "cell_13_mv": null,
+    "cell_14_mv": null,
+    "cell_15_mv": null,
+    "cell_16_mv": null,
+    "grid_v": 232.7,
+    "grid_hz": 49.9,
+    "mains_current_flow_direction": "Mains To Inverter",
+    "mains_power_w": 0,
+    "c_mains_power_w": 0,
+    "c_grid_import_power_w": 0,
+    "c_load_energy_kwh": 0.0,
+    "c_grid_import_energy_kwh": 0.0,
+    "mains_apparent_va": 0,
+    "out_v": 228.5,
+    "out_hz": 49.9,
+    "apparent_va": 868,
+    "load_w": 766,
+    "c_load_w": 766,
+    "load_pct": 7,
+    "output_dc_comp": 18,
+    "generation_power_w": 1403,
+    "c_generation_energy_kwh": 0.0,
+    "c_generation_power_w": 1403,
+    "pv_v": 0.0,
+    "pv_current_a": 0.0,
+    "pv_w": 0,
+    "pv2_v": 132.0,
+    "pv2_current_a": 10.6,
+    "pv2_power_w": 1403,
+    "pv_today_kwh": 2.939,
+    "pv_month_kwh": 315.7,
+    "pv_total_kwh": 2284.6,
+    "pv_year_kwh": 2081.0,
+    "pv_temp": 58.0,
+    "pv2_temp": 48.0,
+    "solar_charging_switch": null,
+    "bus_voltage": 420.0,
+    "ac_charging_switch": "Close",
+    "abnormal_fan_speed": null,
+    "abnormal_low_pv_power": null,
+    "abnormal_temperature_sensor": null,
+    "automatic_return_to_first_page": "On",
+    "bms_allow_charging_flag": null,
+    "bms_allow_discharge_flag": null,
+    "bms_auto_start_soc_after_low": 25,
+    "bms_avg_temp_c": 30.95,
+    "bms_charge_current_limit_a": 195.0,
+    "bms_charge_voltage_limit_v": 57.6,
+    "bms_charging_current_a": 29.1,
+    "bms_charging_overcurrent_sign": null,
+    "bms_communication_control_function": null,
+    "bms_communication_normal": null,
+    "bms_current_soc": 58,
+    "bms_discharge_current_a": 0.0,
+    "bms_discharge_overcurrent_flag": null,
+    "bms_discharge_voltage_limit_v": 42.0,
+    "bms_low_battery_alarm_flag": null,
+    "bms_low_power_fault_flag": null,
+    "bms_low_power_soc": 15,
+    "bms_low_temperature_flag": null,
+    "bms_returns_to_battery_mode_soc": 50,
+    "bms_returns_to_mains_mode_soc": 35,
+    "bms_temperature_too_high_flag": null,
+    "battery_equalization_mode": "Disable",
+    "battery_equalization_voltage_v": 58.4,
+    "battery_not_connected": null,
+    "battery_overvoltage_shutdown_voltage_v": 44.0,
+    "battery_voltage_higher": null,
+    "boost_temperature_c": 38.0,
+    "buzzer_function": "On",
+    "charging_light_status": null,
+    "charging_main_switch": null,
+    "charging_priority_order": "SNU",
+    "ct_function_switch": "OFF",
+    "dc_rectification_temperature_c": 51.0,
+    "does_machine_have_output": "Yes",
+    "dual_output_mode": "On",
+    "eco": "Off",
+    "eeprom_data_abnormality": null,
+    "eeprom_read_write_exception": null,
+    "equalization_interval": "30 day",
+    "equalization_overtime": "120 min",
+    "equalization_time": "60 min",
+    "fan_1_speed": 50,
+    "fan_1_status": null,
+    "fan_2_speed": 50,
+    "fan_2_status": null,
+    "float_charging_voltage_v": 56.4,
+    "grid_connected_current_a": 20,
+    "grid_connection_function": "Off",
+    "grid_connection_sign": "Off Grid",
+    "high_frequency_of_mains_power_loss_hz": 65.0,
+    "high_point_of_mains_power_loss_voltage_v": 280.0,
+    "inductor_current_a": 8.7,
+    "input_source_prompt_function": "On",
+    "input_voltage_too_high": null,
+    "inverter_light_status": null,
+    "inverter_temperature_c": 48.0,
+    "lcd_back_lighting": null,
+    "li_battery_activation_function_switch": null,
+    "li_battery_activation_process": null,
+    "low_battery_alarm": null,
+    "low_electric_lock_voltage_v": 42.0,
+    "low_frequency_of_mains_power_loss_hz": 40.0,
+    "low_point_of_mains_power_loss_voltage_v": 170.0,
+    "machine_over_temperature": null,
+    "main_output_relay_status": null,
+    "mains_charging_ending_time": "0 h",
+    "mains_charging_starting_time": "0 h",
+    "mains_input_range": "UPS",
+    "mains_light_status": null,
+    "max_utility_charge_current_a": 10,
+    "max_temperature_c": 59.0,
+    "maximum_total_charging_current_a": 50,
+    "mppt_constant_temperature_mode": null,
+    "output_ending_time": "0 h",
+    "output_set_frequency": null,
+    "output_set_voltage": 230,
+    "output_starting_time": "0 h",
+    "over_temperature_restart_function": null,
+    "overloaded": null,
+    "overload_restart_function": null,
+    "overload_to_bypass_function": null,
+    "parallel_mode": "Enable",
+    "parallel_mode_turn_off_soc": 20,
+    "parallel_mode_turn_off_voltage_v": 44.0,
+    "parallel_role": "Host",
+    "power_supply_from_pv_to_load_in_ac_state": "No",
+    "pv_energy_feeding_priority": null,
+    "pv_grid_connection_agreement": null,
+    "return_to_battery_mode_voltage_v": 54.0,
+    "return_to_mains_mode_voltage_v": 46.0,
+    "second_delay_time": "5 min",
+    "second_output_battery_capacity": 50,
+    "second_output_battery_voltage_v": 52.0,
+    "second_output_discharge_time": "0 min",
+    "software_version": null,
+    "strong_charging_voltage_v": 56.4,
+    "system_time_hm": "10:04",
+    "system_time_ymd": "260720",
+    "total_number_of_grid_connection": null,
+    "transformer_temperature_c": 59.0,
+    "warning_light_status": null,
+    "working_mode": "SBU",
+    "mains_wdrr_token": "+00000",
+    "mains_wdrr_value": 0,
+    "mains_wdrr_abs": 0,
+    "mains_eo8w_code": "B B",
+    "wdrr_status_bits": "11000",
+    "eo8w_flags_raw": "B010000000000",
+    "eo8w_blob_raw": "20211002120B117020000",
+    "yavb_flags_raw": "1001100000000000",
+    "yavb_code_raw": "03041",
+    "yavb_aux_raw": "000000",
+    "rated_apparent_va": 11000,
+    "output_status_bits": "11000",
+    "mains_flow_code": "0",
+    "mains_input_range_code": "11",
+    "bat_temp": 48.0,
+    "max_chg": 50,
+    "util_chg": null,
+    "bulk_v": 56.4,
+    "float_v": 56.4,
+    "cut_v": 42.0,
+    "mains_flow_state": "Mains To Inverter",
+    "_energy_clocks": {
+     "boot_id": "golden-boot-0000-0000",
+     "clocks": {
+      "battery": 10000.0,
+      "grid": 10000.0,
+      "generation": 10000.0,
+      "load": 10000.0
+     }
+    }
+   }
+  },
+  "s_restart_from_cache": {
+   "published": [],
+   "log": [
+    "[CACHE] Energy clocks: battery resumed (300s old), generation resumed (300s old), grid resumed (300s old), load resumed (300s old)",
+    "--- Siseli Inverter Bridge <VERSION> ---",
+    "[Config] INVERTER_IP=192.168.1.139 ROUTER_IP=192.168.1.1",
+    "[Config] TARGET=8.212.18.157:1883 MQTT=core-mosquitto:1883",
+    "[Config] AUTO_INTERCEPT=True FORWARD_ALL_INVERTER_TRAFFIC=False",
+    "[Config] INVERTER_COUNT=1",
+    "[Config] BATTERY_COUNT=1 BATTERY_CAPACITY_PER_BATTERY_AH=0.0",
+    "[Config] DEVICE_NAME=Siseli Inverter 1 MANUFACTURER=Siseli Compatible",
+    "[Config] STATE_TOPIC=siseli/siseli_inverter_1/state",
+    "[Config] SNIFF_IFACE=auto",
+    "[Config] UPDATE_INTERVAL_SEC=10 EXPIRE_AFTER_SEC=1800 TELEMETRY_TIMEOUT_SEC=1800",
+    "[Config] DEBUG_FLAGS=none"
+   ],
+   "last_state": [
+    [
+     "dtu_id",
+     "34545375423553743260"
+    ],
+    [
+     "model_code",
+     null
+    ],
+    [
+     "output_model",
+     null
+    ],
+    [
+     "mode",
+     null
+    ],
+    [
+     "status_code",
+     "00"
+    ],
+    [
+     "firmware_info",
+     null
+    ],
+    [
+     "firmware_version",
+     null
+    ],
+    [
+     "firmware_build_date",
+     null
+    ],
+    [
+     "firmware_build_slot",
+     null
+    ],
+    [
+     "bat_v",
+     53.4
+    ],
+    [
+     "bat_cap",
+     58
+    ],
+    [
+     "bat_charge_current",
+     7.0
+    ],
+    [
+     "dischg_current",
+     0.0
+    ],
+    [
+     "c_battery_charge_power_w",
+     1554
+    ],
+    [
+     "c_battery_discharge_power_w",
+     0
+    ],
+    [
+     "c_battery_charge_energy_kwh",
+     0.0
+    ],
+    [
+     "c_battery_discharge_energy_kwh",
+     0.0
+    ],
+    [
+     "bat_series_count",
+     4
+    ],
+    [
+     "battery_status",
+     "Charge"
+    ],
+    [
+     "battery_type",
+     null
+    ],
+    [
+     "c_bms_total_capacity_ah",
+     null
+    ],
+    [
+     "bms_remaining_ah",
+     null
+    ],
+    [
+     "bms_nominal_ah",
+     null
+    ],
+    [
+     "bms_display_mode",
+     null
+    ],
+    [
+     "bms_max_cell_mv",
+     null
+    ],
+    [
+     "bms_max_cell_pos",
+     null
+    ],
+    [
+     "bms_min_cell_mv",
+     null
+    ],
+    [
+     "bms_min_cell_pos",
+     null
+    ],
+    [
+     "bms_cell_count",
+     null
+    ],
+    [
+     "bms_cell_delta_mv",
+     null
+    ],
+    [
+     "cell_1_mv",
+     null
+    ],
+    [
+     "cell_2_mv",
+     null
+    ],
+    [
+     "cell_3_mv",
+     null
+    ],
+    [
+     "cell_4_mv",
+     null
+    ],
+    [
+     "cell_5_mv",
+     null
+    ],
+    [
+     "cell_6_mv",
+     null
+    ],
+    [
+     "cell_7_mv",
+     null
+    ],
+    [
+     "cell_8_mv",
+     null
+    ],
+    [
+     "cell_9_mv",
+     null
+    ],
+    [
+     "cell_10_mv",
+     null
+    ],
+    [
+     "cell_11_mv",
+     null
+    ],
+    [
+     "cell_12_mv",
+     null
+    ],
+    [
+     "cell_13_mv",
+     null
+    ],
+    [
+     "cell_14_mv",
+     null
+    ],
+    [
+     "cell_15_mv",
+     null
+    ],
+    [
+     "cell_16_mv",
+     null
+    ],
+    [
+     "grid_v",
+     232.7
+    ],
+    [
+     "grid_hz",
+     49.9
+    ],
+    [
+     "mains_current_flow_direction",
+     "Mains To Inverter"
+    ],
+    [
+     "mains_power_w",
+     0
+    ],
+    [
+     "c_mains_power_w",
+     0
+    ],
+    [
+     "c_grid_import_power_w",
+     0
+    ],
+    [
+     "c_load_energy_kwh",
+     0.0
+    ],
+    [
+     "c_grid_import_energy_kwh",
+     0.0
+    ],
+    [
+     "mains_apparent_va",
+     0
+    ],
+    [
+     "out_v",
+     228.5
+    ],
+    [
+     "out_hz",
+     49.9
+    ],
+    [
+     "apparent_va",
+     868
+    ],
+    [
+     "load_w",
+     766
+    ],
+    [
+     "c_load_w",
+     766
+    ],
+    [
+     "load_pct",
+     7
+    ],
+    [
+     "output_dc_comp",
+     18
+    ],
+    [
+     "generation_power_w",
+     1403
+    ],
+    [
+     "c_generation_energy_kwh",
+     0.0
+    ],
+    [
+     "c_generation_power_w",
+     1403
+    ],
+    [
+     "pv_v",
+     0.0
+    ],
+    [
+     "pv_current_a",
+     0.0
+    ],
+    [
+     "pv_w",
+     0
+    ],
+    [
+     "pv2_v",
+     132.0
+    ],
+    [
+     "pv2_current_a",
+     10.6
+    ],
+    [
+     "pv2_power_w",
+     1403
+    ],
+    [
+     "pv_today_kwh",
+     2.939
+    ],
+    [
+     "pv_month_kwh",
+     315.7
+    ],
+    [
+     "pv_total_kwh",
+     2284.6
+    ],
+    [
+     "pv_year_kwh",
+     2081.0
+    ],
+    [
+     "pv_temp",
+     58.0
+    ],
+    [
+     "pv2_temp",
+     48.0
+    ],
+    [
+     "solar_charging_switch",
+     null
+    ],
+    [
+     "bus_voltage",
+     420.0
+    ],
+    [
+     "ac_charging_switch",
+     "Close"
+    ],
+    [
+     "abnormal_fan_speed",
+     null
+    ],
+    [
+     "abnormal_low_pv_power",
+     null
+    ],
+    [
+     "abnormal_temperature_sensor",
+     null
+    ],
+    [
+     "automatic_return_to_first_page",
+     "On"
+    ],
+    [
+     "bms_allow_charging_flag",
+     null
+    ],
+    [
+     "bms_allow_discharge_flag",
+     null
+    ],
+    [
+     "bms_auto_start_soc_after_low",
+     25
+    ],
+    [
+     "bms_avg_temp_c",
+     30.95
+    ],
+    [
+     "bms_charge_current_limit_a",
+     195.0
+    ],
+    [
+     "bms_charge_voltage_limit_v",
+     57.6
+    ],
+    [
+     "bms_charging_current_a",
+     29.1
+    ],
+    [
+     "bms_charging_overcurrent_sign",
+     null
+    ],
+    [
+     "bms_communication_control_function",
+     null
+    ],
+    [
+     "bms_communication_normal",
+     null
+    ],
+    [
+     "bms_current_soc",
+     58
+    ],
+    [
+     "bms_discharge_current_a",
+     0.0
+    ],
+    [
+     "bms_discharge_overcurrent_flag",
+     null
+    ],
+    [
+     "bms_discharge_voltage_limit_v",
+     42.0
+    ],
+    [
+     "bms_low_battery_alarm_flag",
+     null
+    ],
+    [
+     "bms_low_power_fault_flag",
+     null
+    ],
+    [
+     "bms_low_power_soc",
+     15
+    ],
+    [
+     "bms_low_temperature_flag",
+     null
+    ],
+    [
+     "bms_returns_to_battery_mode_soc",
+     50
+    ],
+    [
+     "bms_returns_to_mains_mode_soc",
+     35
+    ],
+    [
+     "bms_temperature_too_high_flag",
+     null
+    ],
+    [
+     "battery_equalization_mode",
+     "Disable"
+    ],
+    [
+     "battery_equalization_voltage_v",
+     58.4
+    ],
+    [
+     "battery_not_connected",
+     null
+    ],
+    [
+     "battery_overvoltage_shutdown_voltage_v",
+     44.0
+    ],
+    [
+     "battery_voltage_higher",
+     null
+    ],
+    [
+     "boost_temperature_c",
+     38.0
+    ],
+    [
+     "buzzer_function",
+     "On"
+    ],
+    [
+     "charging_light_status",
+     null
+    ],
+    [
+     "charging_main_switch",
+     null
+    ],
+    [
+     "charging_priority_order",
+     "SNU"
+    ],
+    [
+     "ct_function_switch",
+     "OFF"
+    ],
+    [
+     "dc_rectification_temperature_c",
+     51.0
+    ],
+    [
+     "does_machine_have_output",
+     "Yes"
+    ],
+    [
+     "dual_output_mode",
+     "On"
+    ],
+    [
+     "eco",
+     "Off"
+    ],
+    [
+     "eeprom_data_abnormality",
+     null
+    ],
+    [
+     "eeprom_read_write_exception",
+     null
+    ],
+    [
+     "equalization_interval",
+     "30 day"
+    ],
+    [
+     "equalization_overtime",
+     "120 min"
+    ],
+    [
+     "equalization_time",
+     "60 min"
+    ],
+    [
+     "fan_1_speed",
+     50
+    ],
+    [
+     "fan_1_status",
+     null
+    ],
+    [
+     "fan_2_speed",
+     50
+    ],
+    [
+     "fan_2_status",
+     null
+    ],
+    [
+     "float_charging_voltage_v",
+     56.4
+    ],
+    [
+     "grid_connected_current_a",
+     20
+    ],
+    [
+     "grid_connection_function",
+     "Off"
+    ],
+    [
+     "grid_connection_sign",
+     "Off Grid"
+    ],
+    [
+     "high_frequency_of_mains_power_loss_hz",
+     65.0
+    ],
+    [
+     "high_point_of_mains_power_loss_voltage_v",
+     280.0
+    ],
+    [
+     "inductor_current_a",
+     8.7
+    ],
+    [
+     "input_source_prompt_function",
+     "On"
+    ],
+    [
+     "input_voltage_too_high",
+     null
+    ],
+    [
+     "inverter_light_status",
+     null
+    ],
+    [
+     "inverter_temperature_c",
+     48.0
+    ],
+    [
+     "lcd_back_lighting",
+     null
+    ],
+    [
+     "li_battery_activation_function_switch",
+     null
+    ],
+    [
+     "li_battery_activation_process",
+     null
+    ],
+    [
+     "low_battery_alarm",
+     null
+    ],
+    [
+     "low_electric_lock_voltage_v",
+     42.0
+    ],
+    [
+     "low_frequency_of_mains_power_loss_hz",
+     40.0
+    ],
+    [
+     "low_point_of_mains_power_loss_voltage_v",
+     170.0
+    ],
+    [
+     "machine_over_temperature",
+     null
+    ],
+    [
+     "main_output_relay_status",
+     null
+    ],
+    [
+     "mains_charging_ending_time",
+     "0 h"
+    ],
+    [
+     "mains_charging_starting_time",
+     "0 h"
+    ],
+    [
+     "mains_input_range",
+     "UPS"
+    ],
+    [
+     "mains_light_status",
+     null
+    ],
+    [
+     "max_utility_charge_current_a",
+     10
+    ],
+    [
+     "max_temperature_c",
+     59.0
+    ],
+    [
+     "maximum_total_charging_current_a",
+     50
+    ],
+    [
+     "mppt_constant_temperature_mode",
+     null
+    ],
+    [
+     "output_ending_time",
+     "0 h"
+    ],
+    [
+     "output_set_frequency",
+     null
+    ],
+    [
+     "output_set_voltage",
+     230
+    ],
+    [
+     "output_starting_time",
+     "0 h"
+    ],
+    [
+     "over_temperature_restart_function",
+     null
+    ],
+    [
+     "overloaded",
+     null
+    ],
+    [
+     "overload_restart_function",
+     null
+    ],
+    [
+     "overload_to_bypass_function",
+     null
+    ],
+    [
+     "parallel_mode",
+     "Enable"
+    ],
+    [
+     "parallel_mode_turn_off_soc",
+     20
+    ],
+    [
+     "parallel_mode_turn_off_voltage_v",
+     44.0
+    ],
+    [
+     "parallel_role",
+     "Host"
+    ],
+    [
+     "power_supply_from_pv_to_load_in_ac_state",
+     "No"
+    ],
+    [
+     "pv_energy_feeding_priority",
+     null
+    ],
+    [
+     "pv_grid_connection_agreement",
+     null
+    ],
+    [
+     "return_to_battery_mode_voltage_v",
+     54.0
+    ],
+    [
+     "return_to_mains_mode_voltage_v",
+     46.0
+    ],
+    [
+     "second_delay_time",
+     "5 min"
+    ],
+    [
+     "second_output_battery_capacity",
+     50
+    ],
+    [
+     "second_output_battery_voltage_v",
+     52.0
+    ],
+    [
+     "second_output_discharge_time",
+     "0 min"
+    ],
+    [
+     "software_version",
+     null
+    ],
+    [
+     "strong_charging_voltage_v",
+     56.4
+    ],
+    [
+     "system_time_hm",
+     "10:04"
+    ],
+    [
+     "system_time_ymd",
+     "260720"
+    ],
+    [
+     "total_number_of_grid_connection",
+     null
+    ],
+    [
+     "transformer_temperature_c",
+     59.0
+    ],
+    [
+     "warning_light_status",
+     null
+    ],
+    [
+     "working_mode",
+     "SBU"
+    ],
+    [
+     "mains_wdrr_token",
+     "+00000"
+    ],
+    [
+     "mains_wdrr_value",
+     0
+    ],
+    [
+     "mains_wdrr_abs",
+     0
+    ],
+    [
+     "mains_eo8w_code",
+     "B B"
+    ],
+    [
+     "wdrr_status_bits",
+     "11000"
+    ],
+    [
+     "eo8w_flags_raw",
+     "B010000000000"
+    ],
+    [
+     "eo8w_blob_raw",
+     "20211002120B117020000"
+    ],
+    [
+     "yavb_flags_raw",
+     "1001100000000000"
+    ],
+    [
+     "yavb_code_raw",
+     "03041"
+    ],
+    [
+     "yavb_aux_raw",
+     "000000"
+    ],
+    [
+     "rated_apparent_va",
+     11000
+    ],
+    [
+     "output_status_bits",
+     "11000"
+    ],
+    [
+     "mains_flow_code",
+     "0"
+    ],
+    [
+     "mains_input_range_code",
+     "11"
+    ],
+    [
+     "bat_temp",
+     48.0
+    ],
+    [
+     "max_chg",
+     50
+    ],
+    [
+     "util_chg",
+     null
+    ],
+    [
+     "bulk_v",
+     56.4
+    ],
+    [
+     "float_v",
+     56.4
+    ],
+    [
+     "cut_v",
+     42.0
+    ],
+    [
+     "mains_flow_state",
+     "Mains To Inverter"
+    ]
+   ]
+  },
+  "b_reconnect_matching_marker": {
+   "published": [
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/abnormal_fan_speed/config\t1\t0\tsha256:4375621486ec850d3136ad9ab87df0fc",
+    "homeassistant/sensor/siseli_inverter_1_pv/abnormal_low_pv_power/config\t1\t0\tsha256:240723ad1fc5b234a8e27bc3b23c76a2",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/abnormal_temperature_sensor/config\t1\t0\tsha256:14bbec3813dd19923c300bef3e94a997",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/ac_charging_switch/config\t1\t0\tsha256:a9d414e24e73bd1ed46f414976c3be60",
+    "homeassistant/sensor/siseli_inverter_1_load/apparent_va/config\t1\t0\tsha256:1ecff9a3dcf85285f359b2c2ae643feb",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/automatic_return_to_first_page/config\t1\t0\tsha256:a427ad5b922ffdfa89fd2fd95804fccb",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_cap/config\t1\t0\tsha256:02ffc78f5f268ac5f3b9ce8befb66713",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_charge_current/config\t1\t0\tsha256:5e83e2af6f0f3f59ed3153c1a4cc7a2e",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_series_count/config\t1\t0\tsha256:fa51a58b232ba26c843c9a9b388ab34c",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bat_temp/config\t1\t0\tsha256:7d0ab25502e532956e8fa6b1a8619ec3",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_v/config\t1\t0\tsha256:10d288350e982f4945423a9ca056f7be",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_equalization_mode/config\t1\t0\tsha256:4aa5457cc9b41606491824753c3b7363",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_equalization_voltage_v/config\t1\t0\tsha256:a35ed20dd3ab3866f5b748bf9b3e3fce",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_not_connected/config\t1\t0\tsha256:08defd2e975a25a8c1ace4a07e3a5e22",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_overvoltage_shutdown_voltage_v/config\t1\t0\tsha256:fb994c25339fe7032a783abb3cf56421",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_status/config\t1\t0\tsha256:12722f64a18886e9394d152873ec0065",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_type/config\t1\t0\tsha256:6553a0b5ca734a9bd0300f46154f46cb",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_voltage_higher/config\t1\t0\tsha256:e71f35830f2b849aa9c3cd7a94af3726",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_allow_charging_flag/config\t1\t0\tsha256:547d98573bf4ac828d71f06cc0e3bd66",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_allow_discharge_flag/config\t1\t0\tsha256:02eced73ef2821421f34114d5e949a61",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_auto_start_soc_after_low/config\t1\t0\tsha256:9f8ba83c6ae38f66934bf0b7066071e2",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_avg_temp_c/config\t1\t0\tsha256:d2f9d59b65c404d163d4edfed5355a22",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_cell_count/config\t1\t0\tsha256:d76b13855302f858881fe5ca58a0b5a1",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_cell_delta_mv/config\t1\t0\tsha256:9b4d41713482b3f74827ec1b92cb27e5",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charge_current_limit_a/config\t1\t0\tsha256:c0edff473c5dc1747d6396f2914cfafd",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charge_voltage_limit_v/config\t1\t0\tsha256:3cef35f8837ce816cdf69fc1340040f4",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charging_current_a/config\t1\t0\tsha256:243ee0b1c382da0a8b6eb215bb3bf331",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charging_overcurrent_sign/config\t1\t0\tsha256:fa20db38178f841df0b5209750141a32",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_communication_control_function/config\t1\t0\tsha256:1d70d0f8e9858f07445286d135e34f84",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_communication_normal/config\t1\t0\tsha256:e96504333946f577f9a8e58d80b3d43d",
+    "homeassistant/sensor/siseli_inverter_1/bms_current_soc/config\t1\t0\tsha256:f1a013850fc7175b968523509c477eea",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_current_a/config\t1\t0\tsha256:4efd3ec38455972f8afd2a5f9bbcc6be",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_overcurrent_flag/config\t1\t0\tsha256:11e4cea720f2aa68146ac63eb40b3ed7",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_voltage_limit_v/config\t1\t0\tsha256:41aab42f5a5f83401bfbe287444a512b",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_display_mode/config\t1\t0\tsha256:9d017697e22b349e64e83e92f59ebf4b",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_battery_alarm_flag/config\t1\t0\tsha256:bdc97a02c9719bfb401c2be05833b2d0",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_power_fault_flag/config\t1\t0\tsha256:120bb3b0c16094929f9a40b51b8b2421",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_power_soc/config\t1\t0\tsha256:55b5cc5d3a570de8f02e0e2c049d2632",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_temperature_flag/config\t1\t0\tsha256:60767e04240678fc23bb4f1cf9b5545b",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_max_cell_mv/config\t1\t0\tsha256:c643d3a892762206bfb37651b1bc2113",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_max_cell_pos/config\t1\t0\tsha256:fb332efb1ea545859fc08202fb2186e2",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_min_cell_mv/config\t1\t0\tsha256:ea3aae646594be4eb914fceab022f676",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_min_cell_pos/config\t1\t0\tsha256:4982e783540e947243b6262cb91d2bc4",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_nominal_ah/config\t1\t0\tsha256:99061f355f1bc0703d968f6b60e1444e",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_remaining_ah/config\t1\t0\tsha256:7832ffbfdb8129c0918ae29630050766",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_returns_to_battery_mode_soc/config\t1\t0\tsha256:1a9d471e81d058e453e80a99d61199db",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_returns_to_mains_mode_soc/config\t1\t0\tsha256:0ee0c5ce5ffc11c8cc47b1d4c12d3595",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_temperature_too_high_flag/config\t1\t0\tsha256:7bce5b94ae4e942ece0d88e081d05837",
+    "homeassistant/sensor/siseli_inverter_1_battery/boost_temperature_c/config\t1\t0\tsha256:c4dba477e5a7feadf64ecea780f9c5dd",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bulk_v/config\t1\t0\tsha256:32f40044f6856939470951d0642e6b00",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bus_voltage/config\t1\t0\tsha256:82d349d865183373e85eeeb3816aca93",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/buzzer_function/config\t1\t0\tsha256:7fc3057a06981b175f28dc975abf6b7b",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_charge_energy_kwh/config\t1\t0\tsha256:da499a2a1ef8c8e09992d1937079fae7",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_charge_power_w/config\t1\t0\tsha256:e1e31b41036934553ae6fbe0c1aa75a5",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_discharge_energy_kwh/config\t1\t0\tsha256:b58aac7b2e9c977e7aa82b718e5c4ed3",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_discharge_power_w/config\t1\t0\tsha256:8daed159aedfe3a6532f3e1a8d927d6d",
+    "homeassistant/sensor/siseli_inverter_1/c_bms_total_capacity_ah/config\t1\t0\tsha256:150f60d8d1778e1d8e3b29c471ff30e6",
+    "homeassistant/sensor/siseli_inverter_1/c_generation_energy_kwh/config\t1\t0\tsha256:dc7c212585e1cb190b86ccc161d467e6",
+    "homeassistant/sensor/siseli_inverter_1/c_generation_power_w/config\t1\t0\tsha256:9da2431da71fbf7179d46943d79bcf5f",
+    "homeassistant/sensor/siseli_inverter_1/c_grid_import_energy_kwh/config\t1\t0\tsha256:7a059008c199684c1eacfe07a4cb7a79",
+    "homeassistant/sensor/siseli_inverter_1/c_grid_import_power_w/config\t1\t0\tsha256:c7947e9e1373b487810ff8f56c0fa87d",
+    "homeassistant/sensor/siseli_inverter_1/c_load_energy_kwh/config\t1\t0\tsha256:11ec12ee0a0f3ee3066eae4cdb0a9e47",
+    "homeassistant/sensor/siseli_inverter_1/c_load_w/config\t1\t0\tsha256:dedbcb99004697b12c3301c10bf0fb4f",
+    "homeassistant/sensor/siseli_inverter_1/c_mains_power_w/config\t1\t0\tsha256:a91c30e4f45ca880daa5488a35dcd577",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_10_mv/config\t1\t0\tsha256:479e3b8e234450946f14d90b6f657486",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_11_mv/config\t1\t0\tsha256:44c23d28b3e541ae3ef352ecb43dbc22",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_12_mv/config\t1\t0\tsha256:dc7028a55e28cb0d017e8ea8ac6e0736",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_13_mv/config\t1\t0\tsha256:525f3bd72bab7af1e0f373522c0ff5fa",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_14_mv/config\t1\t0\tsha256:f59262d7a8626616b13d882bc5dde54a",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_15_mv/config\t1\t0\tsha256:081ab5f4c6b2acdbc1755226b6fe9673",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_16_mv/config\t1\t0\tsha256:038098cb2de38ec84f2167002d551af6",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_1_mv/config\t1\t0\tsha256:d7eaef1d43718baca32aee90e0097e14",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_2_mv/config\t1\t0\tsha256:fd2709d9213733dc3e2b12ee12c1a614",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_3_mv/config\t1\t0\tsha256:10a1984f7ffb1044a5a19431e8195222",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_4_mv/config\t1\t0\tsha256:79f930f14cc3c80cbf4704b88bcc3987",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_5_mv/config\t1\t0\tsha256:67734f358f02770e54b1aa4605c33614",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_6_mv/config\t1\t0\tsha256:5d41c795dbbc86653556f3250991744c",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_7_mv/config\t1\t0\tsha256:a9d640fa52ee05f3fd4672128565b485",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_8_mv/config\t1\t0\tsha256:31dce604db9427a6a4a3fb74f6329025",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_9_mv/config\t1\t0\tsha256:47665542b410bf8d8b97e5ce02648fd2",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_light_status/config\t1\t0\tsha256:ac49ad089b7d1c48982b7543084da0bf",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_main_switch/config\t1\t0\tsha256:2e3665f85e60be8cd38a2123db9d5dc8",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_priority_order/config\t1\t0\tsha256:a1310a419671c6bb1f698f61c85f7e79",
+    "homeassistant/sensor/siseli_inverter_1_grid/ct_function_switch/config\t1\t0\tsha256:829aa0449339e79ccc64e3787f39cbd1",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/cut_v/config\t1\t0\tsha256:cff195350c15ced5d49e9bc132fcda66",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/dc_rectification_temperature_c/config\t1\t0\tsha256:1e7662631597d69629e45d38931b518a",
+    "homeassistant/sensor/siseli_inverter_1_battery/dischg_current/config\t1\t0\tsha256:7bbb6b8214932737a92504520ab7b130",
+    "homeassistant/sensor/siseli_inverter_1_load/does_machine_have_output/config\t1\t0\tsha256:01c3210fc393a0e96e6f2a9924385dcc",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/dtu_id/config\t1\t0\tsha256:4c46ccf33c49e87f2ad021afbff1f0bf",
+    "homeassistant/sensor/siseli_inverter_1_load/dual_output_mode/config\t1\t0\tsha256:f7daac8a27ab452d6e38242ba4459691",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eco/config\t1\t0\tsha256:a6bea9b9ed9a69d82629b697ee4afb8e",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eeprom_data_abnormality/config\t1\t0\tsha256:2722ea259af94cdf2f193ca03d78ae02",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eeprom_read_write_exception/config\t1\t0\tsha256:03f00899afc6d1b5fe715e2baed5532b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eo8w_blob_raw/config\t1\t0\tsha256:573ff8642f0285a2801f92310740327b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eo8w_flags_raw/config\t1\t0\tsha256:143e975c5d6c9b04e7576e17b75c5137",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_interval/config\t1\t0\tsha256:80a4b5e4e633f53fd8e81939c0589c5b",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_overtime/config\t1\t0\tsha256:4973ba5a6ce7c555e113cee37b98ee4c",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_time/config\t1\t0\tsha256:e105ab674b9d5a8012453b8482679da6",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_1_speed/config\t1\t0\tsha256:428fc6a655e19acd93915b041d4c4784",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_1_status/config\t1\t0\tsha256:f7cc72755c63a424b24120bf43be5802",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_2_speed/config\t1\t0\tsha256:a3243425228062e940fa1255a6fb3bfb",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_2_status/config\t1\t0\tsha256:f25d1279270dde7717415508550a39da",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_build_date/config\t1\t0\tsha256:44a091feb193add586c46bb3d619066c",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_build_slot/config\t1\t0\tsha256:7f0602616ebc52f4b517599218bf8a2d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_info/config\t1\t0\tsha256:fbacdf80bf02bc970b387be838d9a091",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_version/config\t1\t0\tsha256:5a0cb46e9aaa89a5fc3f11377031479d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/float_charging_voltage_v/config\t1\t0\tsha256:669bc473bad59ca1e45da4e3e440c7e9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/float_v/config\t1\t0\tsha256:2b982c2bd0eca78c625d9c35c7b6eb07",
+    "homeassistant/sensor/siseli_inverter_1_pv/generation_power_w/config\t1\t0\tsha256:cb575a745947dd68231121a0bb4a57e1",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connected_current_a/config\t1\t0\tsha256:c81499da59c4c6b9541c0b3aa6bb5024",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connection_function/config\t1\t0\tsha256:b3d8020b9bae6df0036cebcdb5ebe927",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connection_sign/config\t1\t0\tsha256:fa27c6b1720aebd1cc56aff7187acd9f",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_hz/config\t1\t0\tsha256:75415edfaa9d3867c81166e62d41c94f",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_v/config\t1\t0\tsha256:5a3c1fc087c7800d1361aa15a98deed7",
+    "homeassistant/sensor/siseli_inverter_1_grid/high_frequency_of_mains_power_loss_hz/config\t1\t0\tsha256:69a7fa7c5bf87876528a1f8903a102b0",
+    "homeassistant/sensor/siseli_inverter_1_grid/high_point_of_mains_power_loss_voltage_v/config\t1\t0\tsha256:0942142d15b6c0d31ab6dba231abfbd4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/inductor_current_a/config\t1\t0\tsha256:10752d6ea033dfa1b840ad6f90017380",
+    "homeassistant/sensor/siseli_inverter_1_grid/input_source_prompt_function/config\t1\t0\tsha256:42cbe41f67588fc83a6af5c2e7624df9",
+    "homeassistant/sensor/siseli_inverter_1_grid/input_voltage_too_high/config\t1\t0\tsha256:40f95cefa7f0d6844be858c00dca3252",
+    "homeassistant/sensor/siseli_inverter_1_load/inverter_light_status/config\t1\t0\tsha256:ac7905bcd12c33c5e88445fb720e23a7",
+    "homeassistant/sensor/siseli_inverter_1_load/inverter_temperature_c/config\t1\t0\tsha256:79ed41dd402e5d257432197bf5c60191",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/lcd_back_lighting/config\t1\t0\tsha256:666a2082d2dfda0827b489557ebe1ca6",
+    "homeassistant/sensor/siseli_inverter_1_battery/li_battery_activation_function_switch/config\t1\t0\tsha256:c836eaeb482b8e958f649c60d3bf21eb",
+    "homeassistant/sensor/siseli_inverter_1_battery/li_battery_activation_process/config\t1\t0\tsha256:aed40e713c578163e09bb04f02244e78",
+    "homeassistant/sensor/siseli_inverter_1_load/load_pct/config\t1\t0\tsha256:f7e02985db553d3a60dda10040337108",
+    "homeassistant/sensor/siseli_inverter_1_load/load_w/config\t1\t0\tsha256:88db848571de998ce97ffeab2cf2cf2d",
+    "homeassistant/sensor/siseli_inverter_1_battery/low_battery_alarm/config\t1\t0\tsha256:c5a5641277c97d100d17637d7f320520",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/low_electric_lock_voltage_v/config\t1\t0\tsha256:8eeb41886267f18220cd97feb577b1a6",
+    "homeassistant/sensor/siseli_inverter_1_grid/low_frequency_of_mains_power_loss_hz/config\t1\t0\tsha256:d700fa7c50513296a6256ec69cc65e18",
+    "homeassistant/sensor/siseli_inverter_1_grid/low_point_of_mains_power_loss_voltage_v/config\t1\t0\tsha256:6f3eed171b5f2c969fc94888d3897de9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/machine_over_temperature/config\t1\t0\tsha256:abb797588448537355c8313fafdc1938",
+    "homeassistant/sensor/siseli_inverter_1_grid/main_output_relay_status/config\t1\t0\tsha256:b937904c0e2072d0a591383dfe36c1be",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_apparent_va/config\t1\t0\tsha256:37a2bdf215578fee10852f3c16a3f8b0",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_charging_ending_time/config\t1\t0\tsha256:22434e2fa55341f6f2c3514716c13f4c",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_charging_starting_time/config\t1\t0\tsha256:337a8504544f614bc6d5f297a4e45afb",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_current_flow_direction/config\t1\t0\tsha256:95ca7aa2d069adf82fea902475669c88",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_eo8w_code/config\t1\t0\tsha256:33c27549a953d20d4a1670bf73f0ae51",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_flow_code/config\t1\t0\tsha256:7fdf61221bfae2cda1a7d4c7b329009e",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_flow_state/config\t1\t0\tsha256:38f706626bdead7aba30f553131d3442",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_input_range/config\t1\t0\tsha256:d618e9efa27648e89ca816efeebb7297",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_input_range_code/config\t1\t0\tsha256:ecef4da5e92f444089b6eb7360335f78",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_light_status/config\t1\t0\tsha256:015c96248b5580e4cd5b38fe8ebae9f5",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_power_w/config\t1\t0\tsha256:593f9628c20f54d6b8f3de5f5282e737",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_abs/config\t1\t0\tsha256:ce94dfc537efc0d1718adda180cf629f",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_token/config\t1\t0\tsha256:4a9039dc2099a0e566fa2d6600238ed2",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_value/config\t1\t0\tsha256:2257b116f0dee7a0724ba3cf7861884b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/max_chg/config\t1\t0\tsha256:4c023aae4ca4cd0117a9289e735e11d4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/max_temperature_c/config\t1\t0\tsha256:ebee54a31a26c14430fca616c243f537",
+    "homeassistant/sensor/siseli_inverter_1_battery/max_utility_charge_current_a/config\t1\t0\tsha256:bdaac56c90dfaeed6c59949c827d63af",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/maximum_total_charging_current_a/config\t1\t0\tsha256:42c805bd83a4fd93eb1c4e01ff80f12b",
+    "homeassistant/sensor/siseli_inverter_1/mode/config\t1\t0\tsha256:0c07869e454e9c0e14bde693992ef161",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/model_code/config\t1\t0\tsha256:a3f38e2ea0d7819150a57e6686931d86",
+    "homeassistant/sensor/siseli_inverter_1_pv/mppt_constant_temperature_mode/config\t1\t0\tsha256:491bbf7183a13bcbd4e745064e116bfe",
+    "homeassistant/sensor/siseli_inverter_1_load/out_hz/config\t1\t0\tsha256:d1a90595b335d589be97d5d9b5310577",
+    "homeassistant/sensor/siseli_inverter_1_load/out_v/config\t1\t0\tsha256:49432a52e9f1a6ecaac04c3acfb3526a",
+    "homeassistant/sensor/siseli_inverter_1_load/output_dc_comp/config\t1\t0\tsha256:359358b44bcf1db11b8fffa825fa46ab",
+    "homeassistant/sensor/siseli_inverter_1_load/output_ending_time/config\t1\t0\tsha256:eea5cec8a5c8b13d18a448f6007b01c4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/output_model/config\t1\t0\tsha256:51d62a3798134c510ca5300749708781",
+    "homeassistant/sensor/siseli_inverter_1_load/output_set_frequency/config\t1\t0\tsha256:35964a09ba5595f70b989f263fd18f87",
+    "homeassistant/sensor/siseli_inverter_1_load/output_set_voltage/config\t1\t0\tsha256:b82c89489cab9b9f0a4c9780afe7aa3b",
+    "homeassistant/sensor/siseli_inverter_1_load/output_starting_time/config\t1\t0\tsha256:23452b719573e77e97efd844c63f4537",
+    "homeassistant/sensor/siseli_inverter_1_load/output_status_bits/config\t1\t0\tsha256:10bc7add48b4b82903b5a29bca7018c6",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/over_temperature_restart_function/config\t1\t0\tsha256:ac28e9dedb093631bc3ebbb8fdf5f046",
+    "homeassistant/sensor/siseli_inverter_1_load/overload_restart_function/config\t1\t0\tsha256:178fb23cee639da3dd187bc9cecc7749",
+    "homeassistant/sensor/siseli_inverter_1_load/overload_to_bypass_function/config\t1\t0\tsha256:594ef569ac79d675955e8b13500d12d1",
+    "homeassistant/sensor/siseli_inverter_1_load/overloaded/config\t1\t0\tsha256:a0fa9f81185940f1234c537256ec14c5",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_mode/config\t1\t0\tsha256:5ecb69a951755fa805474befb975add2",
+    "homeassistant/sensor/siseli_inverter_1_battery/parallel_mode_turn_off_soc/config\t1\t0\tsha256:11f86e3a7898de489576de43acf78026",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_mode_turn_off_voltage_v/config\t1\t0\tsha256:4165c3292a21a3d0331073f32e97df33",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_role/config\t1\t0\tsha256:54f892f18d4b5b0c75e2c85baec6e085",
+    "homeassistant/sensor/siseli_inverter_1_pv/power_supply_from_pv_to_load_in_ac_state/config\t1\t0\tsha256:8b611e8fad67cf866d4ee07fbafd2d42",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_current_a/config\t1\t0\tsha256:a33977f33bae08dc82a302dfd1e4532d",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_power_w/config\t1\t0\tsha256:fdc9491ed5e9ec85e6273efce3aa57fd",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_temp/config\t1\t0\tsha256:c88e89e7e6b66a6d931a29f9e3eea1e8",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_v/config\t1\t0\tsha256:ad81c348ca40acb0768f1e799a98f1b1",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_current_a/config\t1\t0\tsha256:f10b541f71d7df1cb788a89c8d8cfead",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_energy_feeding_priority/config\t1\t0\tsha256:f6828d9ab982be7ab9c687a13864fcfe",
+    "homeassistant/sensor/siseli_inverter_1_grid/pv_grid_connection_agreement/config\t1\t0\tsha256:c76a5aae6f386028a2621ae594f3d696",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_month_kwh/config\t1\t0\tsha256:cf2764211ddf3929b37fadbcd336a880",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_temp/config\t1\t0\tsha256:66b0dbd2b5e589907150495086631b62",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_today_kwh/config\t1\t0\tsha256:44eff6cab4576e79bfa88403670280ea",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_total_kwh/config\t1\t0\tsha256:c6813876163545f29242dc91db883388",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_v/config\t1\t0\tsha256:e4bf1ca815785fe1fdd853548775b852",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_w/config\t1\t0\tsha256:a9e20d9ec4b48307715fe9d238a78b37",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_year_kwh/config\t1\t0\tsha256:023f8f33d2f146fd9ba01f225d2995e9",
+    "homeassistant/sensor/siseli_inverter_1_load/rated_apparent_va/config\t1\t0\tsha256:08373f601679ab7f5fc93b48a7b247fc",
+    "homeassistant/sensor/siseli_inverter_1_battery/return_to_battery_mode_voltage_v/config\t1\t0\tsha256:100f913643b4213f6ac575673ebcec06",
+    "homeassistant/sensor/siseli_inverter_1_grid/return_to_mains_mode_voltage_v/config\t1\t0\tsha256:cc143a0fd95442dd9f01b98c8baf4a90",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/second_delay_time/config\t1\t0\tsha256:0491388fa7d7f7245df63ddcfe814bcd",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_battery_capacity/config\t1\t0\tsha256:d9a13383a3ce709d7fb714c5ac6cbb78",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_battery_voltage_v/config\t1\t0\tsha256:eb501b26542a5b48731701d01a128781",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_discharge_time/config\t1\t0\tsha256:0a7ca27b18fc099ce988c25935397156",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/software_version/config\t1\t0\tsha256:89ce5cc744bec5773219e399c83ddd4a",
+    "homeassistant/sensor/siseli_inverter_1_pv/solar_charging_switch/config\t1\t0\tsha256:d5a61502c53ff4b182b596fb9e39b05f",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/status_code/config\t1\t0\tsha256:54d4b44c887649cbc869e26161eac505",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/strong_charging_voltage_v/config\t1\t0\tsha256:9436c07c10479bb3c6d4dba9e838130d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/system_time_hm/config\t1\t0\tsha256:b24c413c99ee3fb470cbc679b605b892",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/system_time_ymd/config\t1\t0\tsha256:b51a81ab3760f178aa7bbd25488d2a83",
+    "homeassistant/sensor/siseli_inverter_1_grid/total_number_of_grid_connection/config\t1\t0\tsha256:1639434d8fb673ae34de73718acd4ecd",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/transformer_temperature_c/config\t1\t0\tsha256:c5590f43e19f18acaa2870f6dc499795",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/util_chg/config\t1\t0\tsha256:c733a64d670f0d2f404a923045c56cb9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/warning_light_status/config\t1\t0\tsha256:a5313ccbbadf8aae365f1822cea29791",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/wdrr_status_bits/config\t1\t0\tsha256:725bbfd2083130db4cb36359b5be2540",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/working_mode/config\t1\t0\tsha256:421474de8e2a0bb8f2c88e6e8208a08f",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_aux_raw/config\t1\t0\tsha256:3d593ecac1f3c734f1dcfa59c90aa610",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_code_raw/config\t1\t0\tsha256:f7550d18c034fb96a58e2655fe97861a",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_flags_raw/config\t1\t0\tsha256:5b695795d11f7b8821deb75a09694bb1",
+    "siseli/siseli_inverter_1/availability\t1\t0\tonline",
+    "siseli/siseli_inverter_1/diagnostics/state\t1\t0\t{\"dtu_id\": \"34545375423553743260\", \"model_code\": null, \"output_model\": null, \"status_code\": \"00\", \"firmware_info\": null, \"firmware_version\": null, \"firmware_build_date\": null, \"firmware_build_slot\": null, \"bus_voltage\": 420.0, \"ac_charging_switch\": \"Close\", \"abnormal_fan_speed\": null, \"abnormal_temperature_sensor\": null, \"automatic_return_to_first_page\": \"On\", \"buzzer_function\": \"On\", \"charging_light_status\": null, \"charging_main_switch\": null, \"charging_priority_order\": \"SNU\", \"dc_rectification_temperature_c\": 51.0, \"eco\": \"Off\", \"eeprom_data_abnormality\": null, \"eeprom_read_write_exception\": null, \"fan_1_speed\": 50, \"fan_1_status\": null, \"fan_2_speed\": 50, \"fan_2_status\": null, \"float_charging_voltage_v\": 56.4, \"inductor_current_a\": 8.7, \"lcd_back_lighting\": null, \"low_electric_lock_voltage_v\": 42.0, \"machine_over_temperature\": null, \"max_temperature_c\": 59.0, \"maximum_total_charging_current_a\": 50, \"over_temperature_restart_function\": null, \"second_delay_time\": \"5 min\", \"software_version\": null, \"strong_charging_voltage_v\": 56.4, \"system_time_hm\": \"10:04\", \"system_time_ymd\": \"260720\", \"transformer_temperature_c\": 59.0, \"warning_light_status\": null, \"working_mode\": \"SBU\", \"wdrr_status_bits\": \"11000\", \"eo8w_flags_raw\": \"B010000000000\", \"eo8w_blob_raw\": \"20211002120B117020000\", \"yavb_flags_raw\": \"1001100000000000\", \"yavb_code_raw\": \"03041\", \"yavb_aux_raw\": \"000000\", \"bat_temp\": 48.0, \"max_chg\": 50, \"util_chg\": null, \"bulk_v\": 56.4, \"float_v\": 56.4, \"cut_v\": 42.0}",
+    "siseli/siseli_inverter_1/state\t1\t0\t{\"mode\": null, \"c_battery_charge_power_w\": 1554, \"c_battery_discharge_power_w\": 0, \"c_battery_charge_energy_kwh\": 0.0, \"c_battery_discharge_energy_kwh\": 0.0, \"c_bms_total_capacity_ah\": null, \"c_mains_power_w\": 0, \"c_grid_import_power_w\": 0, \"c_load_energy_kwh\": 0.0, \"c_grid_import_energy_kwh\": 0.0, \"c_load_w\": 766, \"c_generation_energy_kwh\": 0.0, \"c_generation_power_w\": 1403, \"bms_current_soc\": 58}",
+    "siseli/siseli_inverter_1/battery/state\t1\t0\t{\"bat_v\": 53.4, \"bat_cap\": 58, \"bat_charge_current\": 7.0, \"dischg_current\": 0.0, \"bat_series_count\": 4, \"battery_status\": \"Charge\", \"battery_type\": null, \"bms_allow_charging_flag\": null, \"bms_allow_discharge_flag\": null, \"bms_auto_start_soc_after_low\": 25, \"bms_avg_temp_c\": 30.95, \"bms_charge_current_limit_a\": 195.0, \"bms_charge_voltage_limit_v\": 57.6, \"bms_charging_current_a\": 29.1, \"bms_charging_overcurrent_sign\": null, \"bms_communication_control_function\": null, \"bms_communication_normal\": null, \"bms_discharge_current_a\": 0.0, \"bms_discharge_overcurrent_flag\": null, \"bms_discharge_voltage_limit_v\": 42.0, \"bms_low_battery_alarm_flag\": null, \"bms_low_power_fault_flag\": null, \"bms_low_power_soc\": 15, \"bms_low_temperature_flag\": null, \"bms_returns_to_battery_mode_soc\": 50, \"bms_returns_to_mains_mode_soc\": 35, \"bms_temperature_too_high_flag\": null, \"battery_equalization_mode\": \"Disable\", \"battery_equalization_voltage_v\": 58.4, \"battery_not_connected\": null, \"battery_overvoltage_shutdown_voltage_v\": 44.0, \"battery_voltage_higher\": null, \"boost_temperature_c\": 38.0, \"equalization_interval\": \"30 day\", \"equalization_overtime\": \"120 min\", \"equalization_time\": \"60 min\", \"li_battery_activation_function_switch\": null, \"li_battery_activation_process\": null, \"low_battery_alarm\": null, \"max_utility_charge_current_a\": 10, \"parallel_mode_turn_off_soc\": 20, \"return_to_battery_mode_voltage_v\": 54.0, \"second_output_battery_capacity\": 50, \"second_output_battery_voltage_v\": 52.0, \"second_output_discharge_time\": \"0 min\"}",
+    "siseli/siseli_inverter_1/bms/state\t1\t0\t{\"bms_remaining_ah\": null, \"bms_nominal_ah\": null, \"bms_display_mode\": null, \"bms_max_cell_mv\": null, \"bms_max_cell_pos\": null, \"bms_min_cell_mv\": null, \"bms_min_cell_pos\": null, \"bms_cell_count\": null, \"bms_cell_delta_mv\": null, \"cell_1_mv\": null, \"cell_2_mv\": null, \"cell_3_mv\": null, \"cell_4_mv\": null, \"cell_5_mv\": null, \"cell_6_mv\": null, \"cell_7_mv\": null, \"cell_8_mv\": null, \"cell_9_mv\": null, \"cell_10_mv\": null, \"cell_11_mv\": null, \"cell_12_mv\": null, \"cell_13_mv\": null, \"cell_14_mv\": null, \"cell_15_mv\": null, \"cell_16_mv\": null}",
+    "siseli/siseli_inverter_1/grid/state\t1\t0\t{\"grid_v\": 232.7, \"grid_hz\": 49.9, \"mains_current_flow_direction\": \"Mains To Inverter\", \"mains_power_w\": 0, \"mains_apparent_va\": 0, \"ct_function_switch\": \"OFF\", \"grid_connected_current_a\": 20, \"grid_connection_function\": \"Off\", \"grid_connection_sign\": \"Off Grid\", \"high_frequency_of_mains_power_loss_hz\": 65.0, \"high_point_of_mains_power_loss_voltage_v\": 280.0, \"input_source_prompt_function\": \"On\", \"input_voltage_too_high\": null, \"low_frequency_of_mains_power_loss_hz\": 40.0, \"low_point_of_mains_power_loss_voltage_v\": 170.0, \"main_output_relay_status\": null, \"mains_charging_ending_time\": \"0 h\", \"mains_charging_starting_time\": \"0 h\", \"mains_input_range\": \"UPS\", \"mains_light_status\": null, \"pv_grid_connection_agreement\": null, \"return_to_mains_mode_voltage_v\": 46.0, \"total_number_of_grid_connection\": null, \"mains_wdrr_token\": \"+00000\", \"mains_wdrr_value\": 0, \"mains_wdrr_abs\": 0, \"mains_eo8w_code\": \"B B\", \"mains_flow_code\": \"0\", \"mains_input_range_code\": \"11\", \"mains_flow_state\": \"Mains To Inverter\"}",
+    "siseli/siseli_inverter_1/load/state\t1\t0\t{\"out_v\": 228.5, \"out_hz\": 49.9, \"apparent_va\": 868, \"load_w\": 766, \"load_pct\": 7, \"output_dc_comp\": 18, \"does_machine_have_output\": \"Yes\", \"dual_output_mode\": \"On\", \"inverter_light_status\": null, \"inverter_temperature_c\": 48.0, \"output_ending_time\": \"0 h\", \"output_set_frequency\": null, \"output_set_voltage\": 230, \"output_starting_time\": \"0 h\", \"overloaded\": null, \"overload_restart_function\": null, \"overload_to_bypass_function\": null, \"parallel_mode\": \"Enable\", \"parallel_mode_turn_off_voltage_v\": 44.0, \"parallel_role\": \"Host\", \"rated_apparent_va\": 11000, \"output_status_bits\": \"11000\"}",
+    "siseli/siseli_inverter_1/pv/state\t1\t0\t{\"generation_power_w\": 1403, \"pv_v\": 0.0, \"pv_current_a\": 0.0, \"pv_w\": 0, \"pv2_v\": 132.0, \"pv2_current_a\": 10.6, \"pv2_power_w\": 1403, \"pv_today_kwh\": 2.939, \"pv_month_kwh\": 315.7, \"pv_total_kwh\": 2284.6, \"pv_year_kwh\": 2081.0, \"pv_temp\": 58.0, \"pv2_temp\": 48.0, \"solar_charging_switch\": null, \"abnormal_low_pv_power\": null, \"mppt_constant_temperature_mode\": null, \"power_supply_from_pv_to_load_in_ac_state\": \"No\", \"pv_energy_feeding_priority\": null}"
+   ],
+   "log": [
+    "[HA MQTT] Connected to core-mosquitto:1883",
+    "[HA MQTT] Discovery published"
+   ]
+  },
+  "d_marker_names_previous_device_id": {
+   "published": [
+    "<2697 cleared topics>\tsha256:991581713910bff375c9a26e7e9ed43b\tfirst=homeassistant/sensor/siseli_inverter_1/abnormal_fan_speed/config\tlast=siseli/siseli_inverter_1/pv/availability",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/abnormal_fan_speed/config\t1\t0\tsha256:4375621486ec850d3136ad9ab87df0fc",
+    "homeassistant/sensor/siseli_inverter_1_pv/abnormal_low_pv_power/config\t1\t0\tsha256:240723ad1fc5b234a8e27bc3b23c76a2",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/abnormal_temperature_sensor/config\t1\t0\tsha256:14bbec3813dd19923c300bef3e94a997",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/ac_charging_switch/config\t1\t0\tsha256:a9d414e24e73bd1ed46f414976c3be60",
+    "homeassistant/sensor/siseli_inverter_1_load/apparent_va/config\t1\t0\tsha256:1ecff9a3dcf85285f359b2c2ae643feb",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/automatic_return_to_first_page/config\t1\t0\tsha256:a427ad5b922ffdfa89fd2fd95804fccb",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_cap/config\t1\t0\tsha256:02ffc78f5f268ac5f3b9ce8befb66713",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_charge_current/config\t1\t0\tsha256:5e83e2af6f0f3f59ed3153c1a4cc7a2e",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_series_count/config\t1\t0\tsha256:fa51a58b232ba26c843c9a9b388ab34c",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bat_temp/config\t1\t0\tsha256:7d0ab25502e532956e8fa6b1a8619ec3",
+    "homeassistant/sensor/siseli_inverter_1_battery/bat_v/config\t1\t0\tsha256:10d288350e982f4945423a9ca056f7be",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_equalization_mode/config\t1\t0\tsha256:4aa5457cc9b41606491824753c3b7363",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_equalization_voltage_v/config\t1\t0\tsha256:a35ed20dd3ab3866f5b748bf9b3e3fce",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_not_connected/config\t1\t0\tsha256:08defd2e975a25a8c1ace4a07e3a5e22",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_overvoltage_shutdown_voltage_v/config\t1\t0\tsha256:fb994c25339fe7032a783abb3cf56421",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_status/config\t1\t0\tsha256:12722f64a18886e9394d152873ec0065",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_type/config\t1\t0\tsha256:6553a0b5ca734a9bd0300f46154f46cb",
+    "homeassistant/sensor/siseli_inverter_1_battery/battery_voltage_higher/config\t1\t0\tsha256:e71f35830f2b849aa9c3cd7a94af3726",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_allow_charging_flag/config\t1\t0\tsha256:547d98573bf4ac828d71f06cc0e3bd66",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_allow_discharge_flag/config\t1\t0\tsha256:02eced73ef2821421f34114d5e949a61",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_auto_start_soc_after_low/config\t1\t0\tsha256:9f8ba83c6ae38f66934bf0b7066071e2",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_avg_temp_c/config\t1\t0\tsha256:d2f9d59b65c404d163d4edfed5355a22",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_cell_count/config\t1\t0\tsha256:d76b13855302f858881fe5ca58a0b5a1",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_cell_delta_mv/config\t1\t0\tsha256:9b4d41713482b3f74827ec1b92cb27e5",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charge_current_limit_a/config\t1\t0\tsha256:c0edff473c5dc1747d6396f2914cfafd",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charge_voltage_limit_v/config\t1\t0\tsha256:3cef35f8837ce816cdf69fc1340040f4",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charging_current_a/config\t1\t0\tsha256:243ee0b1c382da0a8b6eb215bb3bf331",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_charging_overcurrent_sign/config\t1\t0\tsha256:fa20db38178f841df0b5209750141a32",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_communication_control_function/config\t1\t0\tsha256:1d70d0f8e9858f07445286d135e34f84",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_communication_normal/config\t1\t0\tsha256:e96504333946f577f9a8e58d80b3d43d",
+    "homeassistant/sensor/siseli_inverter_1/bms_current_soc/config\t1\t0\tsha256:f1a013850fc7175b968523509c477eea",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_current_a/config\t1\t0\tsha256:4efd3ec38455972f8afd2a5f9bbcc6be",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_overcurrent_flag/config\t1\t0\tsha256:11e4cea720f2aa68146ac63eb40b3ed7",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_discharge_voltage_limit_v/config\t1\t0\tsha256:41aab42f5a5f83401bfbe287444a512b",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_display_mode/config\t1\t0\tsha256:9d017697e22b349e64e83e92f59ebf4b",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_battery_alarm_flag/config\t1\t0\tsha256:bdc97a02c9719bfb401c2be05833b2d0",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_power_fault_flag/config\t1\t0\tsha256:120bb3b0c16094929f9a40b51b8b2421",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_power_soc/config\t1\t0\tsha256:55b5cc5d3a570de8f02e0e2c049d2632",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_low_temperature_flag/config\t1\t0\tsha256:60767e04240678fc23bb4f1cf9b5545b",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_max_cell_mv/config\t1\t0\tsha256:c643d3a892762206bfb37651b1bc2113",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_max_cell_pos/config\t1\t0\tsha256:fb332efb1ea545859fc08202fb2186e2",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_min_cell_mv/config\t1\t0\tsha256:ea3aae646594be4eb914fceab022f676",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_min_cell_pos/config\t1\t0\tsha256:4982e783540e947243b6262cb91d2bc4",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_nominal_ah/config\t1\t0\tsha256:99061f355f1bc0703d968f6b60e1444e",
+    "homeassistant/sensor/siseli_inverter_1_bms/bms_remaining_ah/config\t1\t0\tsha256:7832ffbfdb8129c0918ae29630050766",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_returns_to_battery_mode_soc/config\t1\t0\tsha256:1a9d471e81d058e453e80a99d61199db",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_returns_to_mains_mode_soc/config\t1\t0\tsha256:0ee0c5ce5ffc11c8cc47b1d4c12d3595",
+    "homeassistant/sensor/siseli_inverter_1_battery/bms_temperature_too_high_flag/config\t1\t0\tsha256:7bce5b94ae4e942ece0d88e081d05837",
+    "homeassistant/sensor/siseli_inverter_1_battery/boost_temperature_c/config\t1\t0\tsha256:c4dba477e5a7feadf64ecea780f9c5dd",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bulk_v/config\t1\t0\tsha256:32f40044f6856939470951d0642e6b00",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/bus_voltage/config\t1\t0\tsha256:82d349d865183373e85eeeb3816aca93",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/buzzer_function/config\t1\t0\tsha256:7fc3057a06981b175f28dc975abf6b7b",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_charge_energy_kwh/config\t1\t0\tsha256:da499a2a1ef8c8e09992d1937079fae7",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_charge_power_w/config\t1\t0\tsha256:e1e31b41036934553ae6fbe0c1aa75a5",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_discharge_energy_kwh/config\t1\t0\tsha256:b58aac7b2e9c977e7aa82b718e5c4ed3",
+    "homeassistant/sensor/siseli_inverter_1/c_battery_discharge_power_w/config\t1\t0\tsha256:8daed159aedfe3a6532f3e1a8d927d6d",
+    "homeassistant/sensor/siseli_inverter_1/c_bms_total_capacity_ah/config\t1\t0\tsha256:150f60d8d1778e1d8e3b29c471ff30e6",
+    "homeassistant/sensor/siseli_inverter_1/c_generation_energy_kwh/config\t1\t0\tsha256:dc7c212585e1cb190b86ccc161d467e6",
+    "homeassistant/sensor/siseli_inverter_1/c_generation_power_w/config\t1\t0\tsha256:9da2431da71fbf7179d46943d79bcf5f",
+    "homeassistant/sensor/siseli_inverter_1/c_grid_import_energy_kwh/config\t1\t0\tsha256:7a059008c199684c1eacfe07a4cb7a79",
+    "homeassistant/sensor/siseli_inverter_1/c_grid_import_power_w/config\t1\t0\tsha256:c7947e9e1373b487810ff8f56c0fa87d",
+    "homeassistant/sensor/siseli_inverter_1/c_load_energy_kwh/config\t1\t0\tsha256:11ec12ee0a0f3ee3066eae4cdb0a9e47",
+    "homeassistant/sensor/siseli_inverter_1/c_load_w/config\t1\t0\tsha256:dedbcb99004697b12c3301c10bf0fb4f",
+    "homeassistant/sensor/siseli_inverter_1/c_mains_power_w/config\t1\t0\tsha256:a91c30e4f45ca880daa5488a35dcd577",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_10_mv/config\t1\t0\tsha256:479e3b8e234450946f14d90b6f657486",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_11_mv/config\t1\t0\tsha256:44c23d28b3e541ae3ef352ecb43dbc22",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_12_mv/config\t1\t0\tsha256:dc7028a55e28cb0d017e8ea8ac6e0736",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_13_mv/config\t1\t0\tsha256:525f3bd72bab7af1e0f373522c0ff5fa",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_14_mv/config\t1\t0\tsha256:f59262d7a8626616b13d882bc5dde54a",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_15_mv/config\t1\t0\tsha256:081ab5f4c6b2acdbc1755226b6fe9673",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_16_mv/config\t1\t0\tsha256:038098cb2de38ec84f2167002d551af6",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_1_mv/config\t1\t0\tsha256:d7eaef1d43718baca32aee90e0097e14",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_2_mv/config\t1\t0\tsha256:fd2709d9213733dc3e2b12ee12c1a614",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_3_mv/config\t1\t0\tsha256:10a1984f7ffb1044a5a19431e8195222",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_4_mv/config\t1\t0\tsha256:79f930f14cc3c80cbf4704b88bcc3987",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_5_mv/config\t1\t0\tsha256:67734f358f02770e54b1aa4605c33614",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_6_mv/config\t1\t0\tsha256:5d41c795dbbc86653556f3250991744c",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_7_mv/config\t1\t0\tsha256:a9d640fa52ee05f3fd4672128565b485",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_8_mv/config\t1\t0\tsha256:31dce604db9427a6a4a3fb74f6329025",
+    "homeassistant/sensor/siseli_inverter_1_bms/cell_9_mv/config\t1\t0\tsha256:47665542b410bf8d8b97e5ce02648fd2",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_light_status/config\t1\t0\tsha256:ac49ad089b7d1c48982b7543084da0bf",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_main_switch/config\t1\t0\tsha256:2e3665f85e60be8cd38a2123db9d5dc8",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/charging_priority_order/config\t1\t0\tsha256:a1310a419671c6bb1f698f61c85f7e79",
+    "homeassistant/sensor/siseli_inverter_1_grid/ct_function_switch/config\t1\t0\tsha256:829aa0449339e79ccc64e3787f39cbd1",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/cut_v/config\t1\t0\tsha256:cff195350c15ced5d49e9bc132fcda66",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/dc_rectification_temperature_c/config\t1\t0\tsha256:1e7662631597d69629e45d38931b518a",
+    "homeassistant/sensor/siseli_inverter_1_battery/dischg_current/config\t1\t0\tsha256:7bbb6b8214932737a92504520ab7b130",
+    "homeassistant/sensor/siseli_inverter_1_load/does_machine_have_output/config\t1\t0\tsha256:01c3210fc393a0e96e6f2a9924385dcc",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/dtu_id/config\t1\t0\tsha256:4c46ccf33c49e87f2ad021afbff1f0bf",
+    "homeassistant/sensor/siseli_inverter_1_load/dual_output_mode/config\t1\t0\tsha256:f7daac8a27ab452d6e38242ba4459691",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eco/config\t1\t0\tsha256:a6bea9b9ed9a69d82629b697ee4afb8e",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eeprom_data_abnormality/config\t1\t0\tsha256:2722ea259af94cdf2f193ca03d78ae02",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eeprom_read_write_exception/config\t1\t0\tsha256:03f00899afc6d1b5fe715e2baed5532b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eo8w_blob_raw/config\t1\t0\tsha256:573ff8642f0285a2801f92310740327b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/eo8w_flags_raw/config\t1\t0\tsha256:143e975c5d6c9b04e7576e17b75c5137",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_interval/config\t1\t0\tsha256:80a4b5e4e633f53fd8e81939c0589c5b",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_overtime/config\t1\t0\tsha256:4973ba5a6ce7c555e113cee37b98ee4c",
+    "homeassistant/sensor/siseli_inverter_1_battery/equalization_time/config\t1\t0\tsha256:e105ab674b9d5a8012453b8482679da6",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_1_speed/config\t1\t0\tsha256:428fc6a655e19acd93915b041d4c4784",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_1_status/config\t1\t0\tsha256:f7cc72755c63a424b24120bf43be5802",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_2_speed/config\t1\t0\tsha256:a3243425228062e940fa1255a6fb3bfb",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/fan_2_status/config\t1\t0\tsha256:f25d1279270dde7717415508550a39da",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_build_date/config\t1\t0\tsha256:44a091feb193add586c46bb3d619066c",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_build_slot/config\t1\t0\tsha256:7f0602616ebc52f4b517599218bf8a2d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_info/config\t1\t0\tsha256:fbacdf80bf02bc970b387be838d9a091",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/firmware_version/config\t1\t0\tsha256:5a0cb46e9aaa89a5fc3f11377031479d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/float_charging_voltage_v/config\t1\t0\tsha256:669bc473bad59ca1e45da4e3e440c7e9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/float_v/config\t1\t0\tsha256:2b982c2bd0eca78c625d9c35c7b6eb07",
+    "homeassistant/sensor/siseli_inverter_1_pv/generation_power_w/config\t1\t0\tsha256:cb575a745947dd68231121a0bb4a57e1",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connected_current_a/config\t1\t0\tsha256:c81499da59c4c6b9541c0b3aa6bb5024",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connection_function/config\t1\t0\tsha256:b3d8020b9bae6df0036cebcdb5ebe927",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_connection_sign/config\t1\t0\tsha256:fa27c6b1720aebd1cc56aff7187acd9f",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_hz/config\t1\t0\tsha256:75415edfaa9d3867c81166e62d41c94f",
+    "homeassistant/sensor/siseli_inverter_1_grid/grid_v/config\t1\t0\tsha256:5a3c1fc087c7800d1361aa15a98deed7",
+    "homeassistant/sensor/siseli_inverter_1_grid/high_frequency_of_mains_power_loss_hz/config\t1\t0\tsha256:69a7fa7c5bf87876528a1f8903a102b0",
+    "homeassistant/sensor/siseli_inverter_1_grid/high_point_of_mains_power_loss_voltage_v/config\t1\t0\tsha256:0942142d15b6c0d31ab6dba231abfbd4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/inductor_current_a/config\t1\t0\tsha256:10752d6ea033dfa1b840ad6f90017380",
+    "homeassistant/sensor/siseli_inverter_1_grid/input_source_prompt_function/config\t1\t0\tsha256:42cbe41f67588fc83a6af5c2e7624df9",
+    "homeassistant/sensor/siseli_inverter_1_grid/input_voltage_too_high/config\t1\t0\tsha256:40f95cefa7f0d6844be858c00dca3252",
+    "homeassistant/sensor/siseli_inverter_1_load/inverter_light_status/config\t1\t0\tsha256:ac7905bcd12c33c5e88445fb720e23a7",
+    "homeassistant/sensor/siseli_inverter_1_load/inverter_temperature_c/config\t1\t0\tsha256:79ed41dd402e5d257432197bf5c60191",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/lcd_back_lighting/config\t1\t0\tsha256:666a2082d2dfda0827b489557ebe1ca6",
+    "homeassistant/sensor/siseli_inverter_1_battery/li_battery_activation_function_switch/config\t1\t0\tsha256:c836eaeb482b8e958f649c60d3bf21eb",
+    "homeassistant/sensor/siseli_inverter_1_battery/li_battery_activation_process/config\t1\t0\tsha256:aed40e713c578163e09bb04f02244e78",
+    "homeassistant/sensor/siseli_inverter_1_load/load_pct/config\t1\t0\tsha256:f7e02985db553d3a60dda10040337108",
+    "homeassistant/sensor/siseli_inverter_1_load/load_w/config\t1\t0\tsha256:88db848571de998ce97ffeab2cf2cf2d",
+    "homeassistant/sensor/siseli_inverter_1_battery/low_battery_alarm/config\t1\t0\tsha256:c5a5641277c97d100d17637d7f320520",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/low_electric_lock_voltage_v/config\t1\t0\tsha256:8eeb41886267f18220cd97feb577b1a6",
+    "homeassistant/sensor/siseli_inverter_1_grid/low_frequency_of_mains_power_loss_hz/config\t1\t0\tsha256:d700fa7c50513296a6256ec69cc65e18",
+    "homeassistant/sensor/siseli_inverter_1_grid/low_point_of_mains_power_loss_voltage_v/config\t1\t0\tsha256:6f3eed171b5f2c969fc94888d3897de9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/machine_over_temperature/config\t1\t0\tsha256:abb797588448537355c8313fafdc1938",
+    "homeassistant/sensor/siseli_inverter_1_grid/main_output_relay_status/config\t1\t0\tsha256:b937904c0e2072d0a591383dfe36c1be",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_apparent_va/config\t1\t0\tsha256:37a2bdf215578fee10852f3c16a3f8b0",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_charging_ending_time/config\t1\t0\tsha256:22434e2fa55341f6f2c3514716c13f4c",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_charging_starting_time/config\t1\t0\tsha256:337a8504544f614bc6d5f297a4e45afb",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_current_flow_direction/config\t1\t0\tsha256:95ca7aa2d069adf82fea902475669c88",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_eo8w_code/config\t1\t0\tsha256:33c27549a953d20d4a1670bf73f0ae51",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_flow_code/config\t1\t0\tsha256:7fdf61221bfae2cda1a7d4c7b329009e",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_flow_state/config\t1\t0\tsha256:38f706626bdead7aba30f553131d3442",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_input_range/config\t1\t0\tsha256:d618e9efa27648e89ca816efeebb7297",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_input_range_code/config\t1\t0\tsha256:ecef4da5e92f444089b6eb7360335f78",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_light_status/config\t1\t0\tsha256:015c96248b5580e4cd5b38fe8ebae9f5",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_power_w/config\t1\t0\tsha256:593f9628c20f54d6b8f3de5f5282e737",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_abs/config\t1\t0\tsha256:ce94dfc537efc0d1718adda180cf629f",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_token/config\t1\t0\tsha256:4a9039dc2099a0e566fa2d6600238ed2",
+    "homeassistant/sensor/siseli_inverter_1_grid/mains_wdrr_value/config\t1\t0\tsha256:2257b116f0dee7a0724ba3cf7861884b",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/max_chg/config\t1\t0\tsha256:4c023aae4ca4cd0117a9289e735e11d4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/max_temperature_c/config\t1\t0\tsha256:ebee54a31a26c14430fca616c243f537",
+    "homeassistant/sensor/siseli_inverter_1_battery/max_utility_charge_current_a/config\t1\t0\tsha256:bdaac56c90dfaeed6c59949c827d63af",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/maximum_total_charging_current_a/config\t1\t0\tsha256:42c805bd83a4fd93eb1c4e01ff80f12b",
+    "homeassistant/sensor/siseli_inverter_1/mode/config\t1\t0\tsha256:0c07869e454e9c0e14bde693992ef161",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/model_code/config\t1\t0\tsha256:a3f38e2ea0d7819150a57e6686931d86",
+    "homeassistant/sensor/siseli_inverter_1_pv/mppt_constant_temperature_mode/config\t1\t0\tsha256:491bbf7183a13bcbd4e745064e116bfe",
+    "homeassistant/sensor/siseli_inverter_1_load/out_hz/config\t1\t0\tsha256:d1a90595b335d589be97d5d9b5310577",
+    "homeassistant/sensor/siseli_inverter_1_load/out_v/config\t1\t0\tsha256:49432a52e9f1a6ecaac04c3acfb3526a",
+    "homeassistant/sensor/siseli_inverter_1_load/output_dc_comp/config\t1\t0\tsha256:359358b44bcf1db11b8fffa825fa46ab",
+    "homeassistant/sensor/siseli_inverter_1_load/output_ending_time/config\t1\t0\tsha256:eea5cec8a5c8b13d18a448f6007b01c4",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/output_model/config\t1\t0\tsha256:51d62a3798134c510ca5300749708781",
+    "homeassistant/sensor/siseli_inverter_1_load/output_set_frequency/config\t1\t0\tsha256:35964a09ba5595f70b989f263fd18f87",
+    "homeassistant/sensor/siseli_inverter_1_load/output_set_voltage/config\t1\t0\tsha256:b82c89489cab9b9f0a4c9780afe7aa3b",
+    "homeassistant/sensor/siseli_inverter_1_load/output_starting_time/config\t1\t0\tsha256:23452b719573e77e97efd844c63f4537",
+    "homeassistant/sensor/siseli_inverter_1_load/output_status_bits/config\t1\t0\tsha256:10bc7add48b4b82903b5a29bca7018c6",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/over_temperature_restart_function/config\t1\t0\tsha256:ac28e9dedb093631bc3ebbb8fdf5f046",
+    "homeassistant/sensor/siseli_inverter_1_load/overload_restart_function/config\t1\t0\tsha256:178fb23cee639da3dd187bc9cecc7749",
+    "homeassistant/sensor/siseli_inverter_1_load/overload_to_bypass_function/config\t1\t0\tsha256:594ef569ac79d675955e8b13500d12d1",
+    "homeassistant/sensor/siseli_inverter_1_load/overloaded/config\t1\t0\tsha256:a0fa9f81185940f1234c537256ec14c5",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_mode/config\t1\t0\tsha256:5ecb69a951755fa805474befb975add2",
+    "homeassistant/sensor/siseli_inverter_1_battery/parallel_mode_turn_off_soc/config\t1\t0\tsha256:11f86e3a7898de489576de43acf78026",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_mode_turn_off_voltage_v/config\t1\t0\tsha256:4165c3292a21a3d0331073f32e97df33",
+    "homeassistant/sensor/siseli_inverter_1_load/parallel_role/config\t1\t0\tsha256:54f892f18d4b5b0c75e2c85baec6e085",
+    "homeassistant/sensor/siseli_inverter_1_pv/power_supply_from_pv_to_load_in_ac_state/config\t1\t0\tsha256:8b611e8fad67cf866d4ee07fbafd2d42",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_current_a/config\t1\t0\tsha256:a33977f33bae08dc82a302dfd1e4532d",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_power_w/config\t1\t0\tsha256:fdc9491ed5e9ec85e6273efce3aa57fd",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_temp/config\t1\t0\tsha256:c88e89e7e6b66a6d931a29f9e3eea1e8",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv2_v/config\t1\t0\tsha256:ad81c348ca40acb0768f1e799a98f1b1",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_current_a/config\t1\t0\tsha256:f10b541f71d7df1cb788a89c8d8cfead",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_energy_feeding_priority/config\t1\t0\tsha256:f6828d9ab982be7ab9c687a13864fcfe",
+    "homeassistant/sensor/siseli_inverter_1_grid/pv_grid_connection_agreement/config\t1\t0\tsha256:c76a5aae6f386028a2621ae594f3d696",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_month_kwh/config\t1\t0\tsha256:cf2764211ddf3929b37fadbcd336a880",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_temp/config\t1\t0\tsha256:66b0dbd2b5e589907150495086631b62",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_today_kwh/config\t1\t0\tsha256:44eff6cab4576e79bfa88403670280ea",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_total_kwh/config\t1\t0\tsha256:c6813876163545f29242dc91db883388",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_v/config\t1\t0\tsha256:e4bf1ca815785fe1fdd853548775b852",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_w/config\t1\t0\tsha256:a9e20d9ec4b48307715fe9d238a78b37",
+    "homeassistant/sensor/siseli_inverter_1_pv/pv_year_kwh/config\t1\t0\tsha256:023f8f33d2f146fd9ba01f225d2995e9",
+    "homeassistant/sensor/siseli_inverter_1_load/rated_apparent_va/config\t1\t0\tsha256:08373f601679ab7f5fc93b48a7b247fc",
+    "homeassistant/sensor/siseli_inverter_1_battery/return_to_battery_mode_voltage_v/config\t1\t0\tsha256:100f913643b4213f6ac575673ebcec06",
+    "homeassistant/sensor/siseli_inverter_1_grid/return_to_mains_mode_voltage_v/config\t1\t0\tsha256:cc143a0fd95442dd9f01b98c8baf4a90",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/second_delay_time/config\t1\t0\tsha256:0491388fa7d7f7245df63ddcfe814bcd",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_battery_capacity/config\t1\t0\tsha256:d9a13383a3ce709d7fb714c5ac6cbb78",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_battery_voltage_v/config\t1\t0\tsha256:eb501b26542a5b48731701d01a128781",
+    "homeassistant/sensor/siseli_inverter_1_battery/second_output_discharge_time/config\t1\t0\tsha256:0a7ca27b18fc099ce988c25935397156",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/software_version/config\t1\t0\tsha256:89ce5cc744bec5773219e399c83ddd4a",
+    "homeassistant/sensor/siseli_inverter_1_pv/solar_charging_switch/config\t1\t0\tsha256:d5a61502c53ff4b182b596fb9e39b05f",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/status_code/config\t1\t0\tsha256:54d4b44c887649cbc869e26161eac505",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/strong_charging_voltage_v/config\t1\t0\tsha256:9436c07c10479bb3c6d4dba9e838130d",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/system_time_hm/config\t1\t0\tsha256:b24c413c99ee3fb470cbc679b605b892",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/system_time_ymd/config\t1\t0\tsha256:b51a81ab3760f178aa7bbd25488d2a83",
+    "homeassistant/sensor/siseli_inverter_1_grid/total_number_of_grid_connection/config\t1\t0\tsha256:1639434d8fb673ae34de73718acd4ecd",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/transformer_temperature_c/config\t1\t0\tsha256:c5590f43e19f18acaa2870f6dc499795",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/util_chg/config\t1\t0\tsha256:c733a64d670f0d2f404a923045c56cb9",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/warning_light_status/config\t1\t0\tsha256:a5313ccbbadf8aae365f1822cea29791",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/wdrr_status_bits/config\t1\t0\tsha256:725bbfd2083130db4cb36359b5be2540",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/working_mode/config\t1\t0\tsha256:421474de8e2a0bb8f2c88e6e8208a08f",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_aux_raw/config\t1\t0\tsha256:3d593ecac1f3c734f1dcfa59c90aa610",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_code_raw/config\t1\t0\tsha256:f7550d18c034fb96a58e2655fe97861a",
+    "homeassistant/sensor/siseli_inverter_1_diagnostics/yavb_flags_raw/config\t1\t0\tsha256:5b695795d11f7b8821deb75a09694bb1",
+    "siseli/siseli_inverter_1/availability\t1\t0\tonline",
+    "siseli/siseli_inverter_1/diagnostics/state\t1\t0\t{\"dtu_id\": \"34545375423553743260\", \"model_code\": null, \"output_model\": null, \"status_code\": \"00\", \"firmware_info\": null, \"firmware_version\": null, \"firmware_build_date\": null, \"firmware_build_slot\": null, \"bus_voltage\": 420.0, \"ac_charging_switch\": \"Close\", \"abnormal_fan_speed\": null, \"abnormal_temperature_sensor\": null, \"automatic_return_to_first_page\": \"On\", \"buzzer_function\": \"On\", \"charging_light_status\": null, \"charging_main_switch\": null, \"charging_priority_order\": \"SNU\", \"dc_rectification_temperature_c\": 51.0, \"eco\": \"Off\", \"eeprom_data_abnormality\": null, \"eeprom_read_write_exception\": null, \"fan_1_speed\": 50, \"fan_1_status\": null, \"fan_2_speed\": 50, \"fan_2_status\": null, \"float_charging_voltage_v\": 56.4, \"inductor_current_a\": 8.7, \"lcd_back_lighting\": null, \"low_electric_lock_voltage_v\": 42.0, \"machine_over_temperature\": null, \"max_temperature_c\": 59.0, \"maximum_total_charging_current_a\": 50, \"over_temperature_restart_function\": null, \"second_delay_time\": \"5 min\", \"software_version\": null, \"strong_charging_voltage_v\": 56.4, \"system_time_hm\": \"10:04\", \"system_time_ymd\": \"260720\", \"transformer_temperature_c\": 59.0, \"warning_light_status\": null, \"working_mode\": \"SBU\", \"wdrr_status_bits\": \"11000\", \"eo8w_flags_raw\": \"B010000000000\", \"eo8w_blob_raw\": \"20211002120B117020000\", \"yavb_flags_raw\": \"1001100000000000\", \"yavb_code_raw\": \"03041\", \"yavb_aux_raw\": \"000000\", \"bat_temp\": 48.0, \"max_chg\": 50, \"util_chg\": null, \"bulk_v\": 56.4, \"float_v\": 56.4, \"cut_v\": 42.0}",
+    "siseli/siseli_inverter_1/state\t1\t0\t{\"mode\": null, \"c_battery_charge_power_w\": 1554, \"c_battery_discharge_power_w\": 0, \"c_battery_charge_energy_kwh\": 0.0, \"c_battery_discharge_energy_kwh\": 0.0, \"c_bms_total_capacity_ah\": null, \"c_mains_power_w\": 0, \"c_grid_import_power_w\": 0, \"c_load_energy_kwh\": 0.0, \"c_grid_import_energy_kwh\": 0.0, \"c_load_w\": 766, \"c_generation_energy_kwh\": 0.0, \"c_generation_power_w\": 1403, \"bms_current_soc\": 58}",
+    "siseli/siseli_inverter_1/battery/state\t1\t0\t{\"bat_v\": 53.4, \"bat_cap\": 58, \"bat_charge_current\": 7.0, \"dischg_current\": 0.0, \"bat_series_count\": 4, \"battery_status\": \"Charge\", \"battery_type\": null, \"bms_allow_charging_flag\": null, \"bms_allow_discharge_flag\": null, \"bms_auto_start_soc_after_low\": 25, \"bms_avg_temp_c\": 30.95, \"bms_charge_current_limit_a\": 195.0, \"bms_charge_voltage_limit_v\": 57.6, \"bms_charging_current_a\": 29.1, \"bms_charging_overcurrent_sign\": null, \"bms_communication_control_function\": null, \"bms_communication_normal\": null, \"bms_discharge_current_a\": 0.0, \"bms_discharge_overcurrent_flag\": null, \"bms_discharge_voltage_limit_v\": 42.0, \"bms_low_battery_alarm_flag\": null, \"bms_low_power_fault_flag\": null, \"bms_low_power_soc\": 15, \"bms_low_temperature_flag\": null, \"bms_returns_to_battery_mode_soc\": 50, \"bms_returns_to_mains_mode_soc\": 35, \"bms_temperature_too_high_flag\": null, \"battery_equalization_mode\": \"Disable\", \"battery_equalization_voltage_v\": 58.4, \"battery_not_connected\": null, \"battery_overvoltage_shutdown_voltage_v\": 44.0, \"battery_voltage_higher\": null, \"boost_temperature_c\": 38.0, \"equalization_interval\": \"30 day\", \"equalization_overtime\": \"120 min\", \"equalization_time\": \"60 min\", \"li_battery_activation_function_switch\": null, \"li_battery_activation_process\": null, \"low_battery_alarm\": null, \"max_utility_charge_current_a\": 10, \"parallel_mode_turn_off_soc\": 20, \"return_to_battery_mode_voltage_v\": 54.0, \"second_output_battery_capacity\": 50, \"second_output_battery_voltage_v\": 52.0, \"second_output_discharge_time\": \"0 min\"}",
+    "siseli/siseli_inverter_1/bms/state\t1\t0\t{\"bms_remaining_ah\": null, \"bms_nominal_ah\": null, \"bms_display_mode\": null, \"bms_max_cell_mv\": null, \"bms_max_cell_pos\": null, \"bms_min_cell_mv\": null, \"bms_min_cell_pos\": null, \"bms_cell_count\": null, \"bms_cell_delta_mv\": null, \"cell_1_mv\": null, \"cell_2_mv\": null, \"cell_3_mv\": null, \"cell_4_mv\": null, \"cell_5_mv\": null, \"cell_6_mv\": null, \"cell_7_mv\": null, \"cell_8_mv\": null, \"cell_9_mv\": null, \"cell_10_mv\": null, \"cell_11_mv\": null, \"cell_12_mv\": null, \"cell_13_mv\": null, \"cell_14_mv\": null, \"cell_15_mv\": null, \"cell_16_mv\": null}",
+    "siseli/siseli_inverter_1/grid/state\t1\t0\t{\"grid_v\": 232.7, \"grid_hz\": 49.9, \"mains_current_flow_direction\": \"Mains To Inverter\", \"mains_power_w\": 0, \"mains_apparent_va\": 0, \"ct_function_switch\": \"OFF\", \"grid_connected_current_a\": 20, \"grid_connection_function\": \"Off\", \"grid_connection_sign\": \"Off Grid\", \"high_frequency_of_mains_power_loss_hz\": 65.0, \"high_point_of_mains_power_loss_voltage_v\": 280.0, \"input_source_prompt_function\": \"On\", \"input_voltage_too_high\": null, \"low_frequency_of_mains_power_loss_hz\": 40.0, \"low_point_of_mains_power_loss_voltage_v\": 170.0, \"main_output_relay_status\": null, \"mains_charging_ending_time\": \"0 h\", \"mains_charging_starting_time\": \"0 h\", \"mains_input_range\": \"UPS\", \"mains_light_status\": null, \"pv_grid_connection_agreement\": null, \"return_to_mains_mode_voltage_v\": 46.0, \"total_number_of_grid_connection\": null, \"mains_wdrr_token\": \"+00000\", \"mains_wdrr_value\": 0, \"mains_wdrr_abs\": 0, \"mains_eo8w_code\": \"B B\", \"mains_flow_code\": \"0\", \"mains_input_range_code\": \"11\", \"mains_flow_state\": \"Mains To Inverter\"}",
+    "siseli/siseli_inverter_1/load/state\t1\t0\t{\"out_v\": 228.5, \"out_hz\": 49.9, \"apparent_va\": 868, \"load_w\": 766, \"load_pct\": 7, \"output_dc_comp\": 18, \"does_machine_have_output\": \"Yes\", \"dual_output_mode\": \"On\", \"inverter_light_status\": null, \"inverter_temperature_c\": 48.0, \"output_ending_time\": \"0 h\", \"output_set_frequency\": null, \"output_set_voltage\": 230, \"output_starting_time\": \"0 h\", \"overloaded\": null, \"overload_restart_function\": null, \"overload_to_bypass_function\": null, \"parallel_mode\": \"Enable\", \"parallel_mode_turn_off_voltage_v\": 44.0, \"parallel_role\": \"Host\", \"rated_apparent_va\": 11000, \"output_status_bits\": \"11000\"}",
+    "siseli/siseli_inverter_1/pv/state\t1\t0\t{\"generation_power_w\": 1403, \"pv_v\": 0.0, \"pv_current_a\": 0.0, \"pv_w\": 0, \"pv2_v\": 132.0, \"pv2_current_a\": 10.6, \"pv2_power_w\": 1403, \"pv_today_kwh\": 2.939, \"pv_month_kwh\": 315.7, \"pv_total_kwh\": 2284.6, \"pv_year_kwh\": 2081.0, \"pv_temp\": 58.0, \"pv2_temp\": 48.0, \"solar_charging_switch\": null, \"abnormal_low_pv_power\": null, \"mppt_constant_temperature_mode\": null, \"power_supply_from_pv_to_load_in_ac_state\": \"No\", \"pv_energy_feeding_priority\": null}"
+   ],
+   "log": [
+    "[HA MQTT] Connected to core-mosquitto:1883",
+    "[HA MQTT] Cleared 2697 stale discovery topics",
+    "[HA MQTT] Discovery published"
+   ]
+  }
+ }
+}

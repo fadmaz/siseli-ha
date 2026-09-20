@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+Tests and internals only. No behaviour change: the golden below was recorded from the
+shipped 2.6.24 code and every run it stores matches it byte for byte.
+
+### Added
+
+- **A behavioural golden for the reference installation**: `tests/test_device_a_golden.py`
+  records what an install actually produces — every MQTT publish in order with its
+  payload, retain flag and QoS, every log line, the bytes of `/data/state.json`, and
+  `LAST_STATE` in insertion order — across five runs of the real startup sequence: a
+  first start, two payloads and the deferred flush, a restart from the written cache, a
+  reconnect with a matching discovery marker, and one whose marker names a previous
+  `DEVICE_ID`. The planned Voltronic PI30 support (`docs/PI30_DESIGN.md`) rewires the
+  parser, the reconnect path, the sensor registry and the startup sequence while
+  promising existing installs stay byte-for-byte unchanged; nothing in the suite could
+  have caught a breach of that promise, because the existing tests assert individual
+  behaviours rather than bytes.
+
+### Changed
+
+- The startup sequence between validating the options and connecting to the broker moved
+  out of `core.py`'s `__main__` block into `prepare_startup_state()` and `seed_state()`.
+  A pure move — `__main__` is the one part of the file no test can execute, so the
+  sequence that ships was also the sequence nothing verified.
+
+### Fixed
+
+- Two test-suite defects the golden found. `tests/test_core.py` reloaded `core` while
+  `config` still held another test's overrides, which left `core.UPDATE_INTERVAL_SEC` at
+  700 for the remainder of every suite run — invisible, because the tests that read it
+  patch it first. And `helpers.isolated_state` did not restore `DISCOVERY_CLEANED`, so
+  whether a test saw the discovery sweep run depended on what had run before it.
+
 ## [2.6.24] - 2026-09-17
 
 ### Fixed

@@ -75,6 +75,31 @@ Two rules that are easy to get wrong:
    `FLOW_STATES`, `LAST_ENERGY_TS` and friends leak between tests otherwise, and the
    failure shows up as an unrelated test failing depending on run order.
 
+3. **A reload is not undone by the test that did it.** `importlib.reload` on
+   `core.py`, `mqtt.py` or `parsers.py` re-binds every config copy from whatever
+   `config.py` holds at that moment, and `reload_config` leaves it holding the last
+   override a config test used. Reload `config.py` under `patched_env()` first, or the
+   module keeps those values for the rest of the session.
+
+### The behavioural golden
+
+`tests/test_device_a_golden.py` records what the reference installation produces --
+every MQTT publish in order with its payload, retain flag and QoS, every log line,
+`state.json`, and `LAST_STATE` in insertion order -- across five runs of the real
+startup sequence. It exists because `docs/PI30_DESIGN.md` promises existing installs
+stay byte-for-byte unchanged, and no other test asserts bytes.
+
+It fails, rather than skips, on any difference: it imposes `BASE_ENV` on the three
+consuming modules instead of reading the ambient environment. When a change to it is
+intended:
+
+```bash
+SISELI_REGEN_GOLDEN=1 py -3.12 -m pytest siseli_bridge/tests/test_device_a_golden.py
+```
+
+Then **read the diff** and say in the commit message what changed and who sees it.
+Regenerating to make a failure go away is how a golden becomes worthless.
+
 Some tests are marked `CURRENT BEHAVIOUR` in their docstring. Those pin a known
 defect deliberately, so that fixing it shows up as a reviewed diff rather than a
 silent change. If one fails because you fixed the underlying bug, update the test in

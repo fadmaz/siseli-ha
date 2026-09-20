@@ -864,6 +864,33 @@ def log_startup_configuration() -> None:
         )
 
 
+def seed_state() -> None:
+    """Give every registered sensor a key, so the first state payload carries them all.
+
+    A key absent from LAST_STATE is absent from the published JSON, and a discovery
+    config whose state topic never mentions its value template reads Unknown in Home
+    Assistant until the first payload that happens to contain it -- which, for a block
+    the device sends rarely, can be hours.
+    """
+    for key in SENSORS.keys():
+        _state.LAST_STATE.setdefault(key, None)
+
+
+def prepare_startup_state(path: str = STATE_CACHE_FILE) -> None:
+    """Everything between validating the options and connecting to the broker.
+
+    The order matters and is not obvious: the cache is restored first so the
+    configuration lines print below the CACHE lines that explain what was restored, and
+    the seeding runs last so it fills only the keys the cache did not. It is one
+    function because __main__ is the one part of this file no test executes, so a
+    sequence left inline there is a sequence nothing verifies -- `tests/
+    test_device_a_golden.py` calls this to record the startup that actually ships.
+    """
+    load_cached_state(path)
+    log_startup_configuration()
+    seed_state()
+
+
 def install_signal_handlers() -> None:
     """Called from __main__ only. At module scope this would hijack the signal
     handlers of any process that merely imports core (e.g. the test runner), and
@@ -876,12 +903,7 @@ if __name__ == "__main__":
     from .config import validate_config
     validate_config()
     install_signal_handlers()
-    load_cached_state()
-    log_startup_configuration()
-
-    for key in SENSORS.keys():
-        _state.LAST_STATE.setdefault(key, None)
-
+    prepare_startup_state(STATE_CACHE_FILE)
     start_mqtt()
 
     if AUTO_INTERCEPT:

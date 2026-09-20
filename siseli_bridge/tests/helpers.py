@@ -129,6 +129,7 @@ def isolated_state():
     saved_state = dict(shared_state.LAST_STATE)
     saved_published = set(shared_state.PUBLISHED_SENSOR_KEYS)
     saved_discovery = shared_state.DISCOVERY_PUBLISHED
+    saved_cleaned = shared_state.DISCOVERY_CLEANED
     saved_flows = dict(parser_mod.FLOW_STATES)
     saved_topics = dict(parser_mod.SEEN_MQTT_TOPICS)
     saved_energy_clocks = dict(parser_mod.LAST_ENERGY_TS)
@@ -154,6 +155,7 @@ def isolated_state():
         shared_state.PUBLISHED_SENSOR_KEYS.clear()
         shared_state.PUBLISHED_SENSOR_KEYS.update(saved_published)
         shared_state.DISCOVERY_PUBLISHED = saved_discovery
+        shared_state.DISCOVERY_CLEANED = saved_cleaned
         parser_mod.FLOW_STATES.clear()
         parser_mod.FLOW_STATES.update(saved_flows)
         parser_mod.SEEN_MQTT_TOPICS.clear()
