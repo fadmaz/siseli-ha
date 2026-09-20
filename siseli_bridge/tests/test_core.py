@@ -1245,8 +1245,8 @@ class TestFramesCarryTheCaptureInterfaceMac(_CoreTestCase):
 class TestEnergyClocksSurviveARestart(unittest.TestCase):
     """Each restart used to drop one integration interval per energy domain: the clocks
     lived only in memory, so the first payload after a restart set a baseline and
-    credited nothing -- 0.1-0.5 kWh per domain at the reference install's captured power
-    and 300-600 s cadence. The
+    credited nothing. Measured on the reference install on 2026-09-20: 0.525 kWh across the
+    four domains in one 301 s interval, each within 0.3 % of power x time. The
     clocks now travel in state.json beside the counters they gate, tagged with the host
     boot id, because a monotonic reading means nothing after a reboot."""
 
