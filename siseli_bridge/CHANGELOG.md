@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+Documentation and tests only. No behaviour change.
+
+### Added
+
+- **The five remaining log diagnostics are documented**: `[ENERGY SOURCE DISAGREEMENT]`,
+  `[ENERGY GAP CLAMPED]`, `[BATTERY CURRENT REJECTED]`, `[GRID VALUE REJECTED]` and
+  `[NO VALUES DECODED]` each get a `DOCS.md` entry saying what happened, whether anything
+  was lost, and what to do. Every warning-level diagnostic the parser can emit is now
+  explained where the user reads, and a test fails if a new one is not. The first of
+  those five fires on the reference installation, so it was the least theoretical gap of
+  the set: a line a user sees on their own hardware with nothing to search for.
+- A test pinning the two physical bounds `DOCS.md` quotes by value against the constants
+  in `parsers.py`. Written from memory they said 300 A and 30 kW where the code enforces
+  1000 A and 100 kW — which would have told a user their entirely normal reading was out
+  of range.
+
 ## [2.6.25] - 2026-09-22
 
 A diagnostic release for Voltronic PI30 inverters, plus the test work that preceded it.

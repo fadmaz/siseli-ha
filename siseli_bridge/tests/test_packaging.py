@@ -358,15 +358,10 @@ class TestUserVisibleDiagnosticsAreDocumented(unittest.TestCase):
     a visible edit in the same diff as the code that emits it.
     """
 
-    #: Warning-level tags DOCS.md does not explain yet. Each is a real gap. They are not
-    #: exemptions: a user who sees one has nothing to search for.
-    KNOWN_GAPS = {
-        "[ENERGY GAP CLAMPED]",
-        "[ENERGY SOURCE DISAGREEMENT]",
-        "[BATTERY CURRENT REJECTED]",
-        "[GRID VALUE REJECTED]",
-        "[NO VALUES DECODED]",
-    }
+    #: Warning-level tags DOCS.md does not explain yet. Empty, and meant to stay that
+    #: way: the five it held when this test was written have since been documented, and
+    #: the companion test below fails if a documented tag is ever put back on the list.
+    KNOWN_GAPS = set()
 
     @staticmethod
     def _warning_tags(source):
@@ -390,6 +385,24 @@ class TestUserVisibleDiagnosticsAreDocumented(unittest.TestCase):
         for tag in sorted(tags - self.KNOWN_GAPS):
             with self.subTest(tag=tag):
                 self.assertIn(tag, docs, f"DOCS.md never mentions {tag}")
+
+    def test_the_bounds_quoted_in_docs_are_the_bounds_in_the_code(self):
+        """A sample log line in DOCS.md quotes two limits by value.
+
+        Written from memory they were 300 A and 30 kW against a real 1000 A and 100 kW,
+        which would have told a user their perfectly normal reading was out of range.
+        A constant is cheap to change and nothing else would notice the docs going stale.
+        """
+        source = (ADDON / "src" / "siseli_bridge" / "parsers.py").read_text(encoding="utf-8")
+        docs = (ADDON / "DOCS.md").read_text(encoding="utf-8")
+        for name, key in (("BATTERY_CURRENT_MAX_A", "max_a"), ("MAINS_POWER_MAX_W", "max_abs")):
+            with self.subTest(constant=name):
+                match = re.search(rf"^{name} = (\d+)", source, re.M)
+                self.assertIsNotNone(match, f"{name} is no longer a module-level literal")
+                self.assertIn(
+                    f"{key}={match.group(1)}", docs,
+                    f"DOCS.md quotes a different {key} than {name}",
+                )
 
     def test_the_known_gap_list_holds_no_tag_that_is_now_documented(self):
         """So the list shrinks as the gaps are closed, and cannot hide a regression."""

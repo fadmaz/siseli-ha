@@ -501,6 +501,73 @@ before. The line is logged once per start.
 That line is the evidence that settles the question. Please open an issue with it and, if
 you can, a screenshot of the vendor app's grid page taken in the same minute.
 
+### The log says [ENERGY SOURCE DISAGREEMENT]
+
+Your inverter reports battery current twice — once from its BMS and once from an older
+field — and on this payload the two disagreed by more than a factor of two, or one read
+zero while the other did not. The line names both values and which one was used:
+
+```
+[ENERGY SOURCE DISAGREEMENT] bms_key="bms_charging_current_a" bms_value=9.8
+    legacy_key="bat_charge_current" legacy_value=0.0 legacy_scaled=0.0
+    using="bms_charging_current_a"
+```
+
+**Nothing is wrong, and nothing is lost.** The BMS reading is used, because it is the
+one that has matched reality on every install compared so far. The line exists because
+there is no ground truth to appeal to: the vendor app displays both figures and they
+disagree there too, so picking a winner silently would hide a real ambiguity.
+
+It is logged whenever the two disagree, not once per start, because which payloads
+disagree is itself the evidence. If you can compare a disagreeing moment against your
+vendor app, that is worth an issue.
+
+### The log says [ENERGY GAP CLAMPED]
+
+The bridge credits energy by multiplying power by the time since the last reading. This
+line means one of those gaps was far longer than your inverter's measured reporting
+interval, so it was capped rather than credited in full:
+
+```
+[ENERGY GAP CLAMPED] domain="generation" dt_seconds=4211.3 max_dt_seconds=1200.0
+```
+
+A long gap means the bridge stopped seeing your inverter for a while — a network
+interruption, the inverter offline, or the add-on stopped without a clean shutdown. Some
+energy is genuinely missing from that window; capping it is the conservative choice,
+because crediting an hour of the current power would inflate your Energy dashboard
+permanently.
+
+Logged once per start. If it appears on every start, look at why the gaps are happening
+rather than at the counters.
+
+### The log says [BATTERY CURRENT REJECTED] or [GRID VALUE REJECTED]
+
+A decoded number was outside any range the hardware can physically produce, so it was
+dropped rather than published:
+
+```
+[BATTERY CURRENT REJECTED] field="bat_charge_current" parsed=3276.7 max_a=1000
+[GRID VALUE REJECTED] token="+6553500" parsed=6553500 max_abs=100000
+```
+
+Dropped, not clamped — a fabricated figure would be integrated into your energy totals,
+where it cannot be taken back out. The affected sensor simply has no value for that
+payload, and the matching energy domain is skipped for it.
+
+A one-off is usually a garbled reading. If it repeats, the add-on is probably reading a
+field your model uses differently, which is worth an issue with the line in it.
+
+Each is logged once per start.
+
+### The log says [NO VALUES DECODED]
+
+The bridge recognised your device's data blocks but got no values out of them. That is
+different from `[UNSUPPORTED PROTOCOL]`, which means it recognised none of them.
+
+The usual cause is truncated blocks — the payload arrived incomplete. If it persists,
+please open an issue with the line and the `[BLOCK RAW]` output described below.
+
 ### PV1 reads zero on a single-string system
 
 Expected. Some inverters report the live string on the second MPPT input, and the official
