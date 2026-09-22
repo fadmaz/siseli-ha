@@ -259,6 +259,7 @@ class TestArchitectureDocAnchors(unittest.TestCase):
     BARE = {
         "core.py": "siseli_bridge/src/siseli_bridge/core.py",
         "parsers.py": "siseli_bridge/src/siseli_bridge/parsers.py",
+        "pi30.py": "siseli_bridge/src/siseli_bridge/pi30.py",
         "mqtt.py": "siseli_bridge/src/siseli_bridge/mqtt.py",
         "sensors.py": "siseli_bridge/src/siseli_bridge/sensors.py",
         "state.py": "siseli_bridge/src/siseli_bridge/state.py",
@@ -345,6 +346,57 @@ class TestDiagnosticVocabularyIsDocumented(unittest.TestCase):
         for shape in sorted(shapes):
             with self.subTest(shape=shape):
                 self.assertIn(f"`{shape}`", docs, f"DOCS.md does not explain body={shape}")
+
+
+class TestUserVisibleDiagnosticsAreDocumented(unittest.TestCase):
+    """A diagnostic logged at warning reaches every user; DOCS.md is where they look.
+
+    The sibling test above exists because 2.6.17 shipped a value the docs contradicted.
+    This one guards the other half of that: a *tag* the docs never mention. It is a
+    ratchet, not a clean sheet -- five tags predate it and are listed as known gaps, so
+    the test cannot pass by having the list grow silently: adding a tag to KNOWN_GAPS is
+    a visible edit in the same diff as the code that emits it.
+    """
+
+    #: Warning-level tags DOCS.md does not explain yet. Each is a real gap. They are not
+    #: exemptions: a user who sees one has nothing to search for.
+    KNOWN_GAPS = {
+        "[ENERGY GAP CLAMPED]",
+        "[ENERGY SOURCE DISAGREEMENT]",
+        "[BATTERY CURRENT REJECTED]",
+        "[GRID VALUE REJECTED]",
+        "[NO VALUES DECODED]",
+    }
+
+    @staticmethod
+    def _warning_tags(source):
+        tags = set()
+        for chunk in source.split("log_kv(")[1:]:
+            head = chunk[:800]
+            tag = re.search(r"\[[A-Z][A-Z0-9 ]*\]", head)
+            level = re.search(r'level="(\w+)"', head)
+            if tag and level and level.group(1) in ("warning", "error"):
+                tags.add(tag.group(0))
+        return tags
+
+    def test_every_warning_level_tag_is_explained_in_docs(self):
+        source = (ADDON / "src" / "siseli_bridge" / "parsers.py").read_text(encoding="utf-8")
+        docs = (ADDON / "DOCS.md").read_text(encoding="utf-8")
+
+        tags = self._warning_tags(source)
+        # An empty set would pass this test trivially forever.
+        self.assertGreaterEqual(len(tags), 8, "the scan stopped finding diagnostic tags")
+
+        for tag in sorted(tags - self.KNOWN_GAPS):
+            with self.subTest(tag=tag):
+                self.assertIn(tag, docs, f"DOCS.md never mentions {tag}")
+
+    def test_the_known_gap_list_holds_no_tag_that_is_now_documented(self):
+        """So the list shrinks as the gaps are closed, and cannot hide a regression."""
+        docs = (ADDON / "DOCS.md").read_text(encoding="utf-8")
+        for tag in sorted(self.KNOWN_GAPS):
+            with self.subTest(tag=tag):
+                self.assertNotIn(tag, docs, f"{tag} is documented; take it off KNOWN_GAPS")
 
 
 class TestDocumentedCountsAreCurrent(unittest.TestCase):

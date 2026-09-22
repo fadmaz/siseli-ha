@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
+from . import pi30
 from . import state as _shared_state
 from .loggers import log, log_kv, json_log, log_payload_preview, log_error_always, hex_preview
 from .sensors import SENSORS
@@ -175,6 +176,18 @@ _CHECKSUM_TAIL_BYTES = 2
 
 #: One-shot guard so a foreign device is diagnosed once, not on every payload.
 UNSUPPORTED_PROTOCOL_LOGGED = False
+#: The same, for a device whose frames are PI30 but whose block names are not the ones
+#: this build maps. Its **own** flag, deliberately: one flag shared with
+#: UNSUPPORTED_PROTOCOL_LOGGED would let whichever diagnosis fired first silence the
+#: other for the life of the process, and an install can have both kinds of device.
+PI30_BLOCK_NAMES_UNKNOWN_LOGGED = False
+#: Whether the PI30 field dump has been printed, and the device state it was printed for.
+#: The dump is one-shot, then re-arms whenever the mode or the QPIGS status bits change,
+#: because the evidence still missing (docs/PI30_DESIGN.md §12) is a capture taken in a
+#: state this device has never been observed in. A strictly one-shot line prints once per
+#: restart and is therefore almost impossible to catch in the right state.
+PI30_DECODE_LOGGED = False
+PI30_LAST_SIGNATURE = ""
 #: Integration clock per energy domain, holding time.monotonic() readings. They mean
 #: something only within one host boot, so they are persisted together with the boot id
 #: and resumed only in that boot (restore_energy_clocks). A dict rather than one global per domain, so
@@ -795,6 +808,72 @@ def _write_state_cache(snapshot: Dict[str, object], now: Optional[float] = None)
 def _log_debug_block(block_name: str, raw_text: str) -> None:
     """Log raw debug block data instead of creating HA entities."""
     log(f"[DEBUG BLOCK] {block_name}: {raw_text[:250]}", level="debug")
+
+
+#: What the reporter of a PI30 device is asked to send back, spelled out in the log so it
+#: does not depend on them finding the issue or the documentation first.
+PI30_DECODE_NOTE = (
+    "this device speaks Voltronic PI30; these values are decoded but not published as "
+    "entities yet -- please post this whole block on "
+    "https://github.com/fadmaz/siseli-ha/issues/32 together with a vendor-portal "
+    "screenshot taken in the same minute"
+)
+
+
+def log_pi30_diagnostic(blocks: Dict[str, bytes], source_topic: Optional[str] = None) -> bool:
+    """Report a Voltronic PI30 payload. True when this payload was one.
+
+    Returns True for `unknown-names` as well: the frames verified and the device is
+    plainly PI30, so calling it "not a supported inverter variant" would be wrong even
+    though nothing here can decode its block names.
+
+    Logged at **warning**, the level the line it replaces uses. A user whose inverter is
+    unsupported has no reason to have raised their log level -- that is precisely how
+    issue #30 reached "all sensors Unknown" with nothing in the log naming the cause --
+    and `warning` is a setting DOCS.md offers for quiet logs.
+    """
+    global PI30_BLOCK_NAMES_UNKNOWN_LOGGED, PI30_DECODE_LOGGED, PI30_LAST_SIGNATURE
+
+    result = pi30.decode(blocks)
+    detection = result.detection
+    if detection.verdict == pi30.NOT_PI30:
+        return False
+
+    if detection.verdict == pi30.UNKNOWN_NAMES:
+        if not PI30_BLOCK_NAMES_UNKNOWN_LOGGED:
+            PI30_BLOCK_NAMES_UNKNOWN_LOGGED = True
+            log_kv(
+                "[PI30 BLOCK NAMES UNKNOWN]",
+                level="warning",
+                note="every frame carries a valid Voltronic checksum, but none of this "
+                     "device's block names are ones this add-on maps to a query; it is a "
+                     "PI30 device this build cannot decode",
+                verified_frames=detection.verified,
+                block_count=detection.total,
+                names=sorted(blocks or {}),
+            )
+        return True
+
+    state_changed = bool(result.signature) and result.signature != PI30_LAST_SIGNATURE
+    if PI30_DECODE_LOGGED and not state_changed:
+        return True
+    PI30_DECODE_LOGGED = True
+    if result.signature:
+        PI30_LAST_SIGNATURE = result.signature
+
+    log_kv(
+        f"[{datetime.now().strftime('%H:%M:%S')}] [PI30 DECODE]",
+        level="warning",
+        note=PI30_DECODE_NOTE,
+        frames=f"{detection.verified}/{detection.total}",
+        mapped_names=len(detection.mapped_names),
+        decoded_fields=len(result.values),
+        topic=source_topic,
+        **result.context,
+    )
+    for query, fields in pi30.describe(result):
+        log_kv("[PI30 DECODE]", level="warning", query=query, **fields)
+    return True
 
 
 class SolarParser:
@@ -2402,6 +2481,14 @@ class SolarParser:
             # needing a debug flag -- someone whose inverter is not supported has no
             # reason to have turned one on, which is precisely how issue #30 reached
             # "all sensors Unknown" with nothing in the log naming the cause.
+            # A Voltronic PI30 device answers this description and is not foreign: its
+            # frames carry a checksum that verifies. It is reached only from here, the
+            # arm no payload the Device A decoder understood has ever entered.
+            if log_pi30_diagnostic(blocks, source_topic):
+                if LOG_UNPARSED_PUBLISH:
+                    log_payload_preview("[UNPARSED PAYLOAD: PI30]", payload_bytes, topic=source_topic, block_names=sorted(blocks.keys()))
+                return False
+
             global UNSUPPORTED_PROTOCOL_LOGGED
             if not UNSUPPORTED_PROTOCOL_LOGGED:
                 UNSUPPORTED_PROTOCOL_LOGGED = True
