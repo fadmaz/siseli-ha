@@ -308,3 +308,142 @@ SYNTH_WDRR_ABSURD_POWER = b"(232.7 49.9 280 170 65 40 +999999999 0 11000 11+0000
 #: Hand-built. Seventeen in-range cell voltages, one more than the 16 cell
 #: entities, to exercise the overflow path no real capture reaches.
 SYNTH_V09K_CELLS_17 = b"(3301 3302 3303 3304 3305 3306 3307 3308 3309 3310 3311 3312 3313 3314 3315 3316 3317 00000000)"
+
+
+# ---------------------------------------------------------------------------
+# Device C -- Falcon VMIII-4000, Voltronic PI30, firmware 00060.10.
+# The 2026-09-02 `dev_prop_post` set, verbatim from the appendix of
+# captures/2026-09-02_device-c-voltronic-pi30.md, captured together with four
+# vendor-portal screenshots taken in the same minute. Every frame CRC-verifies
+# (CRC16-XMODEM over "(" .. pre-CRC, big-endian), which is what makes these usable
+# for value-parity assertions where the earlier DEVC_BLOCK_* set is not: that one
+# came from the first report, whose two telemetry blocks hex_preview cut at 64 bytes.
+#
+# The set arrives as two MQTT messages with the same b.ts -- 14 blocks then 10, the
+# same split every time -- so the fixtures are per fragment. Nine of these bodies are
+# byte-identical to their DEVC_BLOCK_* counterparts and are still written out in full:
+# this is the portal-paired evidence, and it should read as one verbatim record.
+# ---------------------------------------------------------------------------
+
+# --- fragment 1 of 2 (14 blocks) -------------------------------------------
+BLOCK_PI30_CCFT_PROTOCOL = bytes.fromhex("28504933309a0b0d")            # (PI30
+BLOCK_PI30_O2LC_FIRMWARE = bytes.fromhex("2856455246573a30303036302e3130be380d")
+BLOCK_PI30_AG5G_FIRMWARE3 = bytes.fromhex("2856455246573a30303032352e3132ab390d")
+BLOCK_PI30_ZZ3K_MODE_BATTERY = bytes.fromhex("2842e7c90d")              # (B
+BLOCK_PI30_EZGH_NAK = bytes.fromhex("284e414b73730d")                   # (NAK
+#: QPIGS. Battery mode, discharging 6 A at 85 %, on 151 W of PV, grid present at
+#: 219.4 V but unused under SBU priority. Field 17 reads 00010000: the load is on and
+#: nothing else. Paired field by field with the portal in the capture note.
+BLOCK_PI30_G4WT_QPIGS_BATTERY = bytes.fromhex(
+    "283231392e342034392e37203233302e302034392e372030333638203032353820"
+    "303039203433362032372e3630203030302030383520303034392030312e322031"
+    "38342e312030302e30302030303030362030303031303030302030302030302030"
+    "303135312030313120302030312030303534e77e0d"
+)
+#: QPIRI, all 25 fields. A 4000 VA / 4000 W unit on a 24 V bank -- the rating that
+#: makes field 12 of QPIGS a temperature rather than a raw NTC reading.
+BLOCK_PI30_MRFS_QPIRI = bytes.fromhex(
+    "283233302e302031372e33203233302e302035302e302031372e33203430303020"
+    "343030302032342e302032352e302032342e302032382e382032372e3620322030"
+    "3630203033302031203220322031203130203020302032372e3020302031915a0d"
+)
+#: QFLAG. `E` opens the enabled list, `D` the disabled one, and `d` is itself a flag
+#: letter -- which is why the split is on the uppercase separators only.
+BLOCK_PI30_SJQT_QFLAG = bytes.fromhex("2845616b78797a4462646a757678320d")
+BLOCK_PI30_DB48_CHARGE_CURRENTS = bytes.fromhex(
+    "2830313020303230203033302030343020303530203036302030373020303830"
+    "203039302031303020313130203132300ccb0d"
+)
+BLOCK_PI30_WB83_UTILITY_CURRENTS = bytes.fromhex(
+    "28303032203031302030323020303330203034302030353020303630203037302030"
+    "383020303930203130305c460d"
+)
+#: QOPPT and QCHPT answer with byte-identical hourly arrays in this capture, which is
+#: why shape alone cannot tell them apart and the decoder needs the name map.
+BLOCK_PI30_OTLG_OUTPUT_SCHEDULE = bytes.fromhex(
+    "2832203220322032203220322032203220322032203220322032203220322032"
+    "203220322032203220322032203220322032203020302030407f0d"
+)
+BLOCK_PI30_48RR_CHARGER_SCHEDULE = bytes.fromhex(
+    "2832203220322032203220322032203220322032203220322032203220322032"
+    "203220322032203220322032203220322032203020302030407f0d"
+)
+#: Hand-built stand-ins for the two serial-bearing replies, which the capture note
+#: withholds. Same shape, owner's digits replaced, CRC recomputed -- so fragment 1 is
+#: the full 14-block payload the device actually sends. They carry no published value:
+#: QID and QSID are decoded by nothing, so no assertion rests on them.
+SYNTH_PI30_AHLB_SERIAL = bytes.fromhex("283030303030303030303030303038422a0d")
+SYNTH_PI30_G5E9_SERIAL = bytes.fromhex("28303030303030303030303030303030303030303844070d")
+
+# --- fragment 2 of 2 (10 blocks) -------------------------------------------
+BLOCK_PI30_LCMP_CLOCK = bytes.fromhex("28323032363039303231373035353416340d")
+#: QBEQI. Field 6 read 29.20 in the 2026-08-31 capture and 27.60 here, so it is a
+#: live setting; the float voltage moved from 28.8 to 27.6 over the same interval.
+BLOCK_PI30_7V9T_QBEQI = bytes.fromhex(
+    "2830203036302030333020303330203033302032372e363020303030203132302030"
+    "203030303061ee0d"
+)
+BLOCK_PI30_EMU5_MODEL = bytes.fromhex("28564d4949492d34303030de930d")   # (VMIII-4000
+BLOCK_PI30_9GBT_GENERAL_MODEL = bytes.fromhex("28303535ebbe0d")         # (055
+#: QET, lifetime PV energy: 00253800 Wh, the portal's 253.8 kWh. That pairing is the
+#: only thing establishing the Wh unit, which is why the conversion is true division.
+BLOCK_PI30_CT7S_QET = bytes.fromhex("283030323533383030f2d00d")
+#: QLT, lifetime load energy: 00114100 Wh, the portal's 114.1.
+BLOCK_PI30_MA9W_QLT = bytes.fromhex("2830303131343130307a8a0d")
+#: QBMS, reporting itself disconnected. Its ten zero placeholders describe no battery,
+#: and it answers with exactly ten tokens -- the same count as QBEQI.
+BLOCK_PI30_UEFO_QBMS = bytes.fromhex(
+    "2831203030302030203020302030303020303030203030302030303030203030303080860d"
+)
+BLOCK_PI30_U51Q_UNRESOLVED = bytes.fromhex("2831a93d0d")                # (1
+BLOCK_PI30_TWFA_NAK = bytes.fromhex("284e414b73730d")                   # (NAK
+BLOCK_PI30_W7EX_NAK = bytes.fromhex("284e414b73730d")                   # (NAK
+
+PI30_FRAGMENT_1 = {
+    "48rR": BLOCK_PI30_48RR_CHARGER_SCHEDULE,
+    "DB48": BLOCK_PI30_DB48_CHARGE_CURRENTS,
+    "Ezgh": BLOCK_PI30_EZGH_NAK,
+    "G4WT": BLOCK_PI30_G4WT_QPIGS_BATTERY,
+    "G5E9": SYNTH_PI30_G5E9_SERIAL,
+    "MrfS": BLOCK_PI30_MRFS_QPIRI,
+    "ag5g": BLOCK_PI30_AG5G_FIRMWARE3,
+    "ahLb": SYNTH_PI30_AHLB_SERIAL,
+    "cCft": BLOCK_PI30_CCFT_PROTOCOL,
+    "o2lC": BLOCK_PI30_O2LC_FIRMWARE,
+    "oTLG": BLOCK_PI30_OTLG_OUTPUT_SCHEDULE,
+    "sJqt": BLOCK_PI30_SJQT_QFLAG,
+    "wb83": BLOCK_PI30_WB83_UTILITY_CURRENTS,
+    "zZ3K": BLOCK_PI30_ZZ3K_MODE_BATTERY,
+}
+
+PI30_FRAGMENT_2 = {
+    "7v9T": BLOCK_PI30_7V9T_QBEQI,
+    "9gbt": BLOCK_PI30_9GBT_GENERAL_MODEL,
+    "EMu5": BLOCK_PI30_EMU5_MODEL,
+    "TWfA": BLOCK_PI30_TWFA_NAK,
+    "UefO": BLOCK_PI30_UEFO_QBMS,
+    "W7EX": BLOCK_PI30_W7EX_NAK,
+    "cT7S": BLOCK_PI30_CT7S_QET,
+    "lCMp": BLOCK_PI30_LCMP_CLOCK,
+    "mA9W": BLOCK_PI30_MA9W_QLT,
+    "u51Q": BLOCK_PI30_U51Q_UNRESOLVED,
+}
+
+#: The three NAK replies alone. They verify, and they are byte-identical, so without
+#: the unattributed-name list three content-free frames would satisfy the detection
+#: threshold on their own.
+PI30_ONLY_NAKS = {
+    "Ezgh": BLOCK_PI30_EZGH_NAK,
+    "TWfA": BLOCK_PI30_TWFA_NAK,
+    "W7EX": BLOCK_PI30_W7EX_NAK,
+}
+
+#: Hand-built: the captured QPIRI with field 6 (rated apparent power) rewritten from
+#: 4000 to 3000 and the CRC recomputed, everything else byte-for-byte. Backs the
+#: heat-sink gate's ABSENCE case only -- a SYNTH_ block may never assert a value.
+SYNTH_PI30_MRFS_3000VA = bytes.fromhex(
+    "283233302e302031372e33203233302e302035302e302031372e332033303030"
+    "20343030302032342e302032352e302032342e302032382e382032372e362032"
+    "20303630203033302031203220322031203130203020302032372e3020302031"
+    "359f0d"
+)

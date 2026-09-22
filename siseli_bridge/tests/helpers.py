@@ -147,6 +147,12 @@ def isolated_state():
     saved_cell_overflow = parser_mod.CELL_LIST_OVERFLOW_LOGGED
     saved_cache_write_ts = parser_mod.LAST_CACHE_WRITE_TS
     saved_restored_domains = set(parser_mod.RESTORED_ENERGY_DOMAINS)
+    # PI30's one-shots and the device state its dump re-arms on. The automatic scan in
+    # TestEveryOnceFlagIsIsolated finds the two bool *_LOGGED names; the signature is a
+    # str, so it is invisible to that scan and would leak between tests silently.
+    saved_pi30_unknown = parser_mod.PI30_BLOCK_NAMES_UNKNOWN_LOGGED
+    saved_pi30_logged = parser_mod.PI30_DECODE_LOGGED
+    saved_pi30_signature = parser_mod.PI30_LAST_SIGNATURE
     try:
         yield
     finally:
@@ -178,6 +184,9 @@ def isolated_state():
         parser_mod.LAST_CACHE_WRITE_TS = saved_cache_write_ts
         parser_mod.RESTORED_ENERGY_DOMAINS.clear()
         parser_mod.RESTORED_ENERGY_DOMAINS.update(saved_restored_domains)
+        parser_mod.PI30_BLOCK_NAMES_UNKNOWN_LOGGED = saved_pi30_unknown
+        parser_mod.PI30_DECODE_LOGGED = saved_pi30_logged
+        parser_mod.PI30_LAST_SIGNATURE = saved_pi30_signature
 
 
 # ---------------------------------------------------------------- fake broker

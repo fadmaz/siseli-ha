@@ -395,12 +395,6 @@ needed:
     body_shapes="ascii=1,binary=11" modbus_crc_ok="10/12" looks_like="modbus_rtu"
 ```
 
-```
-[UNSUPPORTED PROTOCOL] ... block_count=14 recognised=0 names=[...]
-    body="ascii+binary_tail" body_shapes="ascii=3,ascii+binary_tail=11"
-    voltronic_crc_ok="14/14" looks_like="voltronic_pi30"
-```
-
 **`recognised=0` is the verdict.** Your inverter speaks a protocol this add-on does not
 decode, whatever the other fields say. This is not a fault in the add-on or your
 configuration — the bridge deliberately publishes nothing rather than guessing at values
@@ -427,6 +421,46 @@ work, but it starts with a capture.
 > The entities still appear because Home Assistant creates them from the add-on's
 > discovery messages, which are published before any inverter data arrives. Entities
 > existing is not evidence that anything was decoded.
+
+### Your log says `[PI30 DECODE]`
+
+Your inverter speaks Voltronic PI30, and this add-on now reads it — but does not publish
+it yet. Every sensor still reads Unknown, and the log carries a dump of everything that
+was decoded instead:
+
+```
+[13:45:02] [PI30 DECODE] note="..." frames="24/24" mapped_names=20 decoded_fields=71
+    protocol="PI30" inverter_clock="2026-09-02 17:05:54"
+[PI30 DECODE] query="QPIGS" grid_v=219.4 grid_hz=49.7 ac_out_v=230.0 ...
+[PI30 DECODE] query="QPIRI" rated_grid_v=230.0 ...
+```
+
+This is the last step before those values become entities, and it exists to be checked by
+someone who can see the inverter: **the add-on's author has no PI30 hardware.** Every
+field above was read from one owner's capture and matched against their vendor portal.
+
+If you can help, please post that whole block on
+[issue #32](https://github.com/fadmaz/siseli-ha/issues/32) together with a screenshot of
+your vendor portal taken in the same minute. Two values in particular have never been
+captured while the panels were charging the battery, so a dump taken **in daylight, with
+solar charging active**, is worth more than any other.
+
+The dump prints once when the add-on starts, and again whenever your inverter changes
+mode or one of its status bits, so you do not have to catch a restart. It carries its own
+timestamp and your inverter's own clock, which is what lets a log line and a screenshot be
+lined up exactly.
+
+### Your log says `[PI30 BLOCK NAMES UNKNOWN]`
+
+Your device is a Voltronic PI30 inverter — every one of its frames carries a valid
+checksum — but the four-character names its data collector puts on those frames are not
+the ones this add-on maps to queries. That map is proven for exactly one device, and
+nothing yet shows whether other collectors reuse the same names.
+
+Nothing is published, because decoding a frame whose query is unknown would mean guessing.
+Please open an [unsupported inverter issue](https://github.com/fadmaz/siseli-ha/issues/new?template=unsupported_inverter.yml)
+with that line and the `[BLOCK RAW]` output described below — this is a case the add-on is
+close to supporting.
 
 ### No entities appear
 

@@ -808,7 +808,7 @@ class TestStartupPath(unittest.TestCase):
         # An empty set would pass every module trivially.
         self.assertTrue(private, "found no private names in config.py to check")
 
-        for module in ("core.py", "mqtt.py", "parsers.py"):
+        for module in ("core.py", "mqtt.py", "parsers.py", "pi30.py"):
             text = (src_dir / module).read_text(encoding="utf-8")
             if "from .config import *" not in text:
                 continue

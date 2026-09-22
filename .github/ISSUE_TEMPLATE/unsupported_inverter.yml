@@ -46,6 +46,18 @@ body:
         shape and, where a checksum verifies, name the likely protocol family -- all of
         which changes what adding support would involve.
 
+        **If instead you see `[PI30 DECODE]`**, your inverter is a Voltronic PI30 and
+        the add-on already reads it -- paste that whole block, every line of it. It
+        lists every value that was decoded, and comparing those against your own vendor
+        portal is the last thing needed before they become entities. A dump taken in
+        daylight, while the panels are charging the battery, is the most useful of all:
+        two fields have never been captured in that state.
+
+        **If you see `[PI30 BLOCK NAMES UNKNOWN]`**, your device is PI30 but its data
+        collector labels its frames differently from the one device this is proven
+        against. Paste that line with the `[BLOCK RAW]` output -- this is a case the
+        add-on is close to supporting.
+
         Please scrub the `topic=` values: the Siseli cloud topic contains your device
         serial. The block contents themselves are just readings.
       render: text
@@ -57,7 +69,9 @@ body:
       label: What the official app shows
       description: |
         The values the app displays at the same moment, so the decode can be checked
-        against ground truth. A screenshot is fine.
+        against ground truth. A screenshot is fine -- and for a `[PI30 DECODE]` dump it
+        is what makes the report usable: take it within the same minute as the log
+        lines, so the two can be lined up exactly.
   - type: checkboxes
     id: scrubbed
     attributes:

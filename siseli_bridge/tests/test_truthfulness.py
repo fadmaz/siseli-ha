@@ -19,6 +19,7 @@ from unittest import mock
 
 from src.siseli_bridge import parsers as parser_module
 from src.siseli_bridge import state as shared_state
+from src.siseli_bridge import pi30 as pi30_module
 from src.siseli_bridge.parsers import SolarParser
 from tests import captures
 from tests.helpers import envelope, isolated_state, patch_consts
@@ -630,7 +631,7 @@ class TestNoModuleMeasuresADurationOnTheWallClock(unittest.TestCase):
     SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "siseli_bridge"
 
     def test_no_runtime_module_calls_time_time(self):
-        for name in ("core.py", "parsers.py", "state.py", "mqtt.py"):
+        for name in ("core.py", "parsers.py", "state.py", "mqtt.py", "pi30.py"):
             with self.subTest(module=name):
                 text = (self.SRC / name).read_text(encoding="utf-8")
                 self.assertNotIn(
@@ -1198,7 +1199,7 @@ class TestEveryOnceFlagIsIsolated(unittest.TestCase):
     it first proves the scan finds the flags it is meant to guard."""
 
     def test_every_once_flag_in_parsers_and_state_is_restored(self):
-        modules = (parser_module, shared_state)
+        modules = (parser_module, shared_state, pi30_module)
         flags = [
             (module, name)
             for module in modules

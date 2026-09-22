@@ -1,6 +1,33 @@
 # Voltronic PI30 support — design
 
-**Status: Approved 2026-09-20. Implementation is staged and has not started.**
+**Status: Approved 2026-09-20. Implementation is under way.**
+
+- The regression golden of §10 item 1 merged on 2026-09-20 (PR #49), together with the
+  `prepare_startup_state` / `seed_state` move its first commit calls for.
+- The decoder, the frame check and the block map shipped in **2.6.25** as a diagnostic
+  only: `pi30.py` decodes every field and logs it as `[PI30 DECODE]`, and publishes no
+  entity. The registry, the switch and the energy guard (§1, §2, §4, §6) are not written.
+  Shipping the decoder first is a deviation from this document's staging, taken so the
+  reporter's second portal pairing — the only thing that can close §12 — arrives before
+  the field table is frozen.
+
+**Amendments made while implementing 2.6.25**, each because the design left it open or
+got it wrong:
+
+- §3 requires shape checks but defines none. Every mapped name now carries one, asserted
+  total by a test; QPIGS is bounded at both ends (21–24 tokens, since an open `>= 21`
+  also admits QPIRI and both hourly schedules), and QBEQI needs a voltage in field 6
+  because QBMS answers with the same ten tokens.
+- The block map holds the **20** identified queries, not 24. The three NAK replies are
+  byte-identical and verify, so counting them as recognised names would let three
+  content-free frames clear the detection threshold on their own. They and the
+  unresolved `u51Q` are listed separately and never counted.
+- §5's Wh→kWh conversion is **true division**: `253800 / 1000` is `253.8`, which is what
+  the portal reads. Integer division gives `253.0` and discards the single pairing that
+  establishes the Wh unit at all.
+- The dump re-arms on a mode or status-bit change rather than being strictly one-shot.
+  §12's missing evidence is a capture taken in a state never yet observed, and a line
+  that prints once per restart cannot be caught in it.
 
 This is the design for decoding the second protocol family this add-on has met: Voltronic
 PI30, spoken by the Falcon VMIII-4000 in

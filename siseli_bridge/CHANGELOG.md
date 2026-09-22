@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.6.25] - 2026-09-22
 
-Tests and internals only. No behaviour change: the golden below was recorded from the
-shipped 2.6.24 code and every run it stores matches it byte for byte.
+A diagnostic release for Voltronic PI30 inverters, plus the test work that preceded it.
+**Nothing changes for a supported inverter**: no entity, topic, payload or log line
+moves, which the behavioural golden below asserts byte for byte.
 
 ### Added
+
+- **Voltronic PI30 devices are now read, and reported in the log**: the add-on decodes
+  every frame such a device sends -- checksum-verified, mapped to its query, and read
+  field by field -- and prints the result as a `[PI30 DECODE]` block instead of calling
+  the device "not a supported inverter variant". It still publishes no entity. This is
+  deliberate: the field positions come from one owner's capture paired against their
+  vendor portal, and two of them have never been observed in the state that would prove
+  them, so the values are put where their owner can check them before they reach anyone's
+  dashboard. The dump prints at start-up and again whenever the inverter changes mode or
+  a status bit, carries its own timestamp and the inverter's own clock, and names what to
+  do with it. A PI30 device whose data collector labels its frames differently gets
+  `[PI30 BLOCK NAMES UNKNOWN]` instead, because decoding an unidentified frame would mean
+  guessing. See [issue #32](https://github.com/fadmaz/siseli-ha/issues/32).
 
 - **A behavioural golden for the reference installation**: `tests/test_device_a_golden.py`
   records what an install actually produces — every MQTT publish in order with its
@@ -30,11 +44,15 @@ shipped 2.6.24 code and every run it stores matches it byte for byte.
 
 ### Fixed
 
-- Two test-suite defects the golden found. `tests/test_core.py` reloaded `core` while
-  `config` still held another test's overrides, which left `core.UPDATE_INTERVAL_SEC` at
-  700 for the remainder of every suite run — invisible, because the tests that read it
-  patch it first. And `helpers.isolated_state` did not restore `DISCOVERY_CLEANED`, so
-  whether a test saw the discovery sweep run depended on what had run before it.
+- Three test-suite defects, each a module reload or a global that the test which changed
+  it never put back. `tests/test_core.py` reloaded `core` while `config` still held
+  another test's overrides, leaving `core.UPDATE_INTERVAL_SEC` at 700 for the remainder
+  of every suite run. `tests/test_logging.py` reloaded `loggers` and left the whole
+  session at `LOG_LEVEL=error`, which silenced every warning a later test asserted on.
+  And `helpers.isolated_state` did not restore `DISCOVERY_CLEANED`, so whether a test saw
+  the discovery sweep run depended on what had run before it. All three were invisible:
+  the tests that read those values patch them first, and the tests that did not exist
+  yet were the ones that broke.
 
 ## [2.6.24] - 2026-09-17
 
