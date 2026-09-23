@@ -155,6 +155,33 @@ A release is a single commit touching: `siseli_bridge/CHANGELOG.md` (the canonic
 one -- the root file is just a pointer), `version.py`, `config.yaml`, and the README
 badge.
 
+**Fold `## [Unreleased]` into the new section; never insert the new heading above it.**
+Rename it in place to `## [X.Y.Z] - YYYY-MM-DD`. Inserting a heading above it once
+stranded two shipped entries outside the release notes (ef6c8e4), and
+`test_changelog_head_matches` cannot see that -- it reads only headings that start with a
+digit. Then **reread the section's opening paragraph**, not only its bullets: 2.6.25's
+began "Tests and internals only. No behaviour change", carried over from when it held
+test work alone, and would have shipped as the preamble of a release that changed a log
+line. Nothing mechanical checks prose.
+
+**Merging is not releasing.** Once the release PR is merged, tag its merge commit and
+publish a GitHub release whose notes are that version's changelog section:
+
+```bash
+gh release create vX.Y.Z --repo fadmaz/siseli-ha \
+    --target <merge commit of the release PR> \
+    --title X.Y.Z --notes-file <the section, without its heading> --latest
+```
+
+Tag the release PR's merge commit, not whatever `main` is by the time you get to it --
+later docs-only merges would otherwise be tagged as part of a release they are not in.
+
+This step is easy to skip precisely because skipping it breaks nothing you can see.
+Supervisor installs from the default branch, so the add-on updates without it and your
+own install looks fine. But the Releases page is where everyone else looks: 2.6.25 was
+merged and installable while that page still called 2.6.24 the latest, and the reporter
+it had been built for concluded, reasonably, that it was not out.
+
 Changelog entries follow Keep a Changelog: `## [X.Y.Z] - YYYY-MM-DD`, then
 `### Added` / `### Changed` / `### Fixed`, with bullets shaped
 `- **Bold Title Case Label**: Sentence.` and identifiers in backticks.
